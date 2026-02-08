@@ -148,28 +148,34 @@ class PDFAccessibility(Stack):
                                                     log_group_name="/ecs/pdf-remediation/alt-text-generator",
                                                     retention=logs.RetentionDays.ONE_MONTH,
                                                     removal_policy=cdk.RemovalPolicy.DESTROY)
-        # ECS Task Definitions
+        # ECS Task Definitions - Updated for large PDF support
         adobe_autotag_task_def = ecs.FargateTaskDefinition(self, "AdobeAutotagTaskDefinition",
-                                                      memory_limit_mib=1024,
-                                                      cpu=256, execution_role=ecs_task_execution_role, task_role=ecs_task_role,
+                                                      memory_limit_mib=4096,  # Increased from 1024 for large PDFs
+                                                      cpu=1024,  # Increased from 256 for large PDFs
+                                                      execution_role=ecs_task_execution_role, 
+                                                      task_role=ecs_task_role,
+                                                      family="PDFAccessibilityAdobeAutotagTaskDefinitionV2"  # Force new version
                                                      )
 
         adobe_autotag_container_def = adobe_autotag_task_def.add_container("adobe-autotag-container",
                                                                   image=ecs.ContainerImage.from_registry(adobe_autotag_image_asset.image_uri),
-                                                                  memory_limit_mib=1024,
+                                                                  memory_limit_mib=4096,  # Increased from 1024 for large PDFs
                                                                   logging=ecs.LogDrivers.aws_logs(
         stream_prefix="AdobeAutotagLogs",
         log_group=adobe_autotag_log_group,
     ))
 
         alt_text_task_def = ecs.FargateTaskDefinition(self, "AltTextGenerationTaskDefinition",
-                                                      memory_limit_mib=1024,
-                                                      cpu=256, execution_role=ecs_task_execution_role, task_role=ecs_task_role,
+                                                      memory_limit_mib=4096,  # Increased from 1024 for large PDFs
+                                                      cpu=1024,  # Increased from 256 for large PDFs
+                                                      execution_role=ecs_task_execution_role, 
+                                                      task_role=ecs_task_role,
+                                                      family="PDFAccessibilityAltTextTaskDefinitionV2"  # Force new version
                                                       )
 
         alt_text_container_def = alt_text_task_def.add_container("alt-text-llm-container",
                                                                   image=ecs.ContainerImage.from_registry(alt_text_generator_image_asset.image_uri),
-                                                                  memory_limit_mib=1024,
+                                                                  memory_limit_mib=4096,  # Increased from 1024 for large PDFs
                                                                    logging=ecs.LogDrivers.aws_logs(
         stream_prefix="AltTextGeneratorLogs",
         log_group=alt_text_generator_log_group
@@ -258,7 +264,8 @@ class PDFAccessibility(Stack):
                 'BUCKET_NAME': pdf_processing_bucket.bucket_name  # this line sets the environment variable
             },
             timeout=Duration.seconds(900),
-            memory_size=1024
+            memory_size=3008,  # Increased from 1024 for large PDFs
+            ephemeral_storage_size=cdk.Size.mebibytes(2048)  # 2GB /tmp storage
         )
 
         pdf_merger_lambda.add_to_role_policy(cloudwatch_metrics_policy)
@@ -284,8 +291,8 @@ class PDFAccessibility(Stack):
             handler='title_generator.lambda_handler',
             code=lambda_.Code.from_docker_build('lambda/title-generator-lambda'),
             timeout=Duration.seconds(900),
-            memory_size=1024,
-            # architecture=lambda_.Architecture.ARM_64
+            memory_size=3008,  # Increased from 1024 for large PDFs
+            ephemeral_storage_size=cdk.Size.mebibytes(2048),  # 2GB /tmp storage
             architecture=lambda_arch,
         )
 
@@ -319,7 +326,8 @@ class PDFAccessibility(Stack):
             handler='main.lambda_handler',
             code=lambda_.Code.from_docker_build('lambda/pre-remediation-accessibility-checker'),
             timeout=Duration.seconds(900),
-            memory_size=512,
+            memory_size=2048,  # Increased from 512 for large PDFs
+            ephemeral_storage_size=cdk.Size.mebibytes(2048),  # 2GB /tmp storage
             architecture=lambda_arch,
         )
         
@@ -345,7 +353,8 @@ class PDFAccessibility(Stack):
             handler='main.lambda_handler',
             code=lambda_.Code.from_docker_build('lambda/post-remediation-accessibility-checker'),
             timeout=Duration.seconds(900),
-            memory_size=512,
+            memory_size=2048,  # Increased from 512 for large PDFs
+            ephemeral_storage_size=cdk.Size.mebibytes(2048),  # 2GB /tmp storage
             architecture=lambda_arch,
         )
         
@@ -394,7 +403,8 @@ class PDFAccessibility(Stack):
             handler='main.lambda_handler',
             code=lambda_.Code.from_docker_build("lambda/pdf-splitter-lambda"),
             timeout=Duration.seconds(900),
-            memory_size=1024
+            memory_size=3008,  # Increased from 1024 for large PDFs
+            ephemeral_storage_size=cdk.Size.mebibytes(2048)  # 2GB /tmp storage
         )
 
         pdf_splitter_lambda.add_to_role_policy(cloudwatch_metrics_policy)

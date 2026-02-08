@@ -14,6 +14,9 @@
 
 set -e
 
+# Force AWS CLI to use JSON output format (required for jq parsing)
+export AWS_DEFAULT_OUTPUT=json
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -91,16 +94,22 @@ deploy_backend_solution() {
         # Set up Adobe credentials in Secrets Manager
         print_status "🔒 Setting up Adobe API credentials in AWS Secrets Manager..."
         
-        JSON_TEMPLATE='{
-          "client_credentials": {
-            "PDF_SERVICES_CLIENT_ID": "<Your client ID here>",
-            "PDF_SERVICES_CLIENT_SECRET": "<Your secret ID here>"
-          }
-        }'
-
-        echo "$JSON_TEMPLATE" | jq --arg cid "$ADOBE_CLIENT_ID" --arg csec "$ADOBE_CLIENT_SECRET" \
-            '.client_credentials.PDF_SERVICES_CLIENT_ID = $cid | 
-             .client_credentials.PDF_SERVICES_CLIENT_SECRET = $csec' > client_credentials.json
+        # Validate credentials are not empty
+        if [ -z "$ADOBE_CLIENT_ID" ] || [ -z "$ADOBE_CLIENT_SECRET" ]; then
+            print_error "Adobe credentials cannot be empty"
+            exit 1
+        fi
+        
+        # Create JSON using jq with proper escaping
+        jq -n \
+            --arg cid "$ADOBE_CLIENT_ID" \
+            --arg csec "$ADOBE_CLIENT_SECRET" \
+            '{
+                "client_credentials": {
+                    "PDF_SERVICES_CLIENT_ID": $cid,
+                    "PDF_SERVICES_CLIENT_SECRET": $csec
+                }
+            }' > client_credentials.json
 
         if aws secretsmanager create-secret --name /myapp/client_credentials --description "Client credentials for PDF services" --secret-string file://client_credentials.json 2>/dev/null; then
             print_success "   ✅ Secret created successfully in Secrets Manager!"
@@ -146,7 +155,8 @@ deploy_backend_solution() {
                     }
                 }
             }' \
-            --region $REGION 2>/dev/null || {
+            --region $REGION \
+            --output json 2>/dev/null || {
             print_error "Failed to create BDA project. Please ensure you have bedrock-data-automation permissions."
             exit 1
         })
@@ -379,18 +389,49 @@ EOF
         
         # Create the policy
         print_status "📋 Creating IAM policy: $POLICY_NAME"
-        POLICY_RESPONSE=$(aws iam create-policy \
-            --policy-name "$POLICY_NAME" \
-            --policy-document "$POLICY_DOCUMENT" \
-            --description "Minimal IAM policy for $DEPLOYMENT_TYPE CodeBuild deployment" 2>/dev/null || \
-            aws iam get-policy --policy-arn "arn:aws:iam::$ACCOUNT_ID:policy/$POLICY_NAME" 2>/dev/null)
         
-        if [ $? -eq 0 ]; then
-            POLICY_ARN=$(echo "$POLICY_RESPONSE" | jq -r '.Policy.Arn // .Policy.Arn')
-            print_success "✅ Policy ready: $POLICY_NAME"
+        # Write policy document to a temporary file to avoid shell escaping issues
+        echo "$POLICY_DOCUMENT" > /tmp/policy_document.json
+        
+        # Try to create the policy
+        POLICY_CREATE_OUTPUT=$(aws iam create-policy \
+            --policy-name "$POLICY_NAME" \
+            --policy-document file:///tmp/policy_document.json \
+            --description "Minimal IAM policy for $DEPLOYMENT_TYPE CodeBuild deployment" \
+            --output json 2>&1)
+        POLICY_CREATE_EXIT=$?
+        
+        # Clean up temp file
+        rm -f /tmp/policy_document.json
+        
+        if [ $POLICY_CREATE_EXIT -eq 0 ]; then
+            # Only parse JSON if command succeeded
+            if echo "$POLICY_CREATE_OUTPUT" | jq empty 2>/dev/null; then
+                POLICY_ARN=$(echo "$POLICY_CREATE_OUTPUT" | jq -r '.Policy.Arn')
+                print_success "✅ Policy created: $POLICY_NAME"
+            else
+                print_error "Unexpected output format from create-policy command"
+                echo "$POLICY_CREATE_OUTPUT"
+                exit 1
+            fi
         else
-            print_error "Failed to create or retrieve IAM policy"
-            exit 1
+            # Check if policy already exists
+            if echo "$POLICY_CREATE_OUTPUT" | grep -q "EntityAlreadyExists"; then
+                print_status "Policy already exists, retrieving..."
+                POLICY_ARN="arn:aws:iam::$ACCOUNT_ID:policy/$POLICY_NAME"
+                
+                # Verify the policy exists
+                if aws iam get-policy --policy-arn "$POLICY_ARN" >/dev/null 2>&1; then
+                    print_success "✅ Using existing policy: $POLICY_NAME"
+                else
+                    print_error "Failed to retrieve existing policy"
+                    exit 1
+                fi
+            else
+                print_error "Failed to create IAM policy. Error:"
+                echo "$POLICY_CREATE_OUTPUT"
+                exit 1
+            fi
         fi
         
         print_status "🔗 Attaching policy to role..."

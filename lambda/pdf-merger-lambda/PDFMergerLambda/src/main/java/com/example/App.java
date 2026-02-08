@@ -83,6 +83,9 @@ public class App implements RequestHandler<Map<String, Object>, String> {
             System.out.println("File: " + baseFileName + ", Status: Failed in Merging the PDF");
             System.out.println(String.format("Filename: %s, File not found: %s", baseFileName, e.getMessage()));
             return "Failed to merge PDFs.";
+        } finally {
+            // Clean up temporary files to prevent "no space left on device" errors
+            cleanupTempFiles(modifiedPdfKeys, mergedFilePath, baseFileName);
         }
     }
 
@@ -150,5 +153,33 @@ public class App implements RequestHandler<Map<String, Object>, String> {
     private void logFileStatus(String baseFileName) {
         baseFileName = baseFileName.replace(".pdf", "");
         System.out.println(String.format("File: %s, Status: succeeded", baseFileName));
+    }
+
+    /**
+     * Cleans up temporary files from /tmp directory to prevent disk space issues.
+     *
+     * @param sourceKeys The list of S3 object keys representing the downloaded PDF files.
+     * @param mergedFilePath The path to the merged PDF file.
+     * @param baseFileName The base name of the file used for logging purposes.
+     */
+    private void cleanupTempFiles(List<String> sourceKeys, String mergedFilePath, String baseFileName) {
+        try {
+            // Delete downloaded source files
+            for (String key : sourceKeys) {
+                String localFilePath = "/tmp/" + key.substring(key.lastIndexOf('/') + 1);
+                File localFile = new File(localFilePath);
+                if (localFile.exists() && localFile.delete()) {
+                    System.out.println(String.format("Filename: %s, Deleted temp file: %s", baseFileName, localFilePath));
+                }
+            }
+            
+            // Delete merged file
+            File mergedFile = new File(mergedFilePath);
+            if (mergedFile.exists() && mergedFile.delete()) {
+                System.out.println(String.format("Filename: %s, Deleted merged temp file: %s", baseFileName, mergedFilePath));
+            }
+        } catch (Exception e) {
+            System.out.println(String.format("Filename: %s, Warning: Failed to cleanup temp files: %s", baseFileName, e.getMessage()));
+        }
     }
 }

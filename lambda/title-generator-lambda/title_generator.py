@@ -41,19 +41,68 @@ def exponential_backoff_retry(
             time.sleep(sleep_time)
 
 
-def download_file_from_s3(bucket_name, file_key, local_path, filename):
+def download_file_from_s3(bucket_name, file_key, local_path, filename, max_bytes=5*1024*1024):
+    """
+    Downloads a file from S3, optionally limiting to first N bytes for large files.
+    
+    Args:
+        bucket_name: S3 bucket name
+        file_key: S3 object key
+        local_path: Local path to save file
+        filename: Filename for logging
+        max_bytes: Maximum bytes to download (default 5MB, enough for ~50 pages)
+    """
     s3 = boto3.client('s3')
-    # Wrap the S3 download_file call with exponential_backoff_retry
-    exponential_backoff_retry(
-        s3.download_file,
-        bucket_name,
-        file_key,
-        local_path,
-        retries=3,
-        base_delay=1,
-        backoff_factor=2
-    )
-    print(f"Filename: {filename}| Downloaded {file_key} from {bucket_name} to {local_path}")
+    
+    try:
+        # Get file size first
+        head_response = exponential_backoff_retry(
+            s3.head_object,
+            Bucket=bucket_name,
+            Key=file_key,
+            retries=3,
+            base_delay=1,
+            backoff_factor=2
+        )
+        file_size = head_response['ContentLength']
+        
+        if file_size > max_bytes:
+            # For large files, download only first portion
+            print(f"Filename: {filename} | Large file detected ({file_size/1024/1024:.1f}MB). "
+                  f"Downloading first {max_bytes/1024/1024:.1f}MB only.")
+            
+            # Download with byte range using exponential backoff
+            response = exponential_backoff_retry(
+                s3.get_object,
+                Bucket=bucket_name,
+                Key=file_key,
+                Range=f'bytes=0-{max_bytes-1}',
+                retries=3,
+                base_delay=1,
+                backoff_factor=2
+            )
+            
+            with open(local_path, 'wb') as f:
+                f.write(response['Body'].read())
+            
+            print(f"Filename: {filename} | Downloaded first {max_bytes/1024/1024:.1f}MB "
+                  f"from {file_key} to {local_path}")
+        else:
+            # For small files, download normally
+            exponential_backoff_retry(
+                s3.download_file,
+                bucket_name,
+                file_key,
+                local_path,
+                retries=3,
+                base_delay=1,
+                backoff_factor=2
+            )
+            print(f"Filename: {filename} | Downloaded {file_key} from {bucket_name} to {local_path}")
+            
+    except Exception as e:
+        print(f"Filename: {filename} | Error downloading from S3: {e}")
+        raise
 
 
 def save_to_s3(local_path, bucket_name, file_key):
@@ -199,6 +248,9 @@ def generate_title(extracted_text, current_title):
 
 
 def lambda_handler(event, context):
+    local_path = None
+    pdf_document = None
+    
     try:
         payload = event.get("Payload")
         file_info = parse_payload(payload)
@@ -206,7 +258,15 @@ def lambda_handler(event, context):
 
         file_name = file_info['merged_file_name']
         local_path = f'/tmp/{file_name}'
-        download_file_from_s3(file_info['bucket'], file_info['merged_file_key'], local_path, file_info['merged_file_name'])
+        
+        # Download file (will be partial for large files - first 5MB)
+        download_file_from_s3(
+            file_info['bucket'], 
+            file_info['merged_file_key'], 
+            local_path, 
+            file_info['merged_file_name'],
+            max_bytes=5*1024*1024  # 5MB should be enough for first few pages
+        )
 
         try:
             pdf_document = fitz.open(local_path)
@@ -225,7 +285,8 @@ def lambda_handler(event, context):
             print(f"(lambda_handler | Extracted text: {extracted_text})")
         except Exception as e:
             print(f"(lambda_handler | Failed to extract text from PDF: {e})")
-            pdf_document.close()
+            if pdf_document:
+                pdf_document.close()
             return {
                 "statusCode": 500,
                 "body": {
@@ -239,7 +300,8 @@ def lambda_handler(event, context):
             print(f"(lambda_handler | Generated title: {title})")
         except Exception as e:
             print(f"(lambda_handler | Failed to generate title: {e})")
-            pdf_document.close()
+            if pdf_document:
+                pdf_document.close()
             return {
                 "statusCode": 500,
                 "body": {
@@ -248,13 +310,46 @@ def lambda_handler(event, context):
                 }
             }
 
+        # For partial downloads, we need to download the full file to set metadata
+        # Check if we downloaded a partial file
+        s3 = boto3.client('s3')
+        head_response = s3.head_object(Bucket=file_info['bucket'], Key=file_info['merged_file_key'])
+        full_file_size = head_response['ContentLength']
+        current_file_size = os.path.getsize(local_path)
+        
+        if current_file_size < full_file_size:
+            print(f"(lambda_handler | Partial file was downloaded. Downloading full file for metadata update...)")
+            if pdf_document:
+                pdf_document.close()
+                pdf_document = None
+            
+            # Remove partial file
+            os.remove(local_path)
+            
+            # Download full file
+            exponential_backoff_retry(
+                s3.download_file,
+                file_info['bucket'],
+                file_info['merged_file_key'],
+                local_path,
+                retries=3,
+                base_delay=1,
+                backoff_factor=2
+            )
+            print(f"(lambda_handler | Full file downloaded for metadata update)")
+            
+            # Reopen the full PDF
+            pdf_document = fitz.open(local_path)
+
         try:
             set_custom_metadata(pdf_document, file_name, title)
             pdf_document.saveIncr()
             pdf_document.close()
+            pdf_document = None
         except Exception as e:
             print(f"(lambda_handler | Failed to set metadata or save PDF: {e})")
-            pdf_document.close()
+            if pdf_document:
+                pdf_document.close()
             return {
                 "statusCode": 500,
                 "body": {
@@ -293,3 +388,18 @@ def lambda_handler(event, context):
                 "details": f"Filename: {file_info.get('merged_file_name','Unknown')} - {str(e)}"
             }
         }
+    finally:
+        # Clean up resources
+        if pdf_document:
+            try:
+                pdf_document.close()
+                print(f"(lambda_handler | Closed PDF document)")
+            except Exception as e:
+                print(f"(lambda_handler | Warning: Failed to close PDF document: {e})")
+        
+        if local_path and os.path.exists(local_path):
+            try:
+                os.remove(local_path)
+                print(f"(lambda_handler | Cleaned up temporary file: {local_path})")
+            except Exception as e:
+                print(f"(lambda_handler | Warning: Failed to cleanup {local_path}: {e})")
