@@ -186,7 +186,7 @@ class PDFAccessibility(Stack):
                                       cluster=pdf_remediation_cluster,
                                       task_definition=adobe_autotag_task_def,
                                       assign_public_ip=False,
-                                      
+                                      result_path="$.ecs_task_1_result",
                                       container_overrides=[tasks.ContainerOverride(
                                        container_definition = adobe_autotag_container_def,
                                           environment=[
@@ -225,11 +225,15 @@ class PDFAccessibility(Stack):
                                           environment=[
                                               tasks.TaskEnvironmentVariable(
                                                   name="S3_BUCKET_NAME",
-                                                  value=sfn.JsonPath.string_at("$.Overrides.ContainerOverrides[0].Environment[0].Value")
+                                                  value=sfn.JsonPath.string_at("$.s3_bucket")
                                               ),
                                               tasks.TaskEnvironmentVariable(
                                                   name="S3_FILE_KEY",
-                                                  value=sfn.JsonPath.string_at("$.Overrides.ContainerOverrides[0].Environment[1].Value")
+                                                  value=sfn.JsonPath.string_at("$.s3_key")
+                                              ),
+                                              tasks.TaskEnvironmentVariable(
+                                                  name="S3_CHUNK_KEY",
+                                                  value=sfn.JsonPath.string_at("$.chunk_key")
                                               ),
                                               tasks.TaskEnvironmentVariable(
                                                   name="AWS_REGION",
@@ -274,7 +278,9 @@ class PDFAccessibility(Stack):
                                       payload=sfn.TaskInput.from_object({
         "fileNames.$": "$.chunks[*].s3_key"
                      }),
-                                      output_path=sfn.JsonPath.string_at("$.Payload"))
+                                      result_selector={
+                                          "java_output.$": "$.Payload"
+                                      })
         pdf_processing_bucket.grant_read_write(pdf_merger_lambda)
 
         # Define the Add Title Lambda function
@@ -303,9 +309,7 @@ class PDFAccessibility(Stack):
         title_generator_lambda_task = tasks.LambdaInvoke(
             self, "GenerateAccessibleTitle",
             lambda_function=title_generator_lambda,
-            payload=sfn.TaskInput.from_object({
-                "Payload.$": "$"
-            })
+            payload=sfn.TaskInput.from_json_path_at("$")
         )
 
         # Add the necessary policy to the Lambda function's role

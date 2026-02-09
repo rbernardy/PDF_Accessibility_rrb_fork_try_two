@@ -321,14 +321,14 @@ async function generateAltTextForLink(url) {
  * @returns {Promise<void>} - A promise that resolves when the PDF has been modified and uploaded.
  * @throws {Error} - Throws an error if any step in the PDF processing or S3 operations fails.
  */
-async function modifyPDF(zipped, bucketName, inputKey, outputKey, filebasename) {
+async function modifyPDF(zipped, bucketName, inputKey, outputKey, filebasename, fileDirectory, fileKey) {
     const downloadPath = path.join('/tmp', path.basename(inputKey)); // Download to /tmp directory
 
     try {
         // Step 1: Download the PDF file from S3 to a local path
         const downloadParams = {
            Bucket: process.env.S3_BUCKET_NAME,
-            Key: `temp/${filebasename}/output_autotag/COMPLIANT_${process.env.S3_FILE_KEY.split("/").pop()}`,
+            Key: `${fileDirectory}/output_autotag/COMPLIANT_${fileKey}`,
         };
         const pdfData = await s3Client.send(new GetObjectCommand(downloadParams));
 
@@ -402,7 +402,7 @@ async function modifyPDF(zipped, bucketName, inputKey, outputKey, filebasename) 
         // Step 4: Upload the modified PDF back to S3
         const uploadParams = {
             Bucket: bucketName,
-            Key: `temp/${filebasename}/FINAL_${outputKey}`,
+            Key: `${fileDirectory}/FINAL_${outputKey}`,
             Body: fs_1.createReadStream(modifiedPdfPath),
             ContentType: 'application/pdf'
         };
@@ -431,15 +431,22 @@ async function modifyPDF(zipped, bucketName, inputKey, outputKey, filebasename) 
 async function startProcess() {
     
     const bucketName = process.env.S3_BUCKET_NAME;
-    const textFileKey = `${process.env.S3_FILE_KEY.split("/")[1]}/output_autotag/${process.env.S3_FILE_KEY.split("/").pop()}_temp_images_data.db`;
-    const filebasename = process.env.S3_FILE_KEY.split("/")[1];
+    const s3ChunkKey = process.env.S3_CHUNK_KEY || process.env.S3_FILE_KEY;
+
+    // Extract file_directory from chunk key (everything except the filename)
+    // Example: temp/batch1/doc/doc_chunk_1.pdf -> temp/batch1/doc
+    const fileDirectory = s3ChunkKey.split('/').slice(0, -1).join('/');
+    const fileKey = s3ChunkKey.split('/').pop();
+
+    const textFileKey = `${fileDirectory}/output_autotag/${fileKey}_temp_images_data.db`;
+    const filebasename = fileDirectory.split('/').pop();
    
     logger.info(`Filename: ${filebasename} | Text File Key: ${textFileKey}, Bucket Name: ${bucketName}`);
     try {
    
         const getObjectParams = {
             Bucket: bucketName,
-            Key: `temp/${textFileKey}`,
+            Key: textFileKey,
         };
         const command = new GetObjectCommand(getObjectParams);
         const { Body } = await s3Client.send(command);
@@ -463,11 +470,10 @@ async function startProcess() {
         try {
             const rows = db.prepare('SELECT * FROM image_data').all();
             imageObjects = rows.map((row) => {
-                const splitKey = process.env.S3_FILE_KEY.split('/');
-                logger.info(`thr path in the loop: temp/${splitKey[1]}/output_autotag/images/${row.img_path}`);
+                logger.info(`thr path in the loop: ${fileDirectory}/output_autotag/images/${row.img_path}`);
                 return {
                     id: row.objid,
-                    path: `temp/${splitKey[1]}/output_autotag/images/${splitKey.pop()}_${row.img_path}`,
+                    path: `${fileDirectory}/output_autotag/images/${fileKey}_${row.img_path}`,
                     context_json: {
                         context: row.context,
                     },
@@ -552,7 +558,7 @@ async function startProcess() {
         let zipped = imageObjects.map((element, index) => [element.id, descriptions[index]]);
         logger.info(`Filename: ${filebasename} | zipped: ${zipped}`);
 
-        await modifyPDF(combinedResults, bucketName, "output_autotag/COMPLIANT.pdf", path.basename(process.env.S3_FILE_KEY), filebasename);
+        await modifyPDF(combinedResults, bucketName, "output_autotag/COMPLIANT.pdf", fileKey, filebasename, fileDirectory, fileKey);
         logger.info(`Filename: ${filebasename} | PDF modification complete`);
 
     } catch (error) {

@@ -59,8 +59,13 @@ public class App implements RequestHandler<Map<String, Object>, String> {
             .collect(Collectors.toList());
 
         String baseFileName = pdfKeys.get(0).substring(pdfKeys.get(0).lastIndexOf('/') + 1).replaceAll("_chunk_\\d+", "");
+
+        // Extract directory path from first chunk key to preserve folder structure
+        String firstKey = pdfKeys.get(0);
+        String directory = firstKey.substring(0, firstKey.lastIndexOf('/') + 1);
+
         String mergedFilePath = "/tmp/merged_" + baseFileName;
-        String outputKey = String.format("temp/%s/merged_%s", baseFileName.replace(".pdf", ""), baseFileName);
+        String outputKey = directory + "merged_" + baseFileName;
 
         try {
             // Download PDFs from S3

@@ -24,14 +24,15 @@ def download_file_from_s3(bucket_name,file_key, save_path, local_path):
 
     print(f"Filename : {file_key} | Downloaded {file_key} from {bucket_name} to {local_path}")
 
-def save_to_s3(bucket_name, file_key):
+def save_to_s3(bucket_name, file_key, folder_path=""):
     s3 = boto3.client('s3')
     local_path = "/tmp/PDFAccessibilityChecker/result_after_remediation.json"
 
     file_key_without_extension = os.path.splitext(file_key)[0]
     file_key_without_compliant = file_key_without_extension.replace("COMPLIANT_", "", 1)
     
-    bucket_save_path = f"temp/{file_key_without_compliant}/accessability-report/{file_key_without_extension}_accessibility_report_after_remidiation.json"
+    folder_prefix = f"{folder_path}/" if folder_path else ""
+    bucket_save_path = f"temp/{folder_prefix}{file_key_without_compliant}/accessability-report/{file_key_without_extension}_accessibility_report_after_remidiation.json"
     with open(local_path, "rb") as data:
         s3.upload_fileobj(data, bucket_name, bucket_save_path)
     print(f"Filename {file_key} | Uploaded {file_key} to {bucket_name} at path {bucket_save_path} after remidiation")
@@ -92,6 +93,11 @@ def lambda_handler(event, context):
     file_basename = match.group(0)
     print("File basename:", file_basename)
 
+    # Extract folder_path from save_path
+    # Example: result/Sample-PDFs/Sample-Syllabus-1/COMPLIANT_Sample-Syllabus-1.pdf -> Sample-PDFs/Sample-Syllabus-1
+    save_path_parts = save_path.replace('result/', '').split('/')
+    folder_path = '/'.join(save_path_parts[:-1]) if len(save_path_parts) > 1 else ''
+    print(f"Extracted folder_path: {folder_path} from save_path: {save_path}")
 
     local_path = f"/tmp/{file_basename}"
     download_file_from_s3(s3_bucket,file_basename ,save_path, local_path)
@@ -131,7 +137,7 @@ def lambda_handler(event, context):
         with open(output_file_path_json, "wb") as file:
             file.write(stream_report.get_input_stream())
 
-        bucket_save_path = save_to_s3(s3_bucket, file_basename)
+        bucket_save_path = save_to_s3(s3_bucket, file_basename, folder_path)
         print(f"Filename : {file_basename} | Saved accessibility report to {bucket_save_path}")
 
     except (ServiceApiException, ServiceUsageException, SdkException) as e:

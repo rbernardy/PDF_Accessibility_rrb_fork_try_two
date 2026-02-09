@@ -105,9 +105,10 @@ def download_file_from_s3(bucket_name, file_key, local_path, filename, max_bytes
         raise
 
 
-def save_to_s3(local_path, bucket_name, file_key):
+def save_to_s3(local_path, bucket_name, file_key, folder_path=""):
     s3 = boto3.client('s3')
-    save_path = f"result/COMPLIANT_{file_key}"
+    folder_prefix = f"{folder_path}/" if folder_path else ""
+    save_path = f"result/{folder_prefix}COMPLIANT_{file_key}"
     with open(local_path, "rb") as data:
         # Wrap the S3 upload_fileobj call with exponential_backoff_retry
         exponential_backoff_retry(
@@ -252,12 +253,20 @@ def lambda_handler(event, context):
     pdf_document = None
     
     try:
-        payload = event.get("Payload")
-        file_info = parse_payload(payload)
+        java_output = event.get("java_output", event)
+        file_info = parse_payload(java_output)
         print(f"(lambda_handler | Parsed file information: {file_info})")
 
         file_name = file_info['merged_file_name']
         local_path = f'/tmp/{file_name}'
+        
+        # Extract folder_path from the merged_file_key
+        # Example: temp/batch1/doc/merged_doc.pdf -> batch1/doc
+        merged_key = file_info['merged_file_key']
+        key_parts = merged_key.replace('temp/', '').split('/')
+        # Remove only the filename (last part), keep all folder parts
+        folder_path = '/'.join(key_parts[:-1]) if len(key_parts) > 1 else ''
+        print(f"(lambda_handler | Extracted folder_path: {folder_path} from merged_key: {merged_key})")
         
         # Download file (will be partial for large files - first 5MB)
         download_file_from_s3(
@@ -359,7 +368,7 @@ def lambda_handler(event, context):
             }
 
         try:
-            save_path = save_to_s3(local_path, file_info['bucket'], file_name)
+            save_path = save_to_s3(local_path, file_info['bucket'], file_name, folder_path)
             print(f"(lambda_handler | Saved file to S3 at: {save_path})")
         except Exception as e:
             print(f"(lambda_handler | Failed to save file to S3: {e})")

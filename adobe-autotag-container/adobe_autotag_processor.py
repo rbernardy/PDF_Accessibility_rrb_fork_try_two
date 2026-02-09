@@ -91,34 +91,33 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 
 s3 = boto3.client('s3')
 
-def download_file_from_s3(bucket_name,file_base_name, file_key, local_path):
+def download_file_from_s3(bucket_name, file_key, local_path):
     """
     Download a file from an S3 bucket.
     
     Args:
         bucket_name (str): The S3 bucket name.
-        file_base_name (str): The base name of the file.
-        file_key (str): The key (path) of the file in the S3 bucket.
+        file_key (str): The full S3 key path of the file.
         local_path (str): The local path where the file will be saved.
     """
     logging.info(f"File key in the download_file_from_s3: {file_key}")
-    s3.download_file(bucket_name, f"temp/{file_base_name}/{file_key}", local_path)
+    s3.download_file(bucket_name, file_key, local_path)
     logging.info(f"Downloaded {file_key} from {bucket_name} to {local_path}")
 
-def save_to_s3(filename, bucket_name, folder_name,file_basename, file_key):
+def save_to_s3(filename, bucket_name, file_directory, file_key):
     """
     Uploads a file to an S3 bucket.
     
     Args:
         filename (str): The path of the file to upload.
         bucket_name (str): The S3 bucket name.
-        folder_name (str): The folder where the file will be uploaded.
-        file_basename (str): The base name of the file.
-        file_key (str): The key (path) where the file will be uploaded.
+        file_directory (str): The directory path where the file will be uploaded.
+        file_key (str): The key (filename) where the file will be uploaded.
     """
 
     with open(filename, "rb") as data:
-        s3.upload_fileobj(data, bucket_name, f"temp/{file_basename}/{folder_name}/COMPLIANT_{file_key}")
+        output_key = f"{file_directory}/output_autotag/COMPLIANT_{file_key}"
+        s3.upload_fileobj(data, bucket_name, output_key)
 
 
 def get_secret(basefilename):
@@ -639,18 +638,19 @@ def main():
     Main function that coordinates the downloading, processing, and uploading of PDF files and associated content.
     """
     file_key = None
-    file_base_name = None
+    file_directory = None
     
     try:    
         bucket_name = os.getenv('S3_BUCKET_NAME')
         s3_file_key = os.getenv('S3_FILE_KEY')
+        s3_chunk_key = os.getenv('S3_CHUNK_KEY')
         
-        if not bucket_name or not s3_file_key:
-            logging.error("Error: S3_BUCKET_NAME and S3_FILE_KEY environment variables are required.")
+        if not bucket_name or not s3_chunk_key:
+            logging.error("Error: S3_BUCKET_NAME and S3_CHUNK_KEY environment variables are required.")
             sys.exit(1)
         
-        file_key = s3_file_key.split('/')[2]
-        file_base_name = s3_file_key.split('/')[1]
+        file_key = s3_chunk_key.split('/')[-1]
+        file_directory = '/'.join(s3_chunk_key.split('/')[:-1])
         logging.info(f'Filename : {file_key} | Bucket Name: {bucket_name}')
 
         # Define the local file path where the file will be saved
@@ -658,7 +658,7 @@ def main():
         
         # Download the file from S3
         logging.info(f'Filename : {file_key} | Downloading file from S3...')
-        download_file_from_s3(bucket_name, file_base_name, file_key, local_file_path)
+        download_file_from_s3(bucket_name, s3_chunk_key, local_file_path)
 
         base_filename = os.path.basename(local_file_path)
         filename = "COMPLIANT_" + base_filename
@@ -698,7 +698,7 @@ def main():
         pdf_document.close()
         
         logging.info(f'Filename : {file_key} | Uploading processed PDF to S3...')
-        save_to_s3(filename, bucket_name, "output_autotag", file_base_name, file_key)
+        save_to_s3(filename, bucket_name, file_directory, file_key)
 
         logging.info(f"PDF saved with updated metadata and TOC. File location: COMPLIANT_{file_key}")
 
@@ -706,28 +706,28 @@ def main():
         autotag_report_path = f"output/AutotagPDF/{filename}.xlsx"
         images_output_dir = "output/zipfile/images"
 
-        s3_folder_autotag = f"temp/{file_base_name}/output_autotag"
+        s3_folder_autotag = f"{file_directory}/output_autotag"
         
         logging.info(f'Filename : {file_key} | Extracting and uploading images...')
         extract_images_from_excel(filename, figure_path, autotag_report_path, images_output_dir, bucket_name, s3_folder_autotag, file_key)
         
         logging.info(f'Filename : {file_key} | Processing completed successfully')
-        logger.info(f"File: {file_base_name}, Status: Succeeded in First ECS task")
+        logger.info(f"File: {file_key}, Status: Succeeded in First ECS task")
         
     except (ServiceApiException, ServiceUsageException, SdkException) as e:
-        logger.error(f"File: {file_base_name}, Status: Failed in First ECS task - Adobe API Error")
+        logger.error(f"File: {file_key}, Status: Failed in First ECS task - Adobe API Error")
         logger.error(f"Filename : {file_key} | Adobe API Error: {e}")
         sys.exit(1)
     except ClientError as e:
-        logger.error(f"File: {file_base_name}, Status: Failed in First ECS task - AWS Error")
+        logger.error(f"File: {file_key}, Status: Failed in First ECS task - AWS Error")
         logger.error(f"Filename : {file_key} | AWS Error: {e}")
         sys.exit(1)
     except FileNotFoundError as e:
-        logger.error(f"File: {file_base_name}, Status: Failed in First ECS task - File Not Found")
+        logger.error(f"File: {file_key}, Status: Failed in First ECS task - File Not Found")
         logger.error(f"Filename : {file_key} | File Not Found Error: {e}")
         sys.exit(1)
     except Exception as e:
-        logger.error(f"File: {file_base_name}, Status: Failed in First ECS task")
+        logger.error(f"File: {file_key}, Status: Failed in First ECS task")
         logger.error(f"Filename : {file_key} | Unexpected Error: {e}")
         sys.exit(1)
         
