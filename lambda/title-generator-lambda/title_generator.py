@@ -261,11 +261,12 @@ def lambda_handler(event, context):
         local_path = f'/tmp/{file_name}'
         
         # Extract folder_path from the merged_file_key
-        # Example: temp/batch1/doc/merged_doc.pdf -> batch1/doc
+        # Example: temp/pdfa-test-0/filename/merged_filename.pdf -> pdfa-test-0
         merged_key = file_info['merged_file_key']
         key_parts = merged_key.replace('temp/', '').split('/')
-        # Remove only the filename (last part), keep all folder parts
-        folder_path = '/'.join(key_parts[:-1]) if len(key_parts) > 1 else ''
+        # Remove the last 2 parts: filename folder and the PDF file itself
+        # Example: ['pdfa-test-0', 'filename', 'merged_filename.pdf'] -> 'pdfa-test-0'
+        folder_path = '/'.join(key_parts[:-2]) if len(key_parts) > 2 else ''
         print(f"(lambda_handler | Extracted folder_path: {folder_path} from merged_key: {merged_key})")
         
         # Download file (will be partial for large files - first 5MB)
