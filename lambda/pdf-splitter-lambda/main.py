@@ -188,7 +188,9 @@ def lambda_handler(event, context):
     except Exception as e:
 
         print(f"File: {file_basename}, Status: Failed in split lambda function")
-        print(f"Filename - {pdf_file_key} | Error occurred: {str(e)}", exc_info=True)
+        print(f"Filename - {pdf_file_key} | Error occurred: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return {
             'statusCode': 500,
             'body': json.dumps(f"Error processing event: {str(e)}")
