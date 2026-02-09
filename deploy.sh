@@ -466,7 +466,7 @@ EOF
         BUILD_IMAGE="aws/codebuild/amazonlinux2-x86_64-standard:5.0"
         COMPUTE_TYPE="BUILD_GENERAL1_LARGE"
         PRIVILEGED_MODE="true"
-        SOURCE_VERSION="usf-pfda-one"
+        SOURCE_VERSION="usf-pdfa-one"
         BUILDSPEC_FILE="buildspec-unified.yml"
     fi
 
