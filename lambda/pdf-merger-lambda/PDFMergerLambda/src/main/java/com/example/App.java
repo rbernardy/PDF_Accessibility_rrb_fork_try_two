@@ -58,10 +58,16 @@ public class App implements RequestHandler<Map<String, Object>, String> {
             })
             .collect(Collectors.toList());
 
-        String baseFileName = pdfKeys.get(0).substring(pdfKeys.get(0).lastIndexOf('/') + 1).replaceAll("_chunk_\\d+", "");
-
-        // Extract directory path from first chunk key to preserve folder structure
+        // Extract the full path from first chunk to preserve folder structure
         String firstKey = pdfKeys.get(0);
+        // Example: temp/folder-name/filename/filename_chunk_1.pdf
+        
+        // Get just the filename from the last segment
+        String fullFileName = firstKey.substring(firstKey.lastIndexOf('/') + 1);
+        String baseFileName = fullFileName.replaceAll("_chunk_\\d+", "");
+        
+        // Extract the directory path up to and including the filename folder
+        // Example: temp/folder-name/filename/
         String directory = firstKey.substring(0, firstKey.lastIndexOf('/') + 1);
 
         String mergedFilePath = "/tmp/merged_" + baseFileName;

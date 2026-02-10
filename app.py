@@ -276,7 +276,7 @@ class PDFAccessibility(Stack):
         pdf_merger_lambda_task = tasks.LambdaInvoke(self, "MergePdfChunks",
                                       lambda_function=pdf_merger_lambda,
                                       payload=sfn.TaskInput.from_object({
-        "fileNames.$": "$.chunks[*].s3_key"
+        "fileNames.$": "$.chunks[*].chunk_key"
                      }),
                                       result_selector={
                                           "java_output.$": "$.Payload"

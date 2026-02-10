@@ -1,0 +1,19 @@
+{
+  "Records": [
+    {
+      "eventVersion": "2.1",
+      "eventSource": "aws:s3",
+      "awsRegion": "us-east-1",
+      "eventTime": "2026-02-09T19:00:00.000Z",
+      "eventName": "ObjectCreated:Put",
+      "s3": {
+        "bucket": {
+          "name": "pdfaccessibility-pdfaccessibilitybucket149b7021e-nh6gcfbp8swt"
+        },
+        "object": {
+          "key": "pdf/pdfs-test-3/aa_sheet_music_16.pdf"
+        }
+      }
+    }
+  ]
+}
