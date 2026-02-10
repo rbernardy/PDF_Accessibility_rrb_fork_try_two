@@ -2,6 +2,31 @@
 
 This guide provides step-by-step instructions for deploying the PDF Accessibility Remediation system to AWS.
 
+## What Gets Created Automatically vs. Manual Setup
+
+### CDK Creates Automatically (No Manual Setup Required)
+The CDK deployment handles all AWS infrastructure:
+
+- **S3 Bucket** - With encryption, versioning, and CORS configuration
+- **Lambda Functions** - PDF splitter, merger, title generator, accessibility checkers
+- **ECS Cluster** - For running Adobe Autotag and Alt-Text generation containers
+- **VPC** - Public/private subnets, NAT gateway, VPC endpoints for ECR/S3
+- **Step Functions** - Complete workflow orchestration
+- **IAM Roles & Policies** - All permissions for Lambda, ECS, S3, Bedrock, Secrets Manager
+- **CloudWatch** - Log groups and monitoring dashboard
+- **S3 Event Notifications** - Automatic pipeline triggering on PDF upload
+
+### Manual Setup Required (2 Items Only)
+
+| Item | Why Manual? | When to Do |
+|------|-------------|------------|
+| **Adobe PDF Services Credentials** | Third-party service credentials from Adobe | Before first PDF processing |
+| **Bedrock Model Access** | Requires AWS account-level approval | Before first PDF processing |
+
+These cannot be automated because:
+1. Adobe credentials come from Adobe's developer portal (external service)
+2. Bedrock model access requires manual approval in AWS Console per account
+
 ## Prerequisites
 
 ### Required Software
@@ -31,10 +56,9 @@ npm install -g aws-cdk
 pip install -r requirements.txt
 ```
 
-### AWS Prerequisites
-- AWS account with appropriate permissions
-- Adobe PDF Services API credentials stored in AWS Secrets Manager at `/myapp/client_credentials`
-- Bedrock model access enabled (for Nova Pro and Claude Sonnet models)
+### AWS Account Requirements
+- AWS account with administrator or appropriate deployment permissions
+- That's it! All IAM roles/policies are created by CDK
 
 ## Deployment Methods
 
@@ -101,11 +125,15 @@ Edit `deploy.sh` and update:
 ./deploy.sh
 ```
 
-## Post-Deployment Configuration
+## Post-Deployment Configuration (Manual Steps)
 
-### 1. Configure Adobe API Credentials
+These are the only manual steps required after CDK deployment.
 
-Store your Adobe PDF Services credentials in AWS Secrets Manager:
+### 1. Configure Adobe API Credentials (Required)
+
+You need Adobe PDF Services API credentials from [Adobe Developer Console](https://developer.adobe.com/console/).
+
+Store your credentials in AWS Secrets Manager:
 
 ```bash
 aws secretsmanager create-secret \
@@ -118,13 +146,28 @@ aws secretsmanager create-secret \
   }'
 ```
 
-### 2. Verify Bedrock Access
+**Note**: If the secret already exists, use `put-secret-value` instead:
+```bash
+aws secretsmanager put-secret-value \
+  --secret-id /myapp/client_credentials \
+  --secret-string '{
+    "client_credentials": {
+      "PDF_SERVICES_CLIENT_ID": "your-client-id",
+      "PDF_SERVICES_CLIENT_SECRET": "your-client-secret"
+    }
+  }'
+```
 
-Ensure your AWS account has access to:
-- `us.amazon.nova-pro-v1:0` (for title generation)
-- Claude Sonnet 3.5 models (for alt-text generation)
+### 2. Enable Bedrock Model Access (Required)
 
-Request model access in the AWS Bedrock console if needed.
+Request access to the required AI models in AWS Console:
+
+1. Go to **AWS Console → Amazon Bedrock → Model access**
+2. Click **Manage model access**
+3. Enable access for:
+   - `Amazon Nova Pro` (for title generation)
+   - `Anthropic Claude 3.5 Sonnet` (for alt-text generation)
+4. Submit request and wait for approval (usually instant for these models)
 
 ### 3. Test the Pipeline
 
