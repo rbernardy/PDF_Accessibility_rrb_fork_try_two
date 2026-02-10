@@ -39,11 +39,17 @@ public class App implements RequestHandler<Map<String, Object>, String> {
     public String handleRequest(Map<String, Object> input, Context context) {
         String bucketName = System.getenv("BUCKET_NAME"); // Replace with your S3 bucket name
 
+        // DEBUG: Log the entire input to see what we're receiving
+        System.out.println("DEBUG: Full input received: " + input.toString());
+
         // Extract the list of file names from the input
         List<String> pdfKeys = (List<String>) input.get("fileNames");
         if (pdfKeys == null || pdfKeys.isEmpty()) {
             return "No files to merge.";
         }
+        
+        // DEBUG: Log the pdfKeys to see what paths we're getting
+        System.out.println("DEBUG: pdfKeys received: " + pdfKeys.toString());
         
         List<String> modifiedPdfKeys = pdfKeys.stream()
             .map(key -> {
@@ -62,6 +68,9 @@ public class App implements RequestHandler<Map<String, Object>, String> {
         String firstKey = pdfKeys.get(0);
         // Example: temp/folder-name/filename/filename_chunk_1.pdf
         
+        // DEBUG: Log the first key to see the full path
+        System.out.println("DEBUG: First chunk key: " + firstKey);
+        
         // Get just the filename from the last segment
         String fullFileName = firstKey.substring(firstKey.lastIndexOf('/') + 1);
         String baseFileName = fullFileName.replaceAll("_chunk_\\d+", "");
@@ -70,8 +79,15 @@ public class App implements RequestHandler<Map<String, Object>, String> {
         // Example: temp/folder-name/filename/
         String directory = firstKey.substring(0, firstKey.lastIndexOf('/') + 1);
 
+        // DEBUG: Log extracted values
+        System.out.println("DEBUG: baseFileName: " + baseFileName);
+        System.out.println("DEBUG: directory: " + directory);
+
         String mergedFilePath = "/tmp/merged_" + baseFileName;
         String outputKey = directory + "merged_" + baseFileName;
+        
+        // DEBUG: Log the output key
+        System.out.println("DEBUG: outputKey for merged file: " + outputKey);
 
         try {
             // Download PDFs from S3
