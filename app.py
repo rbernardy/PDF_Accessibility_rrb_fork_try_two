@@ -249,7 +249,7 @@ class PDFAccessibility(Stack):
 
         # Step Function Map State
         pdf_chunks_map_state = sfn.Map(self, "ProcessPdfChunksInParallel",
-                            max_concurrency=100,
+                            max_concurrency=150,  #changed from 100 to 150
                             items_path=sfn.JsonPath.string_at("$.chunks"),
                             result_path="$.MapResults")
 
@@ -394,7 +394,7 @@ class PDFAccessibility(Stack):
 
         pdf_remediation_state_machine = sfn.StateMachine(self, "PdfAccessibilityRemediationWorkflow",
                                          definition=parallel_accessibility_workflow,
-                                         timeout=Duration.minutes(150),
+                                         timeout=Duration.minutes(180),     # update to 180 from 150
                                          logs=sfn.LogOptions(
                                              destination=pdf_remediation_workflow_log_group,
                                              level=sfn.LogLevel.ALL
