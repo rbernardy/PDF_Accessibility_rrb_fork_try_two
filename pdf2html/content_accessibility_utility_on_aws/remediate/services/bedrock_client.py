@@ -34,8 +34,8 @@ class BedrockClient:
         MAX_IMAGE_SIZE: Maximum allowed image size in bytes
     """
 
-    # Maximum image size in bytes (4MB)
-    MAX_IMAGE_SIZE = 4_000_000
+    # Maximum image size in bytes (8MB)
+    MAX_IMAGE_SIZE = 8_000_000  #original value was 4_000_000, updated to 8_000_00
 
     def __init__(
         self,
