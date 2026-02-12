@@ -154,7 +154,7 @@ def lambda_handler(event, context):
         pdf_file_content = response['Body'].read()
   
         # Split the PDF into pages and upload them to S3
-        chunks = split_pdf_into_pages(pdf_file_content, pdf_file_key, s3, bucket_name, 50)  # changed 200 to 50 
+        chunks = split_pdf_into_pages(pdf_file_content, pdf_file_key, s3, bucket_name, 90)  # changed 200 to 90 - related to Adobe API limitations-Number of pages-up to 100 pages for scanned pdfs 
         
         log_chunk_created(file_basename)
 
