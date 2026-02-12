@@ -253,7 +253,7 @@ class PDFAccessibility(Stack):
         # Each chunk makes 2 Adobe API calls (autotag + extract)
         # Setting to 10 allows ~20 API calls in parallel, staying under limit
         pdf_chunks_map_state = sfn.Map(self, "ProcessPdfChunksInParallel",
-                            max_concurrency=10,
+                            max_concurrency=1,
                             items_path=sfn.JsonPath.string_at("$.chunks"),
                             result_path="$.MapResults")
 
