@@ -86,7 +86,12 @@ from adobe.pdfservices.operation.pdfjobs.jobs.autotag_pdf_job import AutotagPDFJ
 from adobe.pdfservices.operation.pdfjobs.params.autotag_pdf.autotag_pdf_params import AutotagPDFParams
 from adobe.pdfservices.operation.pdfjobs.result.autotag_pdf_result import AutotagPDFResult
 
+from custom_cloudwatch_logger import get_custom_logger
+
 logger = logging.getLogger(__name__)
+
+# Initialize custom CloudWatch logger for metrics
+custom_cw_logger = get_custom_logger()
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 s3 = boto3.client('s3')
@@ -190,6 +195,9 @@ def autotag_pdf_with_options(filename, client_id, client_secret):
         ServiceUsageException: If there's a usage-related error.
         SdkException: If there's an SDK-related error.
     """
+    # Log the API call to custom CloudWatch stream
+    custom_cw_logger.log_adobe_api_call(filename, filename, api_type="autotag")
+    
     try:
         with open(filename, 'rb') as file:
             input_stream = file.read()
@@ -246,6 +254,8 @@ def autotag_pdf_with_options(filename, client_id, client_secret):
 
     except (ServiceApiException, ServiceUsageException, SdkException) as e:
         logging.error(f'Filename : {filename} | Adobe Autotag API failed: {e}')
+        # Log Adobe API error to custom CloudWatch stream
+        custom_cw_logger.log_adobe_api_error(filename, api_type="autotag", error=e)
         raise  # Re-raise to stop the container
 def extract_api(filename, client_id, client_secret):
     """
@@ -261,6 +271,9 @@ def extract_api(filename, client_id, client_secret):
         ServiceUsageException: If there's a usage-related error.
         SdkException: If there's an SDK-related error.
     """
+    # Log the API call to custom CloudWatch stream
+    custom_cw_logger.log_adobe_api_call(filename, filename, api_type="extract")
+    
     try:
         with open(filename, 'rb') as file:
             input_stream = file.read()
@@ -307,6 +320,8 @@ def extract_api(filename, client_id, client_secret):
 
     except (ServiceApiException, ServiceUsageException, SdkException) as e:
         logging.error(f'Filename : {filename} | Adobe Extract API failed: {e}')
+        # Log Adobe API error to custom CloudWatch stream
+        custom_cw_logger.log_adobe_api_error(filename, api_type="extract", error=e)
         raise  # Re-raise to stop the container
 
 def unzip_file(filename,zip_path, extract_to):
@@ -717,18 +732,46 @@ def main():
     except (ServiceApiException, ServiceUsageException, SdkException) as e:
         logger.error(f"File: {file_key}, Status: Failed in First ECS task - Adobe API Error")
         logger.error(f"Filename : {file_key} | Adobe API Error: {e}")
+        # Log processing failure to custom CloudWatch stream
+        custom_cw_logger.log_processing_failure(
+            filename=file_key or "unknown",
+            file_path=local_file_path if 'local_file_path' in dir() else "",
+            stage="adobe_api",
+            error=e
+        )
         sys.exit(1)
     except ClientError as e:
         logger.error(f"File: {file_key}, Status: Failed in First ECS task - AWS Error")
         logger.error(f"Filename : {file_key} | AWS Error: {e}")
+        # Log processing failure to custom CloudWatch stream
+        custom_cw_logger.log_processing_failure(
+            filename=file_key or "unknown",
+            file_path=local_file_path if 'local_file_path' in dir() else "",
+            stage="aws_operation",
+            error=e
+        )
         sys.exit(1)
     except FileNotFoundError as e:
         logger.error(f"File: {file_key}, Status: Failed in First ECS task - File Not Found")
         logger.error(f"Filename : {file_key} | File Not Found Error: {e}")
+        # Log processing failure to custom CloudWatch stream
+        custom_cw_logger.log_processing_failure(
+            filename=file_key or "unknown",
+            file_path=local_file_path if 'local_file_path' in dir() else "",
+            stage="file_access",
+            error=e
+        )
         sys.exit(1)
     except Exception as e:
         logger.error(f"File: {file_key}, Status: Failed in First ECS task")
         logger.error(f"Filename : {file_key} | Unexpected Error: {e}")
+        # Log processing failure to custom CloudWatch stream
+        custom_cw_logger.log_processing_failure(
+            filename=file_key or "unknown",
+            file_path=local_file_path if 'local_file_path' in dir() else "",
+            stage="unknown",
+            error=e
+        )
         sys.exit(1)
         
 if __name__ == "__main__":

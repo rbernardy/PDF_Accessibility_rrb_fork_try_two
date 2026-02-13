@@ -136,6 +136,18 @@ class PDFAccessibility(Stack):
             actions=["secretsmanager:GetSecretValue"],
             resources=[f"arn:aws:secretsmanager:{region}:{account_id}:secret:/myapp/*"],
         ))
+        
+        # CloudWatch Logs permissions for custom metrics logging
+        ecs_task_role.add_to_policy(iam.PolicyStatement(
+            actions=[
+                "logs:CreateLogStream",
+                "logs:PutLogEvents",
+                "logs:DescribeLogStreams"
+            ],
+            resources=[
+                f"arn:aws:logs:{region}:{account_id}:log-group:/custom/pdf-remediation/metrics:*"
+            ],
+        ))
         # Grant S3 read/write access to ECS Task Role
         pdf_processing_bucket.grant_read_write(ecs_task_execution_role)
         # Create ECS Task Log Groups explicitly
@@ -148,6 +160,12 @@ class PDFAccessibility(Stack):
                                                     log_group_name="/ecs/pdf-remediation/alt-text-generator",
                                                     retention=logs.RetentionDays.ONE_MONTH,
                                                     removal_policy=cdk.RemovalPolicy.DESTROY)
+
+        # Custom logging for PDF processing metrics (Adobe API calls, errors, failures)
+        pdf_processing_metrics_log_group = logs.LogGroup(self, "PdfProcessingMetricsLogs",
+                                                         log_group_name="/custom/pdf-remediation/metrics",
+                                                         retention=logs.RetentionDays.ONE_MONTH,
+                                                         removal_policy=cdk.RemovalPolicy.DESTROY)
         # ECS Task Definitions - Updated for large PDF support
         adobe_autotag_task_def = ecs.FargateTaskDefinition(self, "AdobeAutotagTaskDefinition",
                                                       memory_limit_mib=4096,  # Increased from 1024 for large PDFs
@@ -464,6 +482,42 @@ class PDFAccessibility(Stack):
                     | parse @message "File: *, Status: *" as file, status
                     | stats latest(status) as latestStatus by file
                     | sort file asc ''',
+                width=24,
+                height=6
+            ),
+            cloudwatch.LogQueryWidget(
+                title="Adobe API Calls",
+                log_group_names=[pdf_processing_metrics_log_group.log_group_name],
+                query_string='''fields @timestamp, @message
+                    | filter @logStream = "adobe-api-calls"
+                    | parse @message '{"timestamp":"*","filename":"*","api_type":"*","page_count":*,"file_size_bytes":*}' as ts, filename, api_type, pages, size
+                    | display ts, filename, api_type, pages, size
+                    | sort @timestamp desc
+                    | limit 100''',
+                width=12,
+                height=6
+            ),
+            cloudwatch.LogQueryWidget(
+                title="Adobe API Errors",
+                log_group_names=[pdf_processing_metrics_log_group.log_group_name],
+                query_string='''fields @timestamp, @message
+                    | filter @logStream = "adobe-api-errors"
+                    | parse @message '{"timestamp":"*","filename":"*","api_type":"*","error_type":"*","error_message":"*"}' as ts, filename, api_type, error_type, error_msg
+                    | display ts, filename, api_type, error_type, error_msg
+                    | sort @timestamp desc
+                    | limit 50''',
+                width=12,
+                height=6
+            ),
+            cloudwatch.LogQueryWidget(
+                title="Processing Failures",
+                log_group_names=[pdf_processing_metrics_log_group.log_group_name],
+                query_string='''fields @timestamp, @message
+                    | filter @logStream = "processing-failures"
+                    | parse @message '{"timestamp":"*","filename":"*","file_size_bytes":*,"page_count":*,"failed_stage":"*","error_type":"*","error_message":"*"}' as ts, filename, size, pages, stage, error_type, error_msg
+                    | display ts, filename, pages, size, stage, error_type, error_msg
+                    | sort @timestamp desc
+                    | limit 50''',
                 width=24,
                 height=6
             ),
