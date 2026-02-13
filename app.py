@@ -15,6 +15,8 @@ from aws_cdk import (
     aws_logs as logs,
     aws_ecr_assets as ecr_assets,
     aws_cloudwatch as cloudwatch,
+    aws_events as events,
+    aws_events_targets as targets,
 )
 from constructs import Construct
 import platform
@@ -399,6 +401,33 @@ class PDFAccessibility(Stack):
             payload=sfn.TaskInput.from_json_path_at("$"),
             output_path="$.Payload"
         )
+
+        # PDF Report Generator Lambda - generates CSV reports of processed PDFs
+        pdf_report_generator_lambda = lambda_.Function(
+            self, 'PdfReportGeneratorLambda',
+            runtime=lambda_.Runtime.PYTHON_3_12,
+            handler='main.lambda_handler',
+            code=lambda_.Code.from_docker_build('lambda/pdf-report-generator'),
+            timeout=Duration.seconds(900),
+            memory_size=1024,
+            ephemeral_storage_size=cdk.Size.mebibytes(512),
+            architecture=lambda_arch,
+            environment={
+                'BUCKET_NAME': pdf_processing_bucket.bucket_name
+            }
+        )
+        
+        # Grant S3 read/write access for reading PDFs/JSONs and writing CSV reports
+        pdf_processing_bucket.grant_read_write(pdf_report_generator_lambda)
+        pdf_report_generator_lambda.add_to_role_policy(cloudwatch_metrics_policy)
+        
+        # Schedule the report generator to run daily at midnight UTC
+        pdf_report_schedule = events.Rule(
+            self, 'PdfReportSchedule',
+            schedule=events.Schedule.cron(minute='0', hour='0'),
+            description='Daily schedule for PDF processing report generation'
+        )
+        pdf_report_schedule.add_target(targets.LambdaFunction(pdf_report_generator_lambda))
         
         remediation_chain = pdf_chunks_map_state.next(pdf_merger_lambda_task).next(title_generator_lambda_task).next(post_remediation_accessibility_checker_task)
 
