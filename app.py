@@ -492,7 +492,7 @@ class PDFAccessibility(Stack):
                     | filter @logStream like /adobe-api-calls/
                     | sort @timestamp desc
                     | limit 100''',
-                width=12,
+                width=24,
                 height=6
             ),
             cloudwatch.LogQueryWidget(
@@ -502,7 +502,7 @@ class PDFAccessibility(Stack):
                     | filter @logStream like /adobe-api-errors/
                     | sort @timestamp desc
                     | limit 50''',
-                width=12,
+                width=24,
                 height=6
             ),
             cloudwatch.LogQueryWidget(
