@@ -191,39 +191,102 @@ def load_json_from_s3(bucket: str, key: str) -> Optional[Dict]:
         return None
 
 
-def flatten_json(data: Dict, prefix: str = '') -> Dict[str, Any]:
+def flatten_json(data: Any, prefix: str = '') -> Dict[str, Any]:
     """
     Flatten a nested JSON structure into a flat dictionary.
     
+    Handles the Adobe accessibility report structure:
+    - summary array -> before-summary-description, before-summary-needs_manual_check, etc.
+    - Detailed Report -> Document -> before-detailed_report-document-rule, etc.
+    
     Args:
         data: The JSON data to flatten
-        prefix: Prefix for keys (used in recursion)
+        prefix: Prefix for keys (e.g., 'before' or 'after')
         
     Returns:
-        Flattened dictionary with dot-notation keys
+        Flattened dictionary with hierarchical column names
     """
     items = {}
     
-    if not isinstance(data, dict):
-        return {prefix: data} if prefix else {}
+    if data is None:
+        return items
     
+    if not isinstance(data, (dict, list)):
+        # Simple value
+        if prefix:
+            items[prefix] = data
+        return items
+    
+    if isinstance(data, list):
+        # Handle arrays
+        if not data:
+            items[f"{prefix}-count"] = 0
+            return items
+        
+        # Check if it's an array of objects (like summary array or Detailed Report)
+        if isinstance(data[0], dict):
+            # Flatten each object in the array
+            # For arrays like summary, each item has description, status, etc.
+            for i, item in enumerate(data):
+                for key, value in item.items():
+                    # Create column name: prefix-key (e.g., before-summary-description)
+                    # For multiple items with same key, we'll use the first one or concatenate
+                    col_name = f"{prefix}-{normalize_key(key)}"
+                    
+                    if isinstance(value, (dict, list)):
+                        # Recursively flatten nested structures
+                        nested = flatten_json(value, col_name)
+                        items.update(nested)
+                    else:
+                        # For duplicate keys across array items, append index or concatenate
+                        if col_name in items:
+                            # Append with index for subsequent items
+                            items[f"{col_name}-{i}"] = value
+                        else:
+                            items[col_name] = value
+        else:
+            # Array of simple values
+            items[f"{prefix}-count"] = len(data)
+            items[f"{prefix}-values"] = '; '.join(str(v) for v in data[:10])
+        
+        return items
+    
+    # Handle dictionaries
     for key, value in data.items():
-        # Convert key to column-friendly format (spaces to dashes)
-        clean_key = str(key).replace(' ', '-').replace('_', '-')
-        new_key = f"{prefix}-{clean_key}" if prefix else clean_key
+        col_name = f"{prefix}-{normalize_key(key)}" if prefix else normalize_key(key)
         
         if isinstance(value, dict):
-            items.update(flatten_json(value, new_key))
+            # Recursively flatten nested dicts
+            nested = flatten_json(value, col_name)
+            items.update(nested)
         elif isinstance(value, list):
-            # For lists, store the count and optionally the items
-            items[f"{new_key}-count"] = len(value)
-            # Store first few items as string if they're simple values
-            if value and not isinstance(value[0], (dict, list)):
-                items[f"{new_key}-values"] = '; '.join(str(v) for v in value[:5])
+            # Handle arrays
+            nested = flatten_json(value, col_name)
+            items.update(nested)
         else:
-            items[new_key] = value
+            # Simple value
+            items[col_name] = value
     
     return items
+
+
+def normalize_key(key: str) -> str:
+    """
+    Normalize a JSON key to a column-friendly format.
+    
+    - Spaces become underscores
+    - Convert to lowercase
+    - Keep underscores as-is
+    
+    Args:
+        key: The original key name
+        
+    Returns:
+        Normalized key name
+    """
+    # Replace spaces with underscores, convert to lowercase
+    normalized = str(key).replace(' ', '_').lower()
+    return normalized
 
 
 def build_report_row(bucket: str, pdf_info: Dict) -> Dict[str, Any]:
@@ -292,29 +355,49 @@ def collect_all_columns(rows: List[Dict]) -> List[str]:
     """
     Collect all unique column names from all rows.
     
+    Orders columns as:
+    1. Basic file info columns
+    2. Status columns (report found, errors)
+    3. All 'before' columns (sorted alphabetically)
+    4. All 'after' columns (sorted alphabetically)
+    
     Args:
         rows: List of row dictionaries
         
     Returns:
-        Sorted list of all unique column names
+        Ordered list of all unique column names
     """
     all_columns = set()
     for row in rows:
         all_columns.update(row.keys())
     
-    # Sort columns with basic info first, then status flags, then before, then after
+    # Define column groups
     basic_cols = ['file-path', 'file-name', 'original-filename', 'folder-path', 
                   'file-size-bytes', 'last-modified', 'page-count']
+    
+    # Status columns - these come right after basic info
     status_cols = ['before-report-found', 'before-report-error', 'before-error-type', 
                    'before-error-message', 'before-error-timestamp', 'after-report-found']
-    before_cols = sorted([c for c in all_columns if c.startswith('before') and c not in status_cols])
-    after_cols = sorted([c for c in all_columns if c.startswith('after') and c not in status_cols])
-    other_cols = sorted([c for c in all_columns if c not in basic_cols and c not in status_cols
-                        and not c.startswith('before') and not c.startswith('after')])
     
-    # Filter to only include columns that exist
+    # Separate before and after columns (excluding status cols)
+    before_cols = sorted([c for c in all_columns 
+                         if c.startswith('before') and c not in status_cols])
+    after_cols = sorted([c for c in all_columns 
+                        if c.startswith('after') and c not in status_cols])
+    
+    # Any other columns that don't fit the above categories
+    other_cols = sorted([c for c in all_columns 
+                        if c not in basic_cols 
+                        and c not in status_cols
+                        and not c.startswith('before') 
+                        and not c.startswith('after')])
+    
+    # Filter status_cols to only include those that exist
     status_cols = [c for c in status_cols if c in all_columns]
+    # Filter basic_cols to only include those that exist
+    basic_cols = [c for c in basic_cols if c in all_columns]
     
+    # Final order: basic -> status -> other -> before -> after
     return basic_cols + status_cols + other_cols + before_cols + after_cols
 
 
