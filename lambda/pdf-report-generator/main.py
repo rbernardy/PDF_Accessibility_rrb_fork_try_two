@@ -152,6 +152,22 @@ def get_accessibility_report_path(folder_path: str, original_filename: str, repo
         return f"temp/{folder_prefix}{filename_without_ext}/accessability-report/COMPLIANT_{filename_without_ext}_accessibility_report_after_remidiation.json"
 
 
+def get_error_report_path(folder_path: str, original_filename: str) -> str:
+    """
+    Construct the S3 path for a pre-remediation error report.
+    
+    Args:
+        folder_path: The folder path (e.g., 'folder1/folder2')
+        original_filename: The original PDF filename without COMPLIANT_ prefix
+        
+    Returns:
+        The S3 key for the error report
+    """
+    filename_without_ext = os.path.splitext(original_filename)[0]
+    folder_prefix = f"{folder_path}/" if folder_path else ""
+    return f"temp/{folder_prefix}{filename_without_ext}/accessability-report/{filename_without_ext}_pre_remediation_ERROR.json"
+
+
 def load_json_from_s3(bucket: str, key: str) -> Optional[Dict]:
     """
     Load a JSON file from S3.
@@ -240,15 +256,30 @@ def build_report_row(bucket: str, pdf_info: Dict) -> Dict[str, Any]:
     before_report_key = get_accessibility_report_path(folder_path, original_filename, 'before')
     before_data = load_json_from_s3(bucket, before_report_key)
     if before_data:
+        row['before-report-found'] = True
+        row['before-report-error'] = False
         flattened_before = flatten_json(before_data, 'before')
         row.update(flattened_before)
     else:
         row['before-report-found'] = False
+        # Check if there's an error report
+        error_report_key = get_error_report_path(folder_path, original_filename)
+        error_data = load_json_from_s3(bucket, error_report_key)
+        if error_data:
+            row['before-report-error'] = True
+            row['before-error-type'] = error_data.get('error_type', 'Unknown')
+            row['before-error-message'] = error_data.get('error_message', 'Unknown error')
+            row['before-error-timestamp'] = error_data.get('timestamp', '')
+        else:
+            row['before-report-error'] = False
+            row['before-error-type'] = 'MissingReport'
+            row['before-error-message'] = 'No before report or error log found'
     
     # Load after remediation report
     after_report_key = get_accessibility_report_path(folder_path, original_filename, 'after')
     after_data = load_json_from_s3(bucket, after_report_key)
     if after_data:
+        row['after-report-found'] = True
         flattened_after = flatten_json(after_data, 'after')
         row.update(flattened_after)
     else:
@@ -271,15 +302,20 @@ def collect_all_columns(rows: List[Dict]) -> List[str]:
     for row in rows:
         all_columns.update(row.keys())
     
-    # Sort columns with basic info first, then before, then after
+    # Sort columns with basic info first, then status flags, then before, then after
     basic_cols = ['file-path', 'file-name', 'original-filename', 'folder-path', 
                   'file-size-bytes', 'last-modified', 'page-count']
-    before_cols = sorted([c for c in all_columns if c.startswith('before')])
-    after_cols = sorted([c for c in all_columns if c.startswith('after')])
-    other_cols = sorted([c for c in all_columns if c not in basic_cols 
+    status_cols = ['before-report-found', 'before-report-error', 'before-error-type', 
+                   'before-error-message', 'before-error-timestamp', 'after-report-found']
+    before_cols = sorted([c for c in all_columns if c.startswith('before') and c not in status_cols])
+    after_cols = sorted([c for c in all_columns if c.startswith('after') and c not in status_cols])
+    other_cols = sorted([c for c in all_columns if c not in basic_cols and c not in status_cols
                         and not c.startswith('before') and not c.startswith('after')])
     
-    return basic_cols + other_cols + before_cols + after_cols
+    # Filter to only include columns that exist
+    status_cols = [c for c in status_cols if c in all_columns]
+    
+    return basic_cols + status_cols + other_cols + before_cols + after_cols
 
 
 def generate_csv_content(rows: List[Dict], columns: List[str]) -> str:
