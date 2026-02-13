@@ -489,9 +489,7 @@ class PDFAccessibility(Stack):
                 title="Adobe API Calls",
                 log_group_names=[pdf_processing_metrics_log_group.log_group_name],
                 query_string='''fields @timestamp, @message
-                    | filter @logStream = "adobe-api-calls"
-                    | parse @message '{"timestamp":"*","filename":"*","api_type":"*","page_count":*,"file_size_bytes":*}' as ts, filename, api_type, pages, size
-                    | display ts, filename, api_type, pages, size
+                    | filter @logStream like /adobe-api-calls/
                     | sort @timestamp desc
                     | limit 100''',
                 width=12,
@@ -501,9 +499,7 @@ class PDFAccessibility(Stack):
                 title="Adobe API Errors",
                 log_group_names=[pdf_processing_metrics_log_group.log_group_name],
                 query_string='''fields @timestamp, @message
-                    | filter @logStream = "adobe-api-errors"
-                    | parse @message '{"timestamp":"*","filename":"*","api_type":"*","error_type":"*","error_message":"*"}' as ts, filename, api_type, error_type, error_msg
-                    | display ts, filename, api_type, error_type, error_msg
+                    | filter @logStream like /adobe-api-errors/
                     | sort @timestamp desc
                     | limit 50''',
                 width=12,
@@ -513,9 +509,7 @@ class PDFAccessibility(Stack):
                 title="Processing Failures",
                 log_group_names=[pdf_processing_metrics_log_group.log_group_name],
                 query_string='''fields @timestamp, @message
-                    | filter @logStream = "processing-failures"
-                    | parse @message '{"timestamp":"*","filename":"*","file_size_bytes":*,"page_count":*,"failed_stage":"*","error_type":"*","error_message":"*"}' as ts, filename, size, pages, stage, error_type, error_msg
-                    | display ts, filename, pages, size, stage, error_type, error_msg
+                    | filter @logStream like /processing-failures/
                     | sort @timestamp desc
                     | limit 50''',
                 width=24,
