@@ -480,7 +480,7 @@ class PDFAccessibility(Stack):
                 log_group_names=[pdf_splitter_lambda_log_group_name, pdf_merger_lambda_log_group_name, adobe_autotag_log_group.log_group_name,  alt_text_generator_log_group.log_group_name],
                 query_string='''fields @timestamp, @message
                     | parse @message "File: *, Status: *" as file, status
-                    | stats latest(status) as latestStatus by file
+                    | stats latest(status) as latestStatus, max(@timestamp) as lastUpdated by file
                     | sort file asc ''',
                 width=24,
                 height=6
