@@ -548,11 +548,10 @@ class PDFAccessibility(Stack):
                 query_string='''fields @timestamp, @message
                     | filter @message like /PIPELINE_STATUS/
                     | parse @message 'PIPELINE_STATUS: *' as status_json
-                    | parse status_json '"timestamp":"*"' as check_time
                     | parse status_json '"status":"*"' as status
                     | parse status_json '"running_executions":*,' as executions
                     | parse status_json '"running_ecs_tasks":*,' as tasks
-                    | display check_time, status, executions, tasks
+                    | display @timestamp, status, executions, tasks
                     | sort @timestamp desc
                     | limit 100''',
                 width=24,
