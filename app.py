@@ -450,6 +450,44 @@ class PDFAccessibility(Stack):
                                              destination=pdf_remediation_workflow_log_group,
                                              level=sfn.LogLevel.ALL
                                          ))
+
+        # Pipeline Status Checker Lambda - monitors if pipeline is processing or idle
+        pipeline_status_checker_lambda = lambda_.Function(
+            self, 'PipelineStatusCheckerLambda',
+            runtime=lambda_.Runtime.PYTHON_3_12,
+            handler='main.lambda_handler',
+            code=lambda_.Code.from_docker_build('lambda/pipeline-status-checker'),
+            timeout=Duration.seconds(60),
+            memory_size=256,
+            architecture=lambda_arch,
+            environment={
+                'STATE_MACHINE_ARN': pdf_remediation_state_machine.state_machine_arn,
+                'ECS_CLUSTER_NAME': pdf_remediation_cluster.cluster_name
+            }
+        )
+        
+        # Grant permissions to check Step Function executions
+        pdf_remediation_state_machine.grant_read(pipeline_status_checker_lambda)
+        
+        # Grant permissions to list ECS tasks
+        pipeline_status_checker_lambda.add_to_role_policy(iam.PolicyStatement(
+            actions=['ecs:ListTasks'],
+            resources=['*']
+        ))
+        
+        # Grant permissions to publish CloudWatch metrics
+        pipeline_status_checker_lambda.add_to_role_policy(cloudwatch_metrics_policy)
+        
+        # Schedule the status checker to run every minute
+        pipeline_status_schedule = events.Rule(
+            self, 'PipelineStatusSchedule',
+            schedule=events.Schedule.rate(Duration.minutes(1)),
+            description='Every minute check of PDF processing pipeline status'
+        )
+        pipeline_status_schedule.add_target(targets.LambdaFunction(pipeline_status_checker_lambda))
+        
+        # Store the log group name for the dashboard
+        pipeline_status_log_group_name = f"/aws/lambda/{pipeline_status_checker_lambda.function_name}"
         
         # Lambda Function
         pdf_splitter_lambda = lambda_.Function(
@@ -504,6 +542,22 @@ class PDFAccessibility(Stack):
                                          )
         # Add Widgets to the Dashboard
         dashboard.add_widgets(
+            cloudwatch.LogQueryWidget(
+                title="Pipeline Status",
+                log_group_names=[pipeline_status_log_group_name],
+                query_string='''fields @timestamp, @message
+                    | filter @message like /PIPELINE_STATUS/
+                    | parse @message 'PIPELINE_STATUS: *' as status_json
+                    | parse status_json '"timestamp":"*"' as check_time
+                    | parse status_json '"status":"*"' as status
+                    | parse status_json '"running_executions":*,' as executions
+                    | parse status_json '"running_ecs_tasks":*,' as tasks
+                    | display check_time, status, executions, tasks
+                    | sort @timestamp desc
+                    | limit 100''',
+                width=24,
+                height=6
+            ),
             cloudwatch.LogQueryWidget(
                 title="File status",
                 log_group_names=[pdf_splitter_lambda_log_group_name, pdf_merger_lambda_log_group_name, adobe_autotag_log_group.log_group_name,  alt_text_generator_log_group.log_group_name],
