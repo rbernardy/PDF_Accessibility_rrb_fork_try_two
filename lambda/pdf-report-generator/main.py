@@ -358,8 +358,8 @@ def collect_all_columns(rows: List[Dict]) -> List[str]:
     Orders columns as:
     1. Basic file info columns
     2. Status columns (report found, errors)
-    3. All 'before' columns (sorted alphabetically)
-    4. All 'after' columns (sorted alphabetically)
+    3. All 'before' columns (in order they appear in JSON)
+    4. All 'after' columns (in order they appear in JSON)
     
     Args:
         rows: List of row dictionaries
@@ -367,9 +367,15 @@ def collect_all_columns(rows: List[Dict]) -> List[str]:
     Returns:
         Ordered list of all unique column names
     """
-    all_columns = set()
+    # Use a list to preserve order of first appearance
+    all_columns_ordered = []
+    seen = set()
+    
     for row in rows:
-        all_columns.update(row.keys())
+        for key in row.keys():
+            if key not in seen:
+                all_columns_ordered.append(key)
+                seen.add(key)
     
     # Define column groups
     basic_cols = ['file-path', 'file-name', 'original-filename', 'folder-path', 
@@ -379,23 +385,23 @@ def collect_all_columns(rows: List[Dict]) -> List[str]:
     status_cols = ['before-report-found', 'before-report-error', 'before-error-type', 
                    'before-error-message', 'before-error-timestamp', 'after-report-found']
     
-    # Separate before and after columns (excluding status cols)
-    before_cols = sorted([c for c in all_columns 
-                         if c.startswith('before') and c not in status_cols])
-    after_cols = sorted([c for c in all_columns 
-                        if c.startswith('after') and c not in status_cols])
+    # Separate before and after columns (excluding status cols) - preserve order
+    before_cols = [c for c in all_columns_ordered 
+                   if c.startswith('before') and c not in status_cols]
+    after_cols = [c for c in all_columns_ordered 
+                  if c.startswith('after') and c not in status_cols]
     
-    # Any other columns that don't fit the above categories
-    other_cols = sorted([c for c in all_columns 
-                        if c not in basic_cols 
-                        and c not in status_cols
-                        and not c.startswith('before') 
-                        and not c.startswith('after')])
+    # Any other columns that don't fit the above categories - preserve order
+    other_cols = [c for c in all_columns_ordered 
+                  if c not in basic_cols 
+                  and c not in status_cols
+                  and not c.startswith('before') 
+                  and not c.startswith('after')]
     
     # Filter status_cols to only include those that exist
-    status_cols = [c for c in status_cols if c in all_columns]
+    status_cols = [c for c in status_cols if c in seen]
     # Filter basic_cols to only include those that exist
-    basic_cols = [c for c in basic_cols if c in all_columns]
+    basic_cols = [c for c in basic_cols if c in seen]
     
     # Final order: basic -> status -> other -> before -> after
     return basic_cols + status_cols + other_cols + before_cols + after_cols

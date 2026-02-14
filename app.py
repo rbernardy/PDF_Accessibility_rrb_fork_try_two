@@ -555,7 +555,7 @@ class PDFAccessibility(Stack):
                     | sort @timestamp desc
                     | limit 100''',
                 width=24,
-                height=6
+                height=3
             ),
             cloudwatch.LogQueryWidget(
                 title="File status",
