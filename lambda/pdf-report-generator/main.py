@@ -441,6 +441,9 @@ def generate_excel_content(rows: List[Dict], columns: List[str]) -> bytes:
         cell.font = header_font
         cell.alignment = header_alignment
     
+    # Set header row height to accommodate wrapped text
+    ws.row_dimensions[1].height = 30
+    
     # Write data rows
     for row_idx, row in enumerate(rows, start=2):
         for col_idx, column in enumerate(columns, start=1):
