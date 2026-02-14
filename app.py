@@ -402,12 +402,17 @@ class PDFAccessibility(Stack):
             output_path="$.Payload"
         )
 
-        # PDF Report Generator Lambda - generates CSV reports of processed PDFs
+        # PDF Report Generator Lambda - generates Excel reports of processed PDFs
         pdf_report_generator_lambda = lambda_.Function(
             self, 'PdfReportGeneratorLambda',
             runtime=lambda_.Runtime.PYTHON_3_12,
             handler='main.lambda_handler',
-            code=lambda_.Code.from_docker_build('lambda/pdf-report-generator'),
+            code=lambda_.Code.from_docker_build(
+                'lambda/pdf-report-generator',
+                build_args={
+                    'BUILD_DATE': datetime.datetime.now().isoformat()
+                }
+            ),
             timeout=Duration.seconds(900),
             memory_size=1024,
             ephemeral_storage_size=cdk.Size.mebibytes(512),
