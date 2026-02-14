@@ -1,7 +1,7 @@
 """
 PDF Processing Report Generator Lambda
 
-This Lambda function generates a CSV report of all processed PDF files.
+This Lambda function generates an Excel report of all processed PDF files.
 It retrieves file metadata and accessibility report data from S3.
 
 The report includes:
@@ -11,12 +11,14 @@ The report includes:
 
 import os
 import io
-import csv
 import json
 import boto3
 from datetime import datetime
 from typing import Dict, List, Optional, Any
 from pypdf import PdfReader
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill
+from openpyxl.utils import get_column_letter
 
 
 # Initialize S3 client
@@ -407,49 +409,93 @@ def collect_all_columns(rows: List[Dict]) -> List[str]:
     return basic_cols + status_cols + other_cols + before_cols + after_cols
 
 
-def generate_csv_content(rows: List[Dict], columns: List[str]) -> str:
+def generate_excel_content(rows: List[Dict], columns: List[str]) -> bytes:
     """
-    Generate CSV content from rows and columns.
+    Generate Excel content from rows and columns with formatting.
     
     Args:
         rows: List of row dictionaries
         columns: List of column names
         
     Returns:
-        CSV content as string
+        Excel file content as bytes
     """
-    output = io.StringIO()
-    writer = csv.DictWriter(output, fieldnames=columns, extrasaction='ignore')
-    writer.writeheader()
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "PDF Processing Report"
     
-    for row in rows:
-        writer.writerow(row)
+    # Header styling
+    header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF")
+    header_alignment = Alignment(horizontal="center", vertical="top", wrap_text=True)
     
-    return output.getvalue()
+    # Write headers
+    for col_idx, column in enumerate(columns, start=1):
+        cell = ws.cell(row=1, column=col_idx)
+        cell.value = column
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = header_alignment
+    
+    # Write data rows
+    for row_idx, row in enumerate(rows, start=2):
+        for col_idx, column in enumerate(columns, start=1):
+            cell = ws.cell(row=row_idx, column=col_idx)
+            value = row.get(column, '')
+            cell.value = value
+            # Enable text wrapping for all cells
+            cell.alignment = Alignment(vertical="top", wrap_text=True)
+    
+    # Auto-adjust column widths with reasonable limits
+    for col_idx, column in enumerate(columns, start=1):
+        # Calculate max width based on column name and content
+        max_length = len(str(column))
+        
+        # Check first 100 rows for content length
+        for row_idx in range(2, min(len(rows) + 2, 102)):
+            cell_value = ws.cell(row=row_idx, column=col_idx).value
+            if cell_value:
+                # Limit individual cell length check to avoid extremely wide columns
+                cell_length = len(str(cell_value))
+                if cell_length > max_length:
+                    max_length = min(cell_length, 100)  # Cap at 100 chars
+        
+        # Set column width with min/max bounds
+        adjusted_width = min(max(max_length + 2, 15), 80)  # Min 15, max 80
+        ws.column_dimensions[get_column_letter(col_idx)].width = adjusted_width
+    
+    # Freeze the header row
+    ws.freeze_panes = "A2"
+    
+    # Save to bytes
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return output.read()
 
 
-def save_csv_to_s3(bucket: str, csv_content: str) -> str:
+def save_excel_to_s3(bucket: str, excel_content: bytes) -> str:
     """
-    Save CSV content to S3.
+    Save Excel content to S3.
     
     Args:
         bucket: S3 bucket name
-        csv_content: CSV content as string
+        excel_content: Excel file content as bytes
         
     Returns:
-        S3 key where the CSV was saved
+        S3 key where the Excel file was saved
     """
-    timestamp = datetime.utcnow().strftime('%Y%m%d-%H%M%S')
-    key = f"reports/pdf-processing-report-{timestamp}.csv"
+    timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
+    key = f"reports/pdf-processing-report-{timestamp}.xlsx"
     
     s3_client.put_object(
         Bucket=bucket,
         Key=key,
-        Body=csv_content.encode('utf-8'),
-        ContentType='text/csv'
+        Body=excel_content,
+        ContentType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
     
-    print(f"CSV report saved to s3://{bucket}/{key}")
+    print(f"Excel report saved to s3://{bucket}/{key}")
     return key
 
 
@@ -492,12 +538,12 @@ def lambda_handler(event: Dict, context: Any) -> Dict:
         row = build_report_row(bucket, pdf_info)
         rows.append(row)
     
-    # Collect all columns and generate CSV
+    # Collect all columns and generate Excel
     columns = collect_all_columns(rows)
-    csv_content = generate_csv_content(rows, columns)
+    excel_content = generate_excel_content(rows, columns)
     
     # Save to S3
-    report_key = save_csv_to_s3(bucket, csv_content)
+    report_key = save_excel_to_s3(bucket, excel_content)
     
     return {
         'statusCode': 200,
