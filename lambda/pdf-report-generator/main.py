@@ -14,6 +14,7 @@ import io
 import json
 import boto3
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from typing import Dict, List, Optional, Any
 from pypdf import PdfReader
 from openpyxl import Workbook
@@ -23,6 +24,9 @@ from openpyxl.utils import get_column_letter
 
 # Initialize S3 client
 s3_client = boto3.client('s3')
+
+# Version marker to force Lambda updates
+VERSION = "2.0.0-excel"
 
 
 def get_pdf_page_count(bucket: str, key: str) -> int:
@@ -485,7 +489,15 @@ def save_excel_to_s3(bucket: str, excel_content: bytes) -> str:
     Returns:
         S3 key where the Excel file was saved
     """
-    timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
+    # Get timezone from environment variable, default to US/Eastern
+    tz_name = os.environ.get('TZ', 'US/Eastern')
+    try:
+        tz = ZoneInfo(tz_name)
+        timestamp = datetime.now(tz).strftime('%Y%m%d-%H%M%S')
+    except Exception as e:
+        print(f"Warning: Could not use timezone {tz_name}, falling back to UTC: {e}")
+        timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
+    
     key = f"reports/pdf-processing-report-{timestamp}.xlsx"
     
     s3_client.put_object(
@@ -495,7 +507,7 @@ def save_excel_to_s3(bucket: str, excel_content: bytes) -> str:
         ContentType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
     
-    print(f"Excel report saved to s3://{bucket}/{key}")
+    print(f"Excel report saved to s3://{bucket}/{key} (version: {VERSION})")
     return key
 
 
@@ -519,7 +531,7 @@ def lambda_handler(event: Dict, context: Any) -> Dict:
             'body': 'Missing bucket name. Provide in event or BUCKET_NAME env var.'
         }
     
-    print(f"Generating PDF processing report for bucket: {bucket}")
+    print(f"Generating PDF processing report for bucket: {bucket} (version: {VERSION})")
     
     # List all PDFs in result folder
     pdf_files = list_result_pdfs(bucket)

@@ -418,7 +418,8 @@ class PDFAccessibility(Stack):
             ephemeral_storage_size=cdk.Size.mebibytes(512),
             architecture=lambda_arch,
             environment={
-                'BUCKET_NAME': pdf_processing_bucket.bucket_name
+                'BUCKET_NAME': pdf_processing_bucket.bucket_name,
+                'TZ': 'US/Eastern'  # Set timezone for local time in filenames
             }
         )
         
