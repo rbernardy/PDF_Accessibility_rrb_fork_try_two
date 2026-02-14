@@ -442,7 +442,7 @@ def generate_excel_content(rows: List[Dict], columns: List[str]) -> bytes:
         cell.alignment = header_alignment
     
     # Set header row height to accommodate wrapped text
-    ws.row_dimensions[1].height = 45  # Increased height for better wrapping display
+    ws.row_dimensions[1].height = 60  # Taller height for wrapped headers
     
     # Write data rows
     for row_idx, row in enumerate(rows, start=2):
@@ -455,21 +455,17 @@ def generate_excel_content(rows: List[Dict], columns: List[str]) -> bytes:
     
     # Auto-adjust column widths with reasonable limits
     for col_idx, column in enumerate(columns, start=1):
-        # Calculate max width based on column name and content
-        max_length = len(str(column))
-        
-        # Check first 100 rows for content length
-        for row_idx in range(2, min(len(rows) + 2, 102)):
-            cell_value = ws.cell(row=row_idx, column=col_idx).value
-            if cell_value:
-                # Limit individual cell length check to avoid extremely wide columns
-                cell_length = len(str(cell_value))
-                if cell_length > max_length:
-                    max_length = min(cell_length, 100)  # Cap at 100 chars
-        
-        # Set column width with min/max bounds - reduced max to encourage wrapping
-        adjusted_width = min(max(max_length + 2, 15), 50)  # Min 15, max 50 (reduced from 80)
-        ws.column_dimensions[get_column_letter(col_idx)].width = adjusted_width
+        # Set a fixed reasonable width that encourages wrapping
+        # Basic file info columns can be wider, others narrower
+        if column in ['file-path', 'file-name', 'original-filename']:
+            ws.column_dimensions[get_column_letter(col_idx)].width = 40
+        elif column in ['folder-path']:
+            ws.column_dimensions[get_column_letter(col_idx)].width = 30
+        elif column in ['file-size-bytes', 'page-count', 'last-modified']:
+            ws.column_dimensions[get_column_letter(col_idx)].width = 20
+        else:
+            # All other columns (before/after data) - narrow to force wrapping
+            ws.column_dimensions[get_column_letter(col_idx)].width = 25
     
     # Freeze the header row
     ws.freeze_panes = "A2"
