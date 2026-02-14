@@ -442,7 +442,7 @@ def generate_excel_content(rows: List[Dict], columns: List[str]) -> bytes:
         cell.alignment = header_alignment
     
     # Set header row height to accommodate wrapped text
-    ws.row_dimensions[1].height = 30
+    ws.row_dimensions[1].height = 45  # Increased height for better wrapping display
     
     # Write data rows
     for row_idx, row in enumerate(rows, start=2):
@@ -467,8 +467,8 @@ def generate_excel_content(rows: List[Dict], columns: List[str]) -> bytes:
                 if cell_length > max_length:
                     max_length = min(cell_length, 100)  # Cap at 100 chars
         
-        # Set column width with min/max bounds
-        adjusted_width = min(max(max_length + 2, 15), 80)  # Min 15, max 80
+        # Set column width with min/max bounds - reduced max to encourage wrapping
+        adjusted_width = min(max(max_length + 2, 15), 50)  # Min 15, max 50 (reduced from 80)
         ws.column_dimensions[get_column_letter(col_idx)].width = adjusted_width
     
     # Freeze the header row
