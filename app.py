@@ -533,6 +533,39 @@ class PDFAccessibility(Stack):
 
 
 
+        # S3 PDF Copier Lambda - copies remediated PDFs to destination bucket
+        # Get destination bucket from context (pass via -c flag or cdk.context.json)
+        destination_bucket_name = self.node.try_get_context("destination_bucket")
+        
+        if destination_bucket_name:
+            destination_bucket = s3.Bucket.from_bucket_name(
+                self, "DestinationBucket", destination_bucket_name
+            )
+            
+            s3_pdf_copier_lambda = lambda_.Function(
+                self, 'S3PdfCopierLambda',
+                runtime=lambda_.Runtime.PYTHON_3_12,
+                architecture=lambda_.Architecture.ARM_64,
+                handler='main.handler',
+                code=lambda_.Code.from_asset('lambda/s3-pdf-copier'),
+                memory_size=128,
+                timeout=Duration.seconds(30),
+                environment={
+                    'DESTINATION_BUCKET': destination_bucket_name,
+                },
+            )
+            
+            # Grant permissions
+            pdf_processing_bucket.grant_read(s3_pdf_copier_lambda)
+            destination_bucket.grant_write(s3_pdf_copier_lambda)
+            
+            # Add S3 event notification for result/ prefix
+            pdf_processing_bucket.add_event_notification(
+                s3.EventType.OBJECT_CREATED,
+                s3n.LambdaDestination(s3_pdf_copier_lambda),
+                s3.NotificationKeyFilter(prefix="result/"),
+            )
+
         timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         dashboard_name = f"PDF_Processing_Dashboard-{timestamp}"
         dashboard = cloudwatch.Dashboard(self, "PdfRemediationMonitoringDashboard", dashboard_name=dashboard_name,
