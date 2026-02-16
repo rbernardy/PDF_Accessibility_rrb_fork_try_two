@@ -8,7 +8,7 @@ PDF Validation:
 	• If the file is not a PDF, log a message indicating the file was skipped and return early without error.
 Copy Behavior:
 	• Copy the file from the source bucket to a destination bucket whose name is read from the DESTINATION_BUCKET environment variable.
-	• Strip the leading result/ prefix from the object key when constructing the destination key. For example, /result/folder1/folder2/filename.pdf in the source bucket becomes /folder1/folder2/filename.pdf in the destination bucket.
+	• Strip the leading /result prefix from the object key when constructing the destination key. For example, /result/folder1/folder2/filename.pdf in the source bucket becomes /folder1/folder2/filename.pdf in the destination bucket.
 	• If a file with the same key already exists in the destination bucket, overwrite it.
 Logging:
 	• Log the source bucket and key.
