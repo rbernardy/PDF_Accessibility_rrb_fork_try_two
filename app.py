@@ -680,18 +680,10 @@ class PDFAccessibility(Stack):
                 height=6
             ),
         )
-
-        # Create separate dashboard for S3 PDF Copier Lambda
+        
+        # Add S3 PDF Copier widgets to main dashboard if destination bucket is configured
         if destination_bucket_name:
-            s3_copier_dashboard_name = f"S3_PDF_Copier_Dashboard-{timestamp}"
-            s3_copier_dashboard = cloudwatch.Dashboard(
-                self, 
-                "S3PdfCopierDashboard", 
-                dashboard_name=s3_copier_dashboard_name
-            )
-            
-            # Add widgets to the S3 PDF Copier Dashboard
-            s3_copier_dashboard.add_widgets(
+            dashboard.add_widgets(
                 cloudwatch.LogQueryWidget(
                     title="S3 PDF Copier - All Logs",
                     log_group_names=[s3_pdf_copier_log_group_name],
