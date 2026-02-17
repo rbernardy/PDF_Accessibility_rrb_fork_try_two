@@ -555,8 +555,16 @@ class PDFAccessibility(Stack):
                 },
             )
             
+            # Create log group explicitly for the dashboard
+            s3_pdf_copier_log_group = logs.LogGroup(
+                self, 'S3PdfCopierLogGroup',
+                log_group_name=f"/aws/lambda/{s3_pdf_copier_lambda.function_name}",
+                retention=logs.RetentionDays.ONE_WEEK,
+                removal_policy=cdk.RemovalPolicy.DESTROY
+            )
+            
             # Store the log group name for the dashboard
-            s3_pdf_copier_log_group_name = f"/aws/lambda/{s3_pdf_copier_lambda.function_name}"
+            s3_pdf_copier_log_group_name = s3_pdf_copier_log_group.log_group_name
             
             # Grant permissions
             pdf_processing_bucket.grant_read(s3_pdf_copier_lambda)
