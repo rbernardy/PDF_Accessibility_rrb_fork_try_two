@@ -555,6 +555,9 @@ class PDFAccessibility(Stack):
                 },
             )
             
+            # Store the log group name for the dashboard
+            s3_pdf_copier_log_group_name = f"/aws/lambda/{s3_pdf_copier_lambda.function_name}"
+            
             # Grant permissions
             pdf_processing_bucket.grant_read(s3_pdf_copier_lambda)
             destination_bucket.grant_write(s3_pdf_copier_lambda)
@@ -677,6 +680,76 @@ class PDFAccessibility(Stack):
                 height=6
             ),
         )
+
+        # Create separate dashboard for S3 PDF Copier Lambda
+        if destination_bucket_name:
+            s3_copier_dashboard_name = f"S3_PDF_Copier_Dashboard-{timestamp}"
+            s3_copier_dashboard = cloudwatch.Dashboard(
+                self, 
+                "S3PdfCopierDashboard", 
+                dashboard_name=s3_copier_dashboard_name
+            )
+            
+            # Add widgets to the S3 PDF Copier Dashboard
+            s3_copier_dashboard.add_widgets(
+                cloudwatch.LogQueryWidget(
+                    title="S3 PDF Copier - All Logs",
+                    log_group_names=[s3_pdf_copier_log_group_name],
+                    query_string='''fields @timestamp, @message
+                        | sort @timestamp desc
+                        | limit 100''',
+                    width=24,
+                    height=8
+                ),
+                cloudwatch.LogQueryWidget(
+                    title="S3 PDF Copier - Successful Copies",
+                    log_group_names=[s3_pdf_copier_log_group_name],
+                    query_string='''fields @timestamp, @message
+                        | filter @message like /Successfully copied/
+                        | parse @message "Successfully copied to *" as destination
+                        | display @timestamp, destination
+                        | sort @timestamp desc
+                        | limit 50''',
+                    width=12,
+                    height=6
+                ),
+                cloudwatch.LogQueryWidget(
+                    title="S3 PDF Copier - Errors",
+                    log_group_names=[s3_pdf_copier_log_group_name],
+                    query_string='''fields @timestamp, @message
+                        | filter @message like /ERROR/ or @message like /Failed/
+                        | sort @timestamp desc
+                        | limit 50''',
+                    width=12,
+                    height=6
+                ),
+                cloudwatch.LogQueryWidget(
+                    title="S3 PDF Copier - File Processing Details",
+                    log_group_names=[s3_pdf_copier_log_group_name],
+                    query_string='''fields @timestamp, @message
+                        | filter @message like /Source bucket/ or @message like /Destination bucket/
+                        | parse @message "Source bucket: *, key: *" as source_bucket, source_key
+                        | parse @message "Destination bucket: *, key: *" as dest_bucket, dest_key
+                        | display @timestamp, source_bucket, source_key, dest_bucket, dest_key
+                        | sort @timestamp desc
+                        | limit 50''',
+                    width=24,
+                    height=6
+                ),
+                cloudwatch.LogQueryWidget(
+                    title="S3 PDF Copier - Skipped Files",
+                    log_group_names=[s3_pdf_copier_log_group_name],
+                    query_string='''fields @timestamp, @message
+                        | filter @message like /Skipping non-PDF/
+                        | parse @message "Skipping non-PDF file: *" as skipped_file
+                        | display @timestamp, skipped_file
+                        | sort @timestamp desc
+                        | limit 50''',
+                    width=24,
+                    height=6
+                ),
+            )
+
 
 app = cdk.App()
 PDFAccessibility(app, "PDFAccessibility")
