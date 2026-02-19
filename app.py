@@ -17,6 +17,7 @@ from aws_cdk import (
     aws_cloudwatch as cloudwatch,
     aws_events as events,
     aws_events_targets as targets,
+    aws_dynamodb as dynamodb,
 )
 from constructs import Construct
 import platform
@@ -577,6 +578,86 @@ class PDFAccessibility(Stack):
                 s3.NotificationKeyFilter(prefix="result/"),
             )
 
+        # =============================================================================
+        # PDF Cleanup Feature - Auto-delete temp files when PDF is deleted
+        # =============================================================================
+        
+        # Get sender email from context (optional, defaults to placeholder)
+        cleanup_sender_email = self.node.try_get_context("cleanup_sender_email") or "pdf-cleanup@example.com"
+        
+        # DynamoDB table for notification preferences
+        pdf_cleanup_notification_table = dynamodb.Table(
+            self, "PdfCleanupNotificationTable",
+            table_name="pdf-cleanup-notifications",
+            partition_key=dynamodb.Attribute(
+                name="iam_username",
+                type=dynamodb.AttributeType.STRING
+            ),
+            billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
+            removal_policy=cdk.RemovalPolicy.RETAIN,
+            point_in_time_recovery=True
+        )
+        
+        # CloudWatch log group for cleanup events
+        pdf_cleanup_log_group = logs.LogGroup(
+            self, "PdfCleanupLogGroup",
+            log_group_name="/pdf-processing/cleanup",
+            retention=logs.RetentionDays.THREE_MONTHS,
+            removal_policy=cdk.RemovalPolicy.RETAIN
+        )
+        
+        # Lambda function for PDF cleanup
+        pdf_cleanup_lambda = lambda_.Function(
+            self, "PdfCleanupLambda",
+            function_name="pdf-cleanup-handler",
+            runtime=lambda_.Runtime.PYTHON_3_12,
+            handler="main.handler",
+            code=lambda_.Code.from_docker_build("lambda/pdf-cleanup"),
+            memory_size=256,
+            timeout=Duration.minutes(5),
+            architecture=lambda_arch,
+            environment={
+                "NOTIFICATION_TABLE": pdf_cleanup_notification_table.table_name,
+                "LOG_GROUP_NAME": pdf_cleanup_log_group.log_group_name,
+                "SENDER_EMAIL": cleanup_sender_email
+            }
+        )
+        
+        # Grant permissions to cleanup Lambda
+        pdf_processing_bucket.grant_read(pdf_cleanup_lambda, "pdf/*")
+        pdf_processing_bucket.grant_delete(pdf_cleanup_lambda, "temp/*")
+        pdf_processing_bucket.grant_read(pdf_cleanup_lambda, "temp/*")
+        pdf_cleanup_notification_table.grant_read_data(pdf_cleanup_lambda)
+        pdf_cleanup_log_group.grant_write(pdf_cleanup_lambda)
+        
+        # CloudTrail permissions for identifying who deleted the file
+        pdf_cleanup_lambda.add_to_role_policy(
+            iam.PolicyStatement(
+                effect=iam.Effect.ALLOW,
+                actions=["cloudtrail:LookupEvents"],
+                resources=["*"]
+            )
+        )
+        
+        # SES permissions for sending notification emails
+        pdf_cleanup_lambda.add_to_role_policy(
+            iam.PolicyStatement(
+                effect=iam.Effect.ALLOW,
+                actions=["ses:SendEmail"],
+                resources=["*"]
+            )
+        )
+        
+        # S3 event notification for PDF deletions
+        pdf_processing_bucket.add_event_notification(
+            s3.EventType.OBJECT_REMOVED,
+            s3n.LambdaDestination(pdf_cleanup_lambda),
+            s3.NotificationKeyFilter(prefix="pdf/", suffix=".pdf")
+        )
+        
+        # Store log group name for dashboard
+        pdf_cleanup_log_group_name = pdf_cleanup_log_group.log_group_name
+
         timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         dashboard_name = f"PDF_Processing_Dashboard-{timestamp}"
         dashboard = cloudwatch.Dashboard(self, "PdfRemediationMonitoringDashboard", dashboard_name=dashboard_name,
@@ -749,6 +830,51 @@ class PDFAccessibility(Stack):
                     height=6
                 ),
             )
+
+        # Add PDF Cleanup widgets to dashboard
+        dashboard.add_widgets(
+            cloudwatch.LogQueryWidget(
+                title="PDF Deletion Activity",
+                log_group_names=[pdf_cleanup_log_group_name],
+                query_string='''fields @timestamp, @message
+                    | filter @message like /PDF_DELETED/
+                    | parse @message '"deleted_pdf":"*"' as deleted_pdf
+                    | parse @message '"deleted_by":"*"' as deleted_by
+                    | parse @message '"temp_files_deleted":*,' as temp_files
+                    | parse @message '"email_sent":*,' as email_sent
+                    | display @timestamp, deleted_pdf, deleted_by, temp_files, email_sent
+                    | sort @timestamp desc
+                    | limit 50''',
+                width=24,
+                height=6
+            ),
+            cloudwatch.LogQueryWidget(
+                title="PDF Cleanup - Temp Folders Deleted",
+                log_group_names=[pdf_cleanup_log_group_name],
+                query_string='''fields @timestamp, @message
+                    | filter @message like /PDF_DELETED/
+                    | parse @message '"deleted_temp_folder":"*"' as temp_folder
+                    | parse @message '"temp_files_deleted":*,' as files_deleted
+                    | display @timestamp, temp_folder, files_deleted
+                    | sort @timestamp desc
+                    | limit 50''',
+                width=12,
+                height=6
+            ),
+            cloudwatch.LogQueryWidget(
+                title="PDF Cleanup - Email Notifications Sent",
+                log_group_names=[pdf_cleanup_log_group_name],
+                query_string='''fields @timestamp, @message
+                    | filter @message like /PDF_DELETED/ and @message like /"email_sent":true/
+                    | parse @message '"deleted_pdf":"*"' as deleted_pdf
+                    | parse @message '"email_recipient":"*"' as recipient
+                    | display @timestamp, deleted_pdf, recipient
+                    | sort @timestamp desc
+                    | limit 50''',
+                width=12,
+                height=6
+            ),
+        )
 
 
 app = cdk.App()
