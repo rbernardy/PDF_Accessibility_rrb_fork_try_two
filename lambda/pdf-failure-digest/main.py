@@ -21,11 +21,33 @@ logger.setLevel(logging.INFO)
 # Initialize AWS clients
 dynamodb = boto3.resource('dynamodb')
 ses = boto3.client('ses')
+ssm = boto3.client('ssm')
 
 # Environment variables
 FAILURE_TABLE = os.environ.get('FAILURE_TABLE', 'pdf-failure-records')
 NOTIFICATION_TABLE = os.environ.get('NOTIFICATION_TABLE', 'pdf-cleanup-notifications')
-SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'pdf-cleanup@example.com')
+SENDER_EMAIL_PARAM = os.environ.get('SENDER_EMAIL_PARAM', '/pdf-processing/sender-email')
+
+# Cache for sender email (avoid repeated SSM calls within same invocation)
+_sender_email_cache = None
+
+
+def get_sender_email() -> str:
+    """Get sender email from SSM Parameter Store (cached)."""
+    global _sender_email_cache
+    
+    if _sender_email_cache is not None:
+        return _sender_email_cache
+    
+    try:
+        response = ssm.get_parameter(Name=SENDER_EMAIL_PARAM)
+        _sender_email_cache = response['Parameter']['Value']
+        logger.info(f"Loaded sender email from SSM: {_sender_email_cache}")
+        return _sender_email_cache
+    except ClientError as e:
+        logger.error(f"Error getting sender email from SSM: {e}")
+        # Fallback to a default that will likely fail but provides clear error
+        return "sender-email-not-configured@example.com"
 
 
 def get_todays_failures() -> list:
@@ -198,7 +220,7 @@ This is an automated notification.
     
     try:
         ses.send_email(
-            Source=SENDER_EMAIL,
+            Source=get_sender_email(),
             Destination={'ToAddresses': [recipient]},
             Message={
                 'Subject': {'Data': subject, 'Charset': 'UTF-8'},

@@ -582,9 +582,6 @@ class PDFAccessibility(Stack):
         # PDF Failure Cleanup Feature - Auto-delete PDF and temp files on pipeline failure
         # =============================================================================
         
-        # Get sender email from context (optional, defaults to placeholder)
-        cleanup_sender_email = self.node.try_get_context("cleanup_sender_email") or "pdf-cleanup@example.com"
-        
         # DynamoDB table for notification preferences (IAM username -> email)
         pdf_cleanup_notification_table = dynamodb.Table(
             self, "PdfCleanupNotificationTable",
@@ -677,6 +674,11 @@ class PDFAccessibility(Stack):
         )
         pdf_failure_rule.add_target(targets.LambdaFunction(pdf_failure_cleanup_lambda))
         
+        # SSM Parameter for sender email (can be changed without redeploying)
+        # To set: aws ssm put-parameter --name "/pdf-processing/sender-email" --value "your-email@domain.com" --type String
+        # To change: aws ssm put-parameter --name "/pdf-processing/sender-email" --value "new-email@domain.com" --overwrite
+        sender_email_param_name = "/pdf-processing/sender-email"
+        
         # Lambda function for daily email digest (triggered at 11:55 PM)
         pdf_failure_digest_lambda = lambda_.Function(
             self, "PdfFailureDigestLambda",
@@ -690,13 +692,22 @@ class PDFAccessibility(Stack):
             environment={
                 "FAILURE_TABLE": pdf_failure_records_table.table_name,
                 "NOTIFICATION_TABLE": pdf_cleanup_notification_table.table_name,
-                "SENDER_EMAIL": cleanup_sender_email
+                "SENDER_EMAIL_PARAM": sender_email_param_name
             }
         )
         
         # Grant permissions to digest Lambda
         pdf_failure_records_table.grant_read_write_data(pdf_failure_digest_lambda)
         pdf_cleanup_notification_table.grant_read_data(pdf_failure_digest_lambda)
+        
+        # SSM permissions to read sender email parameter
+        pdf_failure_digest_lambda.add_to_role_policy(
+            iam.PolicyStatement(
+                effect=iam.Effect.ALLOW,
+                actions=["ssm:GetParameter"],
+                resources=[f"arn:aws:ssm:{region}:{account_id}:parameter{sender_email_param_name}"]
+            )
+        )
         
         # SES permissions for sending notification emails
         pdf_failure_digest_lambda.add_to_role_policy(
