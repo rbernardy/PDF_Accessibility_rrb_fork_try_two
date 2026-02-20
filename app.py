@@ -579,13 +579,13 @@ class PDFAccessibility(Stack):
             )
 
         # =============================================================================
-        # PDF Cleanup Feature - Auto-delete temp files when PDF is deleted
+        # PDF Failure Cleanup Feature - Auto-delete PDF and temp files on pipeline failure
         # =============================================================================
         
         # Get sender email from context (optional, defaults to placeholder)
         cleanup_sender_email = self.node.try_get_context("cleanup_sender_email") or "pdf-cleanup@example.com"
         
-        # DynamoDB table for notification preferences
+        # DynamoDB table for notification preferences (IAM username -> email)
         pdf_cleanup_notification_table = dynamodb.Table(
             self, "PdfCleanupNotificationTable",
             table_name="pdf-cleanup-notifications",
@@ -598,6 +598,29 @@ class PDFAccessibility(Stack):
             point_in_time_recovery=True
         )
         
+        # DynamoDB table for failure records (for daily digest)
+        pdf_failure_records_table = dynamodb.Table(
+            self, "PdfFailureRecordsTable",
+            table_name="pdf-failure-records",
+            partition_key=dynamodb.Attribute(
+                name="failure_id",
+                type=dynamodb.AttributeType.STRING
+            ),
+            billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
+            removal_policy=cdk.RemovalPolicy.RETAIN,
+            time_to_live_attribute="ttl"  # Auto-delete old records after 30 days
+        )
+        
+        # Add GSI for querying by date
+        pdf_failure_records_table.add_global_secondary_index(
+            index_name="failure_date-index",
+            partition_key=dynamodb.Attribute(
+                name="failure_date",
+                type=dynamodb.AttributeType.STRING
+            ),
+            projection_type=dynamodb.ProjectionType.ALL
+        )
+        
         # CloudWatch log group for cleanup events
         pdf_cleanup_log_group = logs.LogGroup(
             self, "PdfCleanupLogGroup",
@@ -606,32 +629,31 @@ class PDFAccessibility(Stack):
             removal_policy=cdk.RemovalPolicy.RETAIN
         )
         
-        # Lambda function for PDF cleanup
-        pdf_cleanup_lambda = lambda_.Function(
-            self, "PdfCleanupLambda",
-            function_name="pdf-cleanup-handler",
+        # Lambda function for PDF failure cleanup (triggered by Step Function failures)
+        pdf_failure_cleanup_lambda = lambda_.Function(
+            self, "PdfFailureCleanupLambda",
+            function_name="pdf-failure-cleanup-handler",
             runtime=lambda_.Runtime.PYTHON_3_12,
             handler="main.handler",
-            code=lambda_.Code.from_docker_build("lambda/pdf-cleanup"),
+            code=lambda_.Code.from_docker_build("lambda/pdf-failure-cleanup"),
             memory_size=256,
             timeout=Duration.minutes(5),
             architecture=lambda_arch,
             environment={
-                "NOTIFICATION_TABLE": pdf_cleanup_notification_table.table_name,
+                "FAILURE_TABLE": pdf_failure_records_table.table_name,
                 "LOG_GROUP_NAME": pdf_cleanup_log_group.log_group_name,
-                "SENDER_EMAIL": cleanup_sender_email
+                "BUCKET_NAME": pdf_processing_bucket.bucket_name
             }
         )
         
         # Grant permissions to cleanup Lambda
-        pdf_processing_bucket.grant_read(pdf_cleanup_lambda, "pdf/*")
-        pdf_processing_bucket.grant_delete(pdf_cleanup_lambda, "temp/*")
-        pdf_processing_bucket.grant_read(pdf_cleanup_lambda, "temp/*")
-        pdf_cleanup_notification_table.grant_read_data(pdf_cleanup_lambda)
-        pdf_cleanup_log_group.grant_write(pdf_cleanup_lambda)
+        pdf_processing_bucket.grant_read(pdf_failure_cleanup_lambda)
+        pdf_processing_bucket.grant_delete(pdf_failure_cleanup_lambda)
+        pdf_failure_records_table.grant_write_data(pdf_failure_cleanup_lambda)
+        pdf_cleanup_log_group.grant_write(pdf_failure_cleanup_lambda)
         
-        # CloudTrail permissions for identifying who deleted the file
-        pdf_cleanup_lambda.add_to_role_policy(
+        # CloudTrail permissions for identifying who uploaded the file
+        pdf_failure_cleanup_lambda.add_to_role_policy(
             iam.PolicyStatement(
                 effect=iam.Effect.ALLOW,
                 actions=["cloudtrail:LookupEvents"],
@@ -639,8 +661,45 @@ class PDFAccessibility(Stack):
             )
         )
         
+        # EventBridge rule to trigger cleanup on Step Function failures
+        pdf_failure_rule = events.Rule(
+            self, "PdfProcessingFailureRule",
+            rule_name="pdf-processing-failure-cleanup",
+            description="Triggers cleanup when PDF processing Step Function fails",
+            event_pattern=events.EventPattern(
+                source=["aws.states"],
+                detail_type=["Step Functions Execution Status Change"],
+                detail={
+                    "stateMachineArn": [pdf_remediation_state_machine.state_machine_arn],
+                    "status": ["FAILED", "TIMED_OUT", "ABORTED"]
+                }
+            )
+        )
+        pdf_failure_rule.add_target(targets.LambdaFunction(pdf_failure_cleanup_lambda))
+        
+        # Lambda function for daily email digest (triggered at 11:55 PM)
+        pdf_failure_digest_lambda = lambda_.Function(
+            self, "PdfFailureDigestLambda",
+            function_name="pdf-failure-digest-handler",
+            runtime=lambda_.Runtime.PYTHON_3_12,
+            handler="main.handler",
+            code=lambda_.Code.from_docker_build("lambda/pdf-failure-digest"),
+            memory_size=256,
+            timeout=Duration.minutes(5),
+            architecture=lambda_arch,
+            environment={
+                "FAILURE_TABLE": pdf_failure_records_table.table_name,
+                "NOTIFICATION_TABLE": pdf_cleanup_notification_table.table_name,
+                "SENDER_EMAIL": cleanup_sender_email
+            }
+        )
+        
+        # Grant permissions to digest Lambda
+        pdf_failure_records_table.grant_read_write_data(pdf_failure_digest_lambda)
+        pdf_cleanup_notification_table.grant_read_data(pdf_failure_digest_lambda)
+        
         # SES permissions for sending notification emails
-        pdf_cleanup_lambda.add_to_role_policy(
+        pdf_failure_digest_lambda.add_to_role_policy(
             iam.PolicyStatement(
                 effect=iam.Effect.ALLOW,
                 actions=["ses:SendEmail"],
@@ -648,12 +707,14 @@ class PDFAccessibility(Stack):
             )
         )
         
-        # S3 event notification for PDF deletions
-        pdf_processing_bucket.add_event_notification(
-            s3.EventType.OBJECT_REMOVED,
-            s3n.LambdaDestination(pdf_cleanup_lambda),
-            s3.NotificationKeyFilter(prefix="pdf/", suffix=".pdf")
+        # Schedule daily digest at 11:55 PM UTC
+        pdf_digest_schedule = events.Rule(
+            self, "PdfFailureDigestSchedule",
+            rule_name="pdf-failure-digest-daily",
+            description="Daily digest of PDF processing failures at 11:55 PM",
+            schedule=events.Schedule.cron(minute="55", hour="23")
         )
+        pdf_digest_schedule.add_target(targets.LambdaFunction(pdf_failure_digest_lambda))
         
         # Store log group name for dashboard
         pdf_cleanup_log_group_name = pdf_cleanup_log_group.log_group_name
@@ -831,46 +892,43 @@ class PDFAccessibility(Stack):
                 ),
             )
 
-        # Add PDF Cleanup widgets to dashboard
+        # Add PDF Failure Cleanup widgets to dashboard
         dashboard.add_widgets(
             cloudwatch.LogQueryWidget(
-                title="PDF Deletion Activity",
+                title="Pipeline Failure Cleanup Activity",
                 log_group_names=[pdf_cleanup_log_group_name],
                 query_string='''fields @timestamp, @message
-                    | filter @message like /PDF_DELETED/
+                    | filter @message like /PIPELINE_FAILURE_CLEANUP/
                     | parse @message '"deleted_pdf":"*"' as deleted_pdf
-                    | parse @message '"deleted_by":"*"' as deleted_by
+                    | parse @message '"uploaded_by":"*"' as uploaded_by
+                    | parse @message '"failure_reason":"*"' as failure_reason
                     | parse @message '"temp_files_deleted":*,' as temp_files
-                    | parse @message '"email_sent":*,' as email_sent
-                    | display @timestamp, deleted_pdf, deleted_by, temp_files, email_sent
+                    | display @timestamp, deleted_pdf, uploaded_by, failure_reason, temp_files
                     | sort @timestamp desc
                     | limit 50''',
                 width=24,
                 height=6
             ),
             cloudwatch.LogQueryWidget(
-                title="PDF Cleanup - Temp Folders Deleted",
+                title="Failures by User (Today)",
                 log_group_names=[pdf_cleanup_log_group_name],
                 query_string='''fields @timestamp, @message
-                    | filter @message like /PDF_DELETED/
-                    | parse @message '"deleted_temp_folder":"*"' as temp_folder
-                    | parse @message '"temp_files_deleted":*,' as files_deleted
-                    | display @timestamp, temp_folder, files_deleted
-                    | sort @timestamp desc
-                    | limit 50''',
+                    | filter @message like /PIPELINE_FAILURE_CLEANUP/
+                    | parse @message '"uploaded_by":"*"' as user
+                    | stats count(*) as failure_count by user
+                    | sort failure_count desc''',
                 width=12,
                 height=6
             ),
             cloudwatch.LogQueryWidget(
-                title="PDF Cleanup - Email Notifications Sent",
+                title="Failure Reasons Summary",
                 log_group_names=[pdf_cleanup_log_group_name],
                 query_string='''fields @timestamp, @message
-                    | filter @message like /PDF_DELETED/ and @message like /"email_sent":true/
-                    | parse @message '"deleted_pdf":"*"' as deleted_pdf
-                    | parse @message '"email_recipient":"*"' as recipient
-                    | display @timestamp, deleted_pdf, recipient
-                    | sort @timestamp desc
-                    | limit 50''',
+                    | filter @message like /PIPELINE_FAILURE_CLEANUP/
+                    | parse @message '"failure_reason":"*"' as reason
+                    | stats count(*) as count by reason
+                    | sort count desc
+                    | limit 20''',
                 width=12,
                 height=6
             ),
