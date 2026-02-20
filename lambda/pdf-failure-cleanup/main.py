@@ -228,6 +228,10 @@ def log_cleanup_event(
         'uploaded_by_arn': uploader_info['arn']
     }
     
+    # Log to Lambda's default CloudWatch stream (parsed as JSON automatically)
+    logger.info(json.dumps(log_entry))
+    
+    # Also log to dedicated cleanup log group
     try:
         log_stream_name = datetime.utcnow().strftime('%Y/%m/%d')
         

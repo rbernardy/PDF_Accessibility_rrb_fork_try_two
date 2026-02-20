@@ -910,10 +910,7 @@ class PDFAccessibility(Stack):
                 log_group_names=[pdf_cleanup_log_group_name],
                 query_string='''fields @timestamp, @message
                     | filter @message like /PIPELINE_FAILURE_CLEANUP/
-                    | parse @message '"deleted_pdf":"*"' as deleted_pdf
-                    | parse @message '"uploaded_by":"*"' as uploaded_by
-                    | parse @message '"failure_reason":"*"' as failure_reason
-                    | parse @message '"temp_files_deleted":*,' as temp_files
+                    | parse @message '{"timestamp":*,"event_type":*,"execution_arn":*,"failure_reason":"*","deleted_pdf":"*","deleted_temp_folder":*,"temp_files_deleted":*,"uploaded_by":"*","uploaded_by_arn":*}' as ts, evt, arn, failure_reason, deleted_pdf, temp_folder, temp_files, uploaded_by, user_arn
                     | display @timestamp, deleted_pdf, uploaded_by, failure_reason, temp_files
                     | sort @timestamp desc
                     | limit 50''',
@@ -926,6 +923,7 @@ class PDFAccessibility(Stack):
                 query_string='''fields @timestamp, @message
                     | filter @message like /PIPELINE_FAILURE_CLEANUP/
                     | parse @message '"uploaded_by":"*"' as user
+                    | filter ispresent(user)
                     | stats count(*) as failure_count by user
                     | sort failure_count desc''',
                 width=12,
@@ -937,6 +935,7 @@ class PDFAccessibility(Stack):
                 query_string='''fields @timestamp, @message
                     | filter @message like /PIPELINE_FAILURE_CLEANUP/
                     | parse @message '"failure_reason":"*"' as reason
+                    | filter ispresent(reason)
                     | stats count(*) as count by reason
                     | sort count desc
                     | limit 20''',
