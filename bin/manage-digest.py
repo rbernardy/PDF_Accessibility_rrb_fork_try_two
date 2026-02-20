@@ -25,6 +25,7 @@ from botocore.exceptions import ClientError
 
 LAMBDA_FUNCTION_NAME = "pdf-failure-digest-handler"
 EVENTBRIDGE_RULE_NAME = "pdf-failure-digest-daily"
+FAILURE_TABLE_NAME = "pdf-failure-records"
 DEFAULT_SCHEDULE_TIME = "23:55"
 
 
@@ -34,6 +35,54 @@ def get_lambda_client():
 
 def get_events_client():
     return boto3.client('events')
+
+
+def get_dynamodb_resource():
+    return boto3.resource('dynamodb')
+
+
+def reset_todays_notifications():
+    """Reset all notified flags for today's failures so they can be re-sent."""
+    from datetime import datetime, timezone
+    
+    dynamodb = get_dynamodb_resource()
+    table = dynamodb.Table(FAILURE_TABLE_NAME)
+    today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+    
+    print(f"Resetting notified flags for failures on {today}...")
+    
+    try:
+        # Query for today's failures using the GSI
+        response = table.query(
+            IndexName='failure_date-index',
+            KeyConditionExpression='failure_date = :date',
+            ExpressionAttributeValues={':date': today}
+        )
+        
+        items = response.get('Items', [])
+        
+        if not items:
+            print(f"  No failures found for {today}")
+            return 0
+        
+        # Reset notified flag for each item
+        reset_count = 0
+        for item in items:
+            failure_id = item.get('failure_id')
+            if failure_id:
+                table.update_item(
+                    Key={'failure_id': failure_id},
+                    UpdateExpression='SET notified = :n',
+                    ExpressionAttributeValues={':n': False}
+                )
+                reset_count += 1
+        
+        print(f"  ✓ Reset {reset_count} failure records")
+        return reset_count
+        
+    except Exception as e:
+        print(f"  ✗ Error resetting notifications: {e}")
+        return 0
 
 
 def trigger_digest():
@@ -49,17 +98,44 @@ def trigger_digest():
             Payload=json.dumps({})
         )
         
-        # Read the response
-        payload = json.loads(response['Payload'].read().decode('utf-8'))
+        # Read the raw response
+        raw_payload = response['Payload'].read().decode('utf-8')
         status_code = response.get('StatusCode', 0)
+        function_error = response.get('FunctionError', None)
+        
+        # Check for Lambda execution errors
+        if function_error:
+            print(f"✗ Lambda execution error: {function_error}")
+            print(f"  Raw response: {raw_payload}")
+            return False
+        
+        # Try to parse JSON response
+        if raw_payload and raw_payload.strip():
+            try:
+                payload = json.loads(raw_payload)
+            except json.JSONDecodeError:
+                print(f"✓ Lambda executed (status {status_code})")
+                print(f"  Raw response: {raw_payload}")
+                return status_code == 200
+        else:
+            print(f"✓ Lambda executed (status {status_code})")
+            print(f"  No response body returned")
+            return status_code == 200
         
         if status_code == 200:
             print(f"✓ Lambda executed successfully")
             if 'body' in payload:
-                body = json.loads(payload['body']) if isinstance(payload['body'], str) else payload['body']
-                print(f"  - Emails sent: {body.get('emails_sent', 'N/A')}")
-                print(f"  - Failures processed: {body.get('failures_processed', 'N/A')}")
-                print(f"  - Users processed: {body.get('users_processed', 'N/A')}")
+                try:
+                    body = json.loads(payload['body']) if isinstance(payload['body'], str) else payload['body']
+                    print(f"  - Emails sent: {body.get('emails_sent', 'N/A')}")
+                    print(f"  - Failures processed: {body.get('failures_processed', 'N/A')}")
+                    print(f"  - Users processed: {body.get('users_processed', 'N/A')}")
+                except (json.JSONDecodeError, TypeError):
+                    print(f"  Body: {payload['body']}")
+            elif 'statusCode' in payload:
+                print(f"  Status: {payload.get('statusCode')}")
+                if 'body' in payload:
+                    print(f"  Body: {payload.get('body')}")
             else:
                 print(f"  Response: {payload}")
             return True
@@ -73,6 +149,9 @@ def trigger_digest():
         return False
     except Exception as e:
         print(f"✗ Error: {e}", file=sys.stderr)
+        print(f"  Type: {type(e).__name__}")
+        import traceback
+        traceback.print_exc()
         return False
 
 
@@ -189,7 +268,9 @@ Note: All times are in UTC.
     subparsers = parser.add_subparsers(dest='command', help='Command to run')
     
     # Trigger command
-    subparsers.add_parser('trigger', help='Manually trigger the digest Lambda')
+    trigger_parser = subparsers.add_parser('trigger', help='Manually trigger the digest Lambda')
+    trigger_parser.add_argument('--force', action='store_true', 
+                                help='Reset all notified flags for today and re-send emails')
     
     # Schedule command
     schedule_parser = subparsers.add_parser('schedule', help='View or set the digest schedule')
@@ -205,6 +286,8 @@ Note: All times are in UTC.
     success = False
     
     if args.command == 'trigger':
+        if args.force:
+            reset_todays_notifications()
         success = trigger_digest()
     
     elif args.command == 'schedule':

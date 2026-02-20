@@ -76,21 +76,35 @@ def get_todays_failures() -> list:
 
 
 def get_user_email(username: str) -> Optional[str]:
-    """Look up user's email from notification preferences table."""
+    """
+    Look up user's email from notification preferences table.
+    Falls back to 'default' user if specific user not found.
+    """
     try:
         table = dynamodb.Table(NOTIFICATION_TABLE)
-        response = table.get_item(Key={'iam_username': username})
         
-        if 'Item' not in response:
-            logger.info(f"No notification config for user: {username}")
-            return None
+        # First try the specific user
+        if username and username != 'unknown':
+            response = table.get_item(Key={'iam_username': username})
+            
+            if 'Item' in response:
+                item = response['Item']
+                if item.get('enabled', False):
+                    return item.get('email')
+                else:
+                    logger.info(f"Notifications disabled for user: {username}")
         
-        item = response['Item']
-        if not item.get('enabled', False):
-            logger.info(f"Notifications disabled for user: {username}")
-            return None
+        # Fall back to 'default' user (receives all unmatched notifications)
+        response = table.get_item(Key={'iam_username': 'default'})
         
-        return item.get('email')
+        if 'Item' in response:
+            item = response['Item']
+            if item.get('enabled', False):
+                logger.info(f"Using default recipient for user: {username}")
+                return item.get('email')
+        
+        logger.info(f"No notification config for user: {username} (and no default)")
+        return None
         
     except ClientError as e:
         logger.error(f"Error looking up user email: {e}")
