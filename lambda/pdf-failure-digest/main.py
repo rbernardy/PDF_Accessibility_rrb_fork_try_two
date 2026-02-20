@@ -1,15 +1,21 @@
 """
 PDF Failure Digest Lambda
 
-Triggered daily at 11:55 PM to send digest emails to users whose PDFs failed processing.
-Groups all failures by user and sends one summary email per user.
+Triggered daily at 11:55 PM to send digest reports to users whose PDFs failed processing.
+Groups all failures by user and either:
+- Sends email (if email feature is enabled)
+- Saves report to S3 (if email feature is disabled)
+
+Configuration via SSM Parameter Store:
+- /pdf-processing/email-enabled: "true" or "false"
+- /pdf-processing/sender-email: sender email address (if email enabled)
 """
 
 import json
 import os
 import boto3
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from collections import defaultdict
 from typing import Optional
 from botocore.exceptions import ClientError
@@ -22,38 +28,53 @@ logger.setLevel(logging.INFO)
 dynamodb = boto3.resource('dynamodb')
 ses = boto3.client('ses')
 ssm = boto3.client('ssm')
+s3 = boto3.client('s3')
 
 # Environment variables
 FAILURE_TABLE = os.environ.get('FAILURE_TABLE', 'pdf-failure-records')
 NOTIFICATION_TABLE = os.environ.get('NOTIFICATION_TABLE', 'pdf-cleanup-notifications')
 SENDER_EMAIL_PARAM = os.environ.get('SENDER_EMAIL_PARAM', '/pdf-processing/sender-email')
+EMAIL_ENABLED_PARAM = os.environ.get('EMAIL_ENABLED_PARAM', '/pdf-processing/email-enabled')
+BUCKET_NAME = os.environ.get('BUCKET_NAME', '')
 
-# Cache for sender email (avoid repeated SSM calls within same invocation)
-_sender_email_cache = None
+# Cache for SSM parameters (avoid repeated calls within same invocation)
+_ssm_cache = {}
+
+
+def get_ssm_parameter(param_name: str, default: str = None) -> Optional[str]:
+    """Get parameter from SSM Parameter Store (cached)."""
+    if param_name in _ssm_cache:
+        return _ssm_cache[param_name]
+    
+    try:
+        response = ssm.get_parameter(Name=param_name)
+        value = response['Parameter']['Value']
+        _ssm_cache[param_name] = value
+        logger.info(f"Loaded SSM parameter {param_name}: {value}")
+        return value
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'ParameterNotFound':
+            logger.warning(f"SSM parameter {param_name} not found, using default: {default}")
+            return default
+        logger.error(f"Error getting SSM parameter {param_name}: {e}")
+        return default
+
+
+def is_email_enabled() -> bool:
+    """Check if email feature is enabled via SSM."""
+    value = get_ssm_parameter(EMAIL_ENABLED_PARAM, 'false')
+    return value.lower() == 'true'
 
 
 def get_sender_email() -> str:
-    """Get sender email from SSM Parameter Store (cached)."""
-    global _sender_email_cache
-    
-    if _sender_email_cache is not None:
-        return _sender_email_cache
-    
-    try:
-        response = ssm.get_parameter(Name=SENDER_EMAIL_PARAM)
-        _sender_email_cache = response['Parameter']['Value']
-        logger.info(f"Loaded sender email from SSM: {_sender_email_cache}")
-        return _sender_email_cache
-    except ClientError as e:
-        logger.error(f"Error getting sender email from SSM: {e}")
-        # Fallback to a default that will likely fail but provides clear error
-        return "sender-email-not-configured@example.com"
+    """Get sender email from SSM Parameter Store."""
+    return get_ssm_parameter(SENDER_EMAIL_PARAM, 'sender-email-not-configured@example.com')
 
 
 def get_todays_failures() -> list:
     """Query DynamoDB for all failures from today that haven't been notified."""
     table = dynamodb.Table(FAILURE_TABLE)
-    today = datetime.utcnow().strftime('%Y-%m-%d')
+    today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
     
     try:
         response = table.query(
@@ -126,8 +147,15 @@ def mark_as_notified(failure_ids: list):
             logger.error(f"Error marking {failure_id} as notified: {e}")
 
 
+def strip_srv_prefix(username: str) -> str:
+    """Remove 'srv-' prefix from username if present."""
+    if username and username.lower().startswith('srv-'):
+        return username[4:]
+    return username or 'unknown'
+
+
 def format_failure_entry(failure: dict, index: int) -> str:
-    """Format a single failure entry for the email."""
+    """Format a single failure entry for the report."""
     pdf_key = failure.get('pdf_key', 'unknown')
     filename = pdf_key.split('/')[-1] if pdf_key else 'unknown'
     
@@ -160,29 +188,67 @@ def format_failure_entry_html(failure: dict, index: int) -> str:
 """
 
 
-def send_digest_email(recipient: str, username: str, failures: list, date: str) -> bool:
-    """Send digest email to user with all their failures."""
-    
-    # Build text version
-    failure_entries_text = ""
+def generate_report_text(username: str, failures: list, date: str) -> str:
+    """Generate plain text report content."""
+    failure_entries = ""
     for i, failure in enumerate(failures, 1):
-        failure_entries_text += format_failure_entry(failure, i)
+        failure_entries += format_failure_entry(failure, i)
     
-    body_text = f"""PDF Processing Failure Summary
+    return f"""PDF Processing Failure Summary
 ==============================
 
 Date: {date}
 User: {username}
 
 The following PDFs failed processing and have been automatically cleaned up:
-{failure_entries_text}
+{failure_entries}
 
 Total failures today: {len(failures)}
 
 To retry processing, please re-upload the original PDF files to the appropriate folder.
 
-This is an automated notification.
+This is an automated report.
 """
+
+
+def save_report_to_s3(username: str, failures: list, date: str) -> bool:
+    """Save failure report to S3 as a text file."""
+    # Strip 'srv-' prefix from username
+    clean_username = strip_srv_prefix(username)
+    
+    # Generate timestamp for filename: yyyyMMdd-HHmm
+    now = datetime.now(timezone.utc)
+    timestamp = now.strftime('%Y%m%d-%H%M')
+    
+    # Build filename: username-yyyyMMdd-HHmm.txt
+    filename = f"{clean_username}-{timestamp}.txt"
+    
+    # Build S3 key: reports/deletion_reports/username/filename
+    s3_key = f"reports/deletion_reports/{clean_username}/{filename}"
+    
+    # Generate report content
+    report_content = generate_report_text(username, failures, date)
+    
+    try:
+        s3.put_object(
+            Bucket=BUCKET_NAME,
+            Key=s3_key,
+            Body=report_content.encode('utf-8'),
+            ContentType='text/plain'
+        )
+        logger.info(f"Saved report to s3://{BUCKET_NAME}/{s3_key}")
+        return True
+        
+    except ClientError as e:
+        logger.error(f"Error saving report to S3: {e}")
+        return False
+
+
+def send_digest_email(recipient: str, username: str, failures: list, date: str) -> bool:
+    """Send digest email to user with all their failures."""
+    
+    # Build text version
+    body_text = generate_report_text(username, failures, date)
 
     # Build HTML version
     failure_entries_html = ""
@@ -254,13 +320,22 @@ This is an automated notification.
 
 def handler(event, context):
     """
-    Lambda handler for daily digest emails.
+    Lambda handler for daily digest.
     Triggered by EventBridge schedule at 11:55 PM.
+    
+    If email is enabled (SSM: /pdf-processing/email-enabled = "true"):
+        - Sends email to users
+    If email is disabled:
+        - Saves report to S3: reports/deletion_reports/{username}/{username}-{timestamp}.txt
     """
     logger.info("Starting daily failure digest processing")
     
-    # Get today's date for the email
-    today = datetime.utcnow().strftime('%B %d, %Y')
+    # Check if email is enabled
+    email_enabled = is_email_enabled()
+    logger.info(f"Email feature enabled: {email_enabled}")
+    
+    # Get today's date for the report
+    today = datetime.now(timezone.utc).strftime('%B %d, %Y')
     
     # Get all unnotified failures from today
     failures = get_todays_failures()
@@ -278,23 +353,34 @@ def handler(event, context):
     logger.info(f"Processing failures for {len(failures_by_user)} users")
     
     # Process each user
+    reports_generated = 0
     emails_sent = 0
     failure_ids_notified = []
     
     for username, user_failures in failures_by_user.items():
-        # Get user's email
-        email = get_user_email(username)
+        success = False
         
-        if not email:
-            logger.warning(f"No email configured for user {username}, skipping {len(user_failures)} failures")
-            # Still mark as notified to avoid re-processing
-            for f in user_failures:
-                failure_ids_notified.append(f['failure_id'])
-            continue
+        if email_enabled:
+            # Try to send email
+            email = get_user_email(username)
+            if email:
+                success = send_digest_email(email, username, user_failures, today)
+                if success:
+                    emails_sent += 1
+            else:
+                logger.warning(f"No email configured for user {username}, falling back to S3 report")
+                # Fall back to S3 if no email configured
+                success = save_report_to_s3(username, user_failures, today)
+                if success:
+                    reports_generated += 1
+        else:
+            # Save to S3
+            success = save_report_to_s3(username, user_failures, today)
+            if success:
+                reports_generated += 1
         
-        # Send digest email
-        if send_digest_email(email, username, user_failures, today):
-            emails_sent += 1
+        # Mark as notified regardless of delivery method
+        if success:
             for f in user_failures:
                 failure_ids_notified.append(f['failure_id'])
     
@@ -302,12 +388,13 @@ def handler(event, context):
     if failure_ids_notified:
         mark_as_notified(failure_ids_notified)
     
-    logger.info(f"Digest complete: sent {emails_sent} emails, processed {len(failure_ids_notified)} failures")
+    logger.info(f"Digest complete: {emails_sent} emails sent, {reports_generated} S3 reports, {len(failure_ids_notified)} failures processed")
     
     return {
         'statusCode': 200,
         'body': json.dumps({
             'emails_sent': emails_sent,
+            'reports_generated': reports_generated,
             'failures_processed': len(failure_ids_notified),
             'users_processed': len(failures_by_user)
         })

@@ -4,16 +4,19 @@ CLI tool to manage the PDF failure digest Lambda and its schedule.
 
 Usage:
     ./manage-digest.py trigger                    # Manually trigger the digest Lambda
+    ./manage-digest.py trigger --force            # Reset notified flags and re-trigger
     ./manage-digest.py schedule                   # Show current schedule
     ./manage-digest.py schedule <HH:MM>           # Set schedule time (UTC)
     ./manage-digest.py schedule --reset           # Reset to default (23:55 UTC)
+    ./manage-digest.py email                      # Show email feature status
+    ./manage-digest.py email --enable             # Enable email notifications
+    ./manage-digest.py email --disable            # Disable email (use S3 reports instead)
 
 Examples:
-    ./manage-digest.py trigger                    # Send digest emails now
-    ./manage-digest.py schedule                   # Show when digest runs
+    ./manage-digest.py trigger                    # Send digest now
+    ./manage-digest.py trigger --force            # Reset and re-send
     ./manage-digest.py schedule 15:00             # Change to 3:00 PM UTC for testing
-    ./manage-digest.py schedule 23:55             # Change to 11:55 PM UTC
-    ./manage-digest.py schedule --reset           # Reset to default 11:55 PM UTC
+    ./manage-digest.py email --disable            # Switch to S3 reports
 """
 
 import argparse
@@ -26,6 +29,8 @@ from botocore.exceptions import ClientError
 LAMBDA_FUNCTION_NAME = "pdf-failure-digest-handler"
 EVENTBRIDGE_RULE_NAME = "pdf-failure-digest-daily"
 FAILURE_TABLE_NAME = "pdf-failure-records"
+EMAIL_ENABLED_PARAM = "/pdf-processing/email-enabled"
+SENDER_EMAIL_PARAM = "/pdf-processing/sender-email"
 DEFAULT_SCHEDULE_TIME = "23:55"
 
 
@@ -39,6 +44,72 @@ def get_events_client():
 
 def get_dynamodb_resource():
     return boto3.resource('dynamodb')
+
+
+def get_ssm_client():
+    return boto3.client('ssm')
+
+
+def show_email_status():
+    """Show current email feature status."""
+    ssm = get_ssm_client()
+    
+    print("Email Feature Status:")
+    print("-" * 40)
+    
+    # Check email enabled
+    try:
+        response = ssm.get_parameter(Name=EMAIL_ENABLED_PARAM)
+        enabled = response['Parameter']['Value'].lower() == 'true'
+        print(f"  Email enabled: {'Yes' if enabled else 'No (using S3 reports)'}")
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'ParameterNotFound':
+            print(f"  Email enabled: No (parameter not set, defaulting to S3 reports)")
+        else:
+            print(f"  Email enabled: Error - {e.response['Error']['Message']}")
+    
+    # Check sender email
+    try:
+        response = ssm.get_parameter(Name=SENDER_EMAIL_PARAM)
+        print(f"  Sender email: {response['Parameter']['Value']}")
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'ParameterNotFound':
+            print(f"  Sender email: Not configured")
+        else:
+            print(f"  Sender email: Error - {e.response['Error']['Message']}")
+    
+    print()
+    print("When email is disabled, reports are saved to:")
+    print("  s3://bucket/reports/deletion_reports/{username}/{username}-{timestamp}.txt")
+    
+    return True
+
+
+def set_email_enabled(enabled: bool) -> bool:
+    """Enable or disable email feature."""
+    ssm = get_ssm_client()
+    
+    try:
+        ssm.put_parameter(
+            Name=EMAIL_ENABLED_PARAM,
+            Value='true' if enabled else 'false',
+            Type='String',
+            Overwrite=True
+        )
+        
+        if enabled:
+            print("✓ Email notifications enabled")
+            print("  Make sure sender email is configured:")
+            print(f"  aws ssm put-parameter --name \"{SENDER_EMAIL_PARAM}\" --value \"your-email@domain.com\" --type String --overwrite")
+        else:
+            print("✓ Email notifications disabled")
+            print("  Reports will be saved to S3: reports/deletion_reports/{username}/")
+        
+        return True
+        
+    except ClientError as e:
+        print(f"✗ Error: {e.response['Error']['Message']}", file=sys.stderr)
+        return False
 
 
 def reset_todays_notifications():
@@ -128,6 +199,7 @@ def trigger_digest():
                 try:
                     body = json.loads(payload['body']) if isinstance(payload['body'], str) else payload['body']
                     print(f"  - Emails sent: {body.get('emails_sent', 'N/A')}")
+                    print(f"  - S3 reports generated: {body.get('reports_generated', 'N/A')}")
                     print(f"  - Failures processed: {body.get('failures_processed', 'N/A')}")
                     print(f"  - Users processed: {body.get('users_processed', 'N/A')}")
                 except (json.JSONDecodeError, TypeError):
@@ -277,6 +349,12 @@ Note: All times are in UTC.
     schedule_parser.add_argument('time', nargs='?', help='New schedule time in HH:MM format (UTC)')
     schedule_parser.add_argument('--reset', action='store_true', help='Reset to default schedule (23:55 UTC)')
     
+    # Email command
+    email_parser = subparsers.add_parser('email', help='View or toggle email feature')
+    email_group = email_parser.add_mutually_exclusive_group()
+    email_group.add_argument('--enable', action='store_true', help='Enable email notifications')
+    email_group.add_argument('--disable', action='store_true', help='Disable email (use S3 reports)')
+    
     args = parser.parse_args()
     
     if not args.command:
@@ -297,6 +375,14 @@ Note: All times are in UTC.
             success = set_schedule(args.time)
         else:
             success = show_schedule()
+    
+    elif args.command == 'email':
+        if args.enable:
+            success = set_email_enabled(True)
+        elif args.disable:
+            success = set_email_enabled(False)
+        else:
+            success = show_email_status()
     
     sys.exit(0 if success else 1)
 

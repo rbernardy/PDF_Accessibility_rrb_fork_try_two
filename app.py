@@ -674,12 +674,14 @@ class PDFAccessibility(Stack):
         )
         pdf_failure_rule.add_target(targets.LambdaFunction(pdf_failure_cleanup_lambda))
         
-        # SSM Parameter for sender email (can be changed without redeploying)
-        # To set: aws ssm put-parameter --name "/pdf-processing/sender-email" --value "your-email@domain.com" --type String
-        # To change: aws ssm put-parameter --name "/pdf-processing/sender-email" --value "new-email@domain.com" --overwrite
+        # SSM Parameters for digest configuration (can be changed without redeploying)
+        # Email enabled: aws ssm put-parameter --name "/pdf-processing/email-enabled" --value "true" --type String
+        # Sender email: aws ssm put-parameter --name "/pdf-processing/sender-email" --value "your-email@domain.com" --type String
         sender_email_param_name = "/pdf-processing/sender-email"
+        email_enabled_param_name = "/pdf-processing/email-enabled"
         
-        # Lambda function for daily email digest (triggered at 11:55 PM)
+        # Lambda function for daily digest (triggered at 11:55 PM)
+        # If email disabled, saves reports to S3: reports/deletion_reports/{username}/{username}-{timestamp}.txt
         pdf_failure_digest_lambda = lambda_.Function(
             self, "PdfFailureDigestLambda",
             function_name="pdf-failure-digest-handler",
@@ -692,7 +694,9 @@ class PDFAccessibility(Stack):
             environment={
                 "FAILURE_TABLE": pdf_failure_records_table.table_name,
                 "NOTIFICATION_TABLE": pdf_cleanup_notification_table.table_name,
-                "SENDER_EMAIL_PARAM": sender_email_param_name
+                "SENDER_EMAIL_PARAM": sender_email_param_name,
+                "EMAIL_ENABLED_PARAM": email_enabled_param_name,
+                "BUCKET_NAME": pdf_processing_bucket.bucket_name
             }
         )
         
@@ -700,16 +704,22 @@ class PDFAccessibility(Stack):
         pdf_failure_records_table.grant_read_write_data(pdf_failure_digest_lambda)
         pdf_cleanup_notification_table.grant_read_data(pdf_failure_digest_lambda)
         
-        # SSM permissions to read sender email parameter
+        # S3 permissions for saving reports
+        pdf_processing_bucket.grant_write(pdf_failure_digest_lambda, "reports/deletion_reports/*")
+        
+        # SSM permissions to read configuration parameters
         pdf_failure_digest_lambda.add_to_role_policy(
             iam.PolicyStatement(
                 effect=iam.Effect.ALLOW,
                 actions=["ssm:GetParameter"],
-                resources=[f"arn:aws:ssm:{region}:{account_id}:parameter{sender_email_param_name}"]
+                resources=[
+                    f"arn:aws:ssm:{region}:{account_id}:parameter{sender_email_param_name}",
+                    f"arn:aws:ssm:{region}:{account_id}:parameter{email_enabled_param_name}"
+                ]
             )
         )
         
-        # SES permissions for sending notification emails
+        # SES permissions for sending notification emails (when enabled)
         pdf_failure_digest_lambda.add_to_role_policy(
             iam.PolicyStatement(
                 effect=iam.Effect.ALLOW,
