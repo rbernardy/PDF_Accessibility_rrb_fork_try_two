@@ -767,10 +767,9 @@ class PDFAccessibility(Stack):
                     | filter @message like /PIPELINE_STATUS/
                     | parse @message 'PIPELINE_STATUS: *' as status_json
                     | parse status_json '"status":"*"' as status
-                    | parse status_json '"local_time":"*"' as local_time
                     | parse status_json '"running_executions":*,' as executions
                     | parse status_json '"running_ecs_tasks":*,' as tasks
-                    | display local_time, status, executions, tasks
+                    | display @timestamp, status, executions, tasks
                     | sort @timestamp desc
                     | limit 100''',
                 width=24,
@@ -811,10 +810,6 @@ class PDFAccessibility(Stack):
                 log_group_names=[pdf_cleanup_log_group_name],
                 query_string='''fields @timestamp, @message
                     | filter @message like /PIPELINE_FAILURE_CLEANUP/
-                    | parse @message '"deleted_pdf":"*"' as deleted_pdf
-                    | parse @message '"failure_reason":"*"' as failure_reason
-                    | parse @message '"uploaded_by":"*"' as uploaded_by
-                    | display @timestamp, deleted_pdf, failure_reason, uploaded_by
                     | sort @timestamp desc
                     | limit 50''',
                 width=24,
