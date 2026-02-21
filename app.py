@@ -272,9 +272,9 @@ class PDFAccessibility(Stack):
         # max_concurrency controls parallel Adobe API calls
         # Adobe rate limit is 25 requests/minute
         # Each chunk makes 2 Adobe API calls (autotag + extract)
-        # Setting to 10 allows ~20 API calls in parallel, staying under limit
+        # Setting back to 100 after our RPM rate increase to 200
         pdf_chunks_map_state = sfn.Map(self, "ProcessPdfChunksInParallel",
-                            max_concurrency=10,
+                            max_concurrency=100,
                             items_path=sfn.JsonPath.string_at("$.chunks"),
                             result_path="$.MapResults")
 
@@ -768,7 +768,7 @@ class PDFAccessibility(Stack):
                     | sort @timestamp desc
                     | limit 100''',
                 width=24,
-                height=3
+                height=6
             ),
             cloudwatch.LogQueryWidget(
                 title="File status",

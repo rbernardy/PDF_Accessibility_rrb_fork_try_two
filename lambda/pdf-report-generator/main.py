@@ -497,7 +497,7 @@ def save_excel_to_s3(bucket: str, excel_content: bytes) -> str:
         print(f"Warning: Could not use timezone {tz_name}, falling back to UTC: {e}")
         timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
     
-    key = f"reports/pdf-processing-report-{timestamp}.xlsx"
+    key = f"reports/pdf_processing_reports/pdf-processing-report-{timestamp}.xlsx"
     
     s3_client.put_object(
         Bucket=bucket,
