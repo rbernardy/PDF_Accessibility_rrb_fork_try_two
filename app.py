@@ -808,9 +808,13 @@ class PDFAccessibility(Stack):
             ),
             cloudwatch.LogQueryWidget(
                 title="Processing Failures",
-                log_group_names=[pdf_processing_metrics_log_group.log_group_name],
+                log_group_names=[pdf_cleanup_log_group_name],
                 query_string='''fields @timestamp, @message
-                    | filter @logStream like /processing-failures/
+                    | filter @message like /PIPELINE_FAILURE_CLEANUP/
+                    | parse @message '"deleted_pdf":"*"' as deleted_pdf
+                    | parse @message '"failure_reason":"*"' as failure_reason
+                    | parse @message '"uploaded_by":"*"' as uploaded_by
+                    | display @timestamp, deleted_pdf, failure_reason, uploaded_by
                     | sort @timestamp desc
                     | limit 50''',
                 width=24,

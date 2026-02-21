@@ -1,5 +1,9 @@
 FROM public.ecr.aws/lambda/python:3.12
 
+# Build arg to bust cache when code changes
+ARG BUILD_DATE
+RUN echo "Build date: $BUILD_DATE"
+
 # Set environment variable for Lambda Task Root
 ENV LAMBDA_TASK_ROOT=/asset
 
