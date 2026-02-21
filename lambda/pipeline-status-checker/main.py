@@ -17,6 +17,8 @@ from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 from typing import Dict, Any, List
 
+# Version marker to force Lambda updates
+VERSION = "1.1.0-local-time"
 
 # Initialize clients
 sfn_client = boto3.client('stepfunctions')
@@ -161,7 +163,7 @@ def lambda_handler(event: Dict, context: Any) -> Dict:
     # Build status message for logging (this will appear in CloudWatch Logs)
     status_entry = {
         'timestamp': check_time.isoformat(),
-        'local_time': local_time.strftime('%Y-%m-%d %I:%M:%S %p %Z'),
+        'local_time': local_time.strftime('%Y-%m-%d %H:%M:%S ET'),
         'status': status,
         'running_executions': execution_count,
         'running_ecs_tasks': task_count,

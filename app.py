@@ -463,7 +463,12 @@ class PDFAccessibility(Stack):
             self, 'PipelineStatusCheckerLambda',
             runtime=lambda_.Runtime.PYTHON_3_12,
             handler='main.lambda_handler',
-            code=lambda_.Code.from_docker_build('lambda/pipeline-status-checker'),
+            code=lambda_.Code.from_docker_build(
+                'lambda/pipeline-status-checker',
+                build_args={
+                    'BUILD_DATE': datetime.datetime.now().isoformat()
+                }
+            ),
             timeout=Duration.seconds(60),
             memory_size=256,
             architecture=lambda_arch,
