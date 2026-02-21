@@ -14,6 +14,7 @@ import os
 import json
 import boto3
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from typing import Dict, Any, List
 
 
@@ -139,6 +140,7 @@ def lambda_handler(event: Dict, context: Any) -> Dict:
     
     # Get current timestamp
     check_time = datetime.now(timezone.utc)
+    local_time = check_time.astimezone(ZoneInfo('US/Eastern'))
     
     # Check Step Function executions
     running_executions = get_running_executions(state_machine_arn)
@@ -159,6 +161,7 @@ def lambda_handler(event: Dict, context: Any) -> Dict:
     # Build status message for logging (this will appear in CloudWatch Logs)
     status_entry = {
         'timestamp': check_time.isoformat(),
+        'local_time': local_time.strftime('%Y-%m-%d %I:%M:%S %p %Z'),
         'status': status,
         'running_executions': execution_count,
         'running_ecs_tasks': task_count,
