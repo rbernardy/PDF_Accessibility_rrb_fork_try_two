@@ -154,15 +154,72 @@ def strip_srv_prefix(username: str) -> str:
     return username or 'unknown'
 
 
+def extract_clean_failure_reason(failure_reason: str) -> str:
+    """Extract a clean, human-readable failure reason from the raw error."""
+    if not failure_reason:
+        return "Unknown error"
+    
+    # Check for common failure patterns
+    if "States.TaskFailed" in failure_reason:
+        # Try to extract the stopped reason from ECS task failure
+        if '"StoppedReason":"' in failure_reason:
+            try:
+                start = failure_reason.index('"StoppedReason":"') + len('"StoppedReason":"')
+                end = failure_reason.index('"', start)
+                stopped_reason = failure_reason[start:end]
+                
+                # Also try to get the container name
+                container_name = "unknown container"
+                if '"Name":"' in failure_reason:
+                    name_start = failure_reason.index('"Name":"') + len('"Name":"')
+                    name_end = failure_reason.index('"', name_start)
+                    container_name = failure_reason[name_start:name_end]
+                
+                return f"ECS Task Failed ({container_name}): {stopped_reason}"
+            except (ValueError, IndexError):
+                pass
+        
+        # Try to get exit code
+        if '"ExitCode":' in failure_reason:
+            try:
+                start = failure_reason.index('"ExitCode":') + len('"ExitCode":')
+                end = start
+                while end < len(failure_reason) and (failure_reason[end].isdigit() or failure_reason[end] == '-'):
+                    end += 1
+                exit_code = failure_reason[start:end]
+                return f"ECS Task Failed with exit code {exit_code}"
+            except (ValueError, IndexError):
+                pass
+        
+        return "ECS Task Failed"
+    
+    if "States.Timeout" in failure_reason:
+        return "Task timed out"
+    
+    if "Lambda.ServiceException" in failure_reason:
+        return "Lambda service error"
+    
+    if "Lambda.AWSLambdaException" in failure_reason:
+        return "Lambda execution error"
+    
+    # If it's a short message, return as-is
+    if len(failure_reason) < 100:
+        return failure_reason
+    
+    # Otherwise, truncate
+    return failure_reason[:100] + "..."
+
+
 def format_failure_entry(failure: dict, index: int) -> str:
     """Format a single failure entry for the report."""
     pdf_key = failure.get('pdf_key', 'unknown')
     filename = pdf_key.split('/')[-1] if pdf_key else 'unknown'
+    clean_reason = extract_clean_failure_reason(failure.get('failure_reason', ''))
     
     return f"""
 {index}. {filename}
    - Original location: {pdf_key}
-   - Failure reason: {failure.get('failure_reason', 'Unknown')}
+   - Failure reason: {clean_reason}
    - Temp files deleted: {failure.get('temp_files_deleted', 0)}
    - Failed at: {failure.get('timestamp', 'Unknown')}
 """
@@ -172,6 +229,7 @@ def format_failure_entry_html(failure: dict, index: int) -> str:
     """Format a single failure entry for HTML email."""
     pdf_key = failure.get('pdf_key', 'unknown')
     filename = pdf_key.split('/')[-1] if pdf_key else 'unknown'
+    clean_reason = extract_clean_failure_reason(failure.get('failure_reason', ''))
     
     return f"""
     <tr>
@@ -179,7 +237,7 @@ def format_failure_entry_html(failure: dict, index: int) -> str:
             <strong>{index}. {filename}</strong><br>
             <span style="color: #666; font-size: 12px;">
                 Location: <code>{pdf_key}</code><br>
-                Reason: {failure.get('failure_reason', 'Unknown')}<br>
+                Reason: {clean_reason}<br>
                 Temp files deleted: {failure.get('temp_files_deleted', 0)}<br>
                 Failed at: {failure.get('timestamp', 'Unknown')}
             </span>

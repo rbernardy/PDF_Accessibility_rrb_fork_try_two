@@ -692,7 +692,12 @@ class PDFAccessibility(Stack):
             function_name="pdf-failure-digest-handler",
             runtime=lambda_.Runtime.PYTHON_3_12,
             handler="main.handler",
-            code=lambda_.Code.from_docker_build("lambda/pdf-failure-digest"),
+            code=lambda_.Code.from_docker_build(
+                "lambda/pdf-failure-digest",
+                build_args={
+                    "BUILD_DATE": datetime.datetime.now().isoformat()
+                }
+            ),
             memory_size=256,
             timeout=Duration.minutes(5),
             architecture=lambda_arch,
