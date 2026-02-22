@@ -190,7 +190,7 @@ def build_clean_failure_reason(failure_cause: str, chunk_key: str = None) -> str
         chunk_key: The chunk key being processed (for log lookup)
         
     Returns:
-        A clean failure reason string
+        A clean failure reason string (without nested JSON or escaped quotes)
     """
     # Check for common failure types
     if "States.Timeout" in failure_cause:
@@ -203,11 +203,16 @@ def build_clean_failure_reason(failure_cause: str, chunk_key: str = None) -> str
         actual_error = lookup_ecs_error_from_logs(container_name, task_arn, chunk_key)
         
         if actual_error:
-            # Found the actual error in logs
-            return f"ECS Task Failed ({container_name}): {actual_error}"
+            # Found the actual error in logs - clean it up
+            # Remove any JSON-like content that could break log parsing
+            clean_error = actual_error.replace('"', "'").replace('\\', '')
+            if len(clean_error) > 200:
+                clean_error = clean_error[:200] + "..."
+            return f"ECS Task Failed ({container_name}): {clean_error}"
         else:
-            # Fall back to the stopped reason
-            return f"ECS Task Failed ({container_name}): {stopped_reason}"
+            # Fall back to the stopped reason - clean it up
+            clean_reason = stopped_reason.replace('"', "'").replace('\\', '')
+            return f"ECS Task Failed ({container_name}): {clean_reason}"
     
     if "Lambda.ServiceException" in failure_cause:
         return "Lambda service error"
@@ -215,12 +220,29 @@ def build_clean_failure_reason(failure_cause: str, chunk_key: str = None) -> str
     if "Lambda.AWSLambdaException" in failure_cause:
         return "Lambda execution error"
     
+    # Try to extract a meaningful error message from JSON-like content
+    if '{"errorMessage"' in failure_cause or '"errorMessage"' in failure_cause:
+        try:
+            # Try to find and extract the errorMessage
+            import re
+            match = re.search(r'"errorMessage"\s*:\s*"([^"]+)"', failure_cause)
+            if match:
+                error_msg = match.group(1).replace('\\', '')
+                if len(error_msg) > 200:
+                    error_msg = error_msg[:200] + "..."
+                return f"Error: {error_msg}"
+        except Exception:
+            pass
+    
+    # Clean up the failure cause - remove JSON artifacts and escape characters
+    clean_cause = failure_cause.replace('"', "'").replace('\\', '').replace('{', '').replace('}', '')
+    
     # If it's a short message, return as-is
-    if len(failure_cause) < 200:
-        return failure_cause
+    if len(clean_cause) < 200:
+        return clean_cause.strip()
     
     # Otherwise, truncate
-    return failure_cause[:200] + "..."
+    return clean_cause[:200].strip() + "..."
 
 
 def extract_pdf_key_from_execution(execution_input: dict) -> Optional[str]:
