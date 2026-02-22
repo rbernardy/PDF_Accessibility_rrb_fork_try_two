@@ -125,18 +125,22 @@ def acquire_token(api_type: str = 'adobe_api', max_retries: int = 60) -> bool:
         
         try:
             # Atomic increment with condition check
+            # Note: 'ttl' is a reserved keyword in DynamoDB, so we use ExpressionAttributeNames
             response = table.update_item(
                 Key={
                     'minute_key': minute_key
                 },
                 UpdateExpression='SET request_count = if_not_exists(request_count, :zero) + :inc, '
-                                'ttl = :ttl',
+                                '#ttl_attr = :ttl_val',
                 ConditionExpression='attribute_not_exists(request_count) OR request_count < :max',
+                ExpressionAttributeNames={
+                    '#ttl_attr': 'ttl'
+                },
                 ExpressionAttributeValues={
                     ':zero': 0,
                     ':inc': 1,
                     ':max': rpm_limit,
-                    ':ttl': int(time.time()) + 120  # TTL: 2 minutes after the minute ends
+                    ':ttl_val': int(time.time()) + 120  # TTL: 2 minutes after the minute ends
                 },
                 ReturnValues='UPDATED_NEW'
             )
