@@ -1040,7 +1040,10 @@ class PDFAccessibility(Stack):
                 log_group_names=[pdf_cleanup_log_group_name],
                 query_string='''fields @timestamp, @message
                     | filter @message like /PIPELINE_FAILURE_CLEANUP/
-                    | parse @message '{"timestamp":*,"event_type":*,"execution_arn":*,"failure_reason":"*","deleted_pdf":"*","deleted_temp_folder":*,"temp_files_deleted":*,"uploaded_by":"*","uploaded_by_arn":*}' as ts, evt, arn, failure_reason, deleted_pdf, temp_folder, temp_files, uploaded_by, user_arn
+                    | parse @message '"deleted_pdf":"*"' as deleted_pdf
+                    | parse @message '"uploaded_by":"*"' as uploaded_by
+                    | parse @message '"failure_reason":"*"' as failure_reason
+                    | parse @message '"temp_files_deleted":*,' as temp_files
                     | display @timestamp, deleted_pdf, uploaded_by, failure_reason, temp_files
                     | sort @timestamp desc
                     | limit 50''',
