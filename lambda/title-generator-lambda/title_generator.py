@@ -41,16 +41,16 @@ def exponential_backoff_retry(
             time.sleep(sleep_time)
 
 
-def download_file_from_s3(bucket_name, file_key, local_path, filename, max_bytes=5*1024*1024):
+def download_file_from_s3(bucket_name, file_key, local_path, filename, max_bytes=None):
     """
-    Downloads a file from S3, optionally limiting to first N bytes for large files.
+    Downloads a file from S3.
     
     Args:
         bucket_name: S3 bucket name
         file_key: S3 object key
         local_path: Local path to save file
         filename: Filename for logging
-        max_bytes: Maximum bytes to download (default 5MB, enough for ~50 pages)
+        max_bytes: Maximum bytes to download (None = full file, which is required for PDFs)
     """
     s3 = boto3.client('s3')
     
@@ -66,39 +66,18 @@ def download_file_from_s3(bucket_name, file_key, local_path, filename, max_bytes
         )
         file_size = head_response['ContentLength']
         
-        if file_size > max_bytes:
-            # For large files, download only first portion
-            print(f"Filename: {filename} | Large file detected ({file_size/1024/1024:.1f}MB). "
-                  f"Downloading first {max_bytes/1024/1024:.1f}MB only.")
-            
-            # Download with byte range using exponential backoff
-            response = exponential_backoff_retry(
-                s3.get_object,
-                Bucket=bucket_name,
-                Key=file_key,
-                Range=f'bytes=0-{max_bytes-1}',
-                retries=3,
-                base_delay=1,
-                backoff_factor=2
-            )
-            
-            with open(local_path, 'wb') as f:
-                f.write(response['Body'].read())
-            
-            print(f"Filename: {filename} | Downloaded first {max_bytes/1024/1024:.1f}MB "
-                  f"from {file_key} to {local_path}")
-        else:
-            # For small files, download normally
-            exponential_backoff_retry(
-                s3.download_file,
-                bucket_name,
-                file_key,
-                local_path,
-                retries=3,
-                base_delay=1,
-                backoff_factor=2
-            )
-            print(f"Filename: {filename} | Downloaded {file_key} from {bucket_name} to {local_path}")
+        # Always download full file - partial PDFs cannot be opened
+        print(f"Filename: {filename} | Downloading file ({file_size/1024/1024:.1f}MB)...")
+        exponential_backoff_retry(
+            s3.download_file,
+            bucket_name,
+            file_key,
+            local_path,
+            retries=3,
+            base_delay=1,
+            backoff_factor=2
+        )
+        print(f"Filename: {filename} | Downloaded {file_key} from {bucket_name} to {local_path}")
             
     except Exception as e:
         print(f"Filename: {filename} | Error downloading from S3: {e}")
@@ -269,13 +248,14 @@ def lambda_handler(event, context):
         folder_path = '/'.join(key_parts[:-2]) if len(key_parts) > 2 else ''
         print(f"(lambda_handler | Extracted folder_path: {folder_path} from merged_key: {merged_key})")
         
-        # Download file (will be partial for large files - first 5MB)
+        # Download the full file - partial downloads don't work with PDFs
+        # PyMuPDF needs the complete PDF structure to open the file
         download_file_from_s3(
             file_info['bucket'], 
             file_info['merged_file_key'], 
             local_path, 
             file_info['merged_file_name'],
-            max_bytes=5*1024*1024  # 5MB should be enough for first few pages
+            max_bytes=None  # Download full file
         )
 
         try:
@@ -319,37 +299,6 @@ def lambda_handler(event, context):
                     "details": f"{file_name} - {str(e)}"
                 }
             }
-
-        # For partial downloads, we need to download the full file to set metadata
-        # Check if we downloaded a partial file
-        s3 = boto3.client('s3')
-        head_response = s3.head_object(Bucket=file_info['bucket'], Key=file_info['merged_file_key'])
-        full_file_size = head_response['ContentLength']
-        current_file_size = os.path.getsize(local_path)
-        
-        if current_file_size < full_file_size:
-            print(f"(lambda_handler | Partial file was downloaded. Downloading full file for metadata update...)")
-            if pdf_document:
-                pdf_document.close()
-                pdf_document = None
-            
-            # Remove partial file
-            os.remove(local_path)
-            
-            # Download full file
-            exponential_backoff_retry(
-                s3.download_file,
-                file_info['bucket'],
-                file_info['merged_file_key'],
-                local_path,
-                retries=3,
-                base_delay=1,
-                backoff_factor=2
-            )
-            print(f"(lambda_handler | Full file downloaded for metadata update)")
-            
-            # Reopen the full PDF
-            pdf_document = fitz.open(local_path)
 
         try:
             set_custom_metadata(pdf_document, file_name, title)
