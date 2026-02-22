@@ -75,12 +75,31 @@ def lambda_handler(event, context):
     # Extracting nested values from the event
     payload = event.get('Payload', {})
     body = payload.get('body', {})
+    
+    # Check if upstream Lambda returned an error
+    status_code = payload.get('statusCode', 200)
+    if status_code != 200 or 'error' in body:
+        error_msg = body.get('error', 'Unknown error from upstream Lambda')
+        details = body.get('details', '')
+        print(f"Upstream Lambda failed: {error_msg} - {details}")
+        return {
+            "status": "skipped",
+            "reason": f"Upstream Lambda failed: {error_msg}",
+            "details": details
+        }
+    
     s3_bucket = body.get('bucket')
     save_path = body.get('save_path')
 
     # Validate inputs
     if not s3_bucket or not save_path:
-        raise ValueError("Missing required inputs: 's3_bucket' or 'save_path'")
+        print(f"Missing inputs - s3_bucket: {s3_bucket}, save_path: {save_path}")
+        print(f"Full event payload: {event}")
+        return {
+            "status": "error",
+            "reason": "Missing required inputs: 's3_bucket' or 'save_path'",
+            "received_payload": str(payload)
+        }
 
     print(f"s3_bucket: {s3_bucket}, save_path: {save_path}")
 
@@ -88,7 +107,12 @@ def lambda_handler(event, context):
     pattern = r"COMPLIANT_[^/]*"
     match = re.search(pattern, save_path)
     if not match:
-        raise ValueError(f"Pattern '{pattern}' not found in save_path: {save_path}")
+        print(f"Pattern '{pattern}' not found in save_path: {save_path}")
+        return {
+            "status": "error",
+            "reason": f"Pattern '{pattern}' not found in save_path",
+            "save_path": save_path
+        }
     
     file_basename = match.group(0)
     print("File basename:", file_basename)
@@ -142,6 +166,14 @@ def lambda_handler(event, context):
 
     except (ServiceApiException, ServiceUsageException, SdkException) as e:
         print(f'Filename : {file_basename} | Exception encountered while executing operation at post accessibility check: {e}')
-        return f"Filename : {file_basename} | Exception encountered while executing operation at post accessibility check: {e}"
-    return f"Filename : {file_basename} | Saved accessibility report to {bucket_save_path}"
+        return {
+            "status": "error",
+            "filename": file_basename,
+            "reason": f"Exception encountered while executing operation at post accessibility check: {e}"
+        }
+    return {
+        "status": "success",
+        "filename": file_basename,
+        "report_path": bucket_save_path
+    }
     
