@@ -159,39 +159,59 @@ def extract_clean_failure_reason(failure_reason: str) -> str:
     if not failure_reason:
         return "Unknown error"
     
+    # If the failure reason is already clean (from updated cleanup Lambda), return it
+    # Clean reasons start with "ECS Task Failed (" and have a proper container name
+    if failure_reason.startswith("ECS Task Failed (") and "subnetId" not in failure_reason:
+        return failure_reason
+    
     # Check for common failure patterns
     if "States.TaskFailed" in failure_reason:
-        # Try to extract the stopped reason from ECS task failure
-        if '"StoppedReason":"' in failure_reason:
-            try:
+        # Try to extract container name from Containers array
+        container_name = "unknown"
+        stopped_reason = "Essential container in task exited"
+        
+        # Look for container name in the Containers section
+        # The container name appears after "Containers":[{"ContainerArn":..., "Name":"
+        try:
+            if '"Containers":[' in failure_reason:
+                containers_start = failure_reason.index('"Containers":[')
+                # Find the Name field within the Containers array
+                name_pattern = '"Name":"'
+                search_start = containers_start
+                name_idx = failure_reason.find(name_pattern, search_start)
+                if name_idx > 0:
+                    name_start = name_idx + len(name_pattern)
+                    name_end = failure_reason.index('"', name_start)
+                    container_name = failure_reason[name_start:name_end]
+        except (ValueError, IndexError):
+            pass
+        
+        # Try to extract the stopped reason
+        try:
+            if '"StoppedReason":"' in failure_reason:
                 start = failure_reason.index('"StoppedReason":"') + len('"StoppedReason":"')
                 end = failure_reason.index('"', start)
                 stopped_reason = failure_reason[start:end]
-                
-                # Also try to get the container name
-                container_name = "unknown container"
-                if '"Name":"' in failure_reason:
-                    name_start = failure_reason.index('"Name":"') + len('"Name":"')
-                    name_end = failure_reason.index('"', name_start)
-                    container_name = failure_reason[name_start:name_end]
-                
-                return f"ECS Task Failed ({container_name}): {stopped_reason}"
-            except (ValueError, IndexError):
-                pass
+        except (ValueError, IndexError):
+            pass
         
         # Try to get exit code
-        if '"ExitCode":' in failure_reason:
-            try:
+        exit_code = None
+        try:
+            if '"ExitCode":' in failure_reason:
                 start = failure_reason.index('"ExitCode":') + len('"ExitCode":')
                 end = start
                 while end < len(failure_reason) and (failure_reason[end].isdigit() or failure_reason[end] == '-'):
                     end += 1
                 exit_code = failure_reason[start:end]
-                return f"ECS Task Failed with exit code {exit_code}"
-            except (ValueError, IndexError):
-                pass
+        except (ValueError, IndexError):
+            pass
         
-        return "ECS Task Failed"
+        # Build the clean message
+        if exit_code and exit_code != '0':
+            return f"ECS Task Failed ({container_name}): {stopped_reason} (exit code: {exit_code})"
+        else:
+            return f"ECS Task Failed ({container_name}): {stopped_reason}"
     
     if "States.Timeout" in failure_reason:
         return "Task timed out"
@@ -203,11 +223,11 @@ def extract_clean_failure_reason(failure_reason: str) -> str:
         return "Lambda execution error"
     
     # If it's a short message, return as-is
-    if len(failure_reason) < 100:
+    if len(failure_reason) < 150:
         return failure_reason
     
     # Otherwise, truncate
-    return failure_reason[:100] + "..."
+    return failure_reason[:150] + "..."
 
 
 def format_failure_entry(failure: dict, index: int) -> str:

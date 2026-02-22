@@ -11,8 +11,9 @@ import os
 import boto3
 import logging
 import uuid
+import re
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, Tuple
 from botocore.exceptions import ClientError
 
 # Configure logging
@@ -29,6 +30,197 @@ logs = boto3.client('logs')
 FAILURE_TABLE = os.environ.get('FAILURE_TABLE', 'pdf-failure-records')
 LOG_GROUP_NAME = os.environ.get('LOG_GROUP_NAME', '/pdf-processing/cleanup')
 BUCKET_NAME = os.environ.get('BUCKET_NAME', '')
+
+# ECS log group names for looking up actual errors
+ADOBE_AUTOTAG_LOG_GROUP = '/ecs/pdf-remediation/adobe-autotag'
+ALT_TEXT_LOG_GROUP = '/ecs/pdf-remediation/alt-text-generator'
+
+
+def extract_ecs_failure_details(failure_cause: str) -> Tuple[str, str, Optional[str]]:
+    """
+    Extract meaningful failure details from ECS task failure JSON.
+    
+    Args:
+        failure_cause: The raw failure cause string from Step Functions
+        
+    Returns:
+        Tuple of (container_name, stopped_reason, task_arn)
+    """
+    container_name = "unknown"
+    stopped_reason = "Unknown error"
+    task_arn = None
+    
+    try:
+        # The cause is JSON embedded in the string after "States.TaskFailed: "
+        if "States.TaskFailed:" in failure_cause:
+            json_start = failure_cause.index("States.TaskFailed:") + len("States.TaskFailed:")
+            json_str = failure_cause[json_start:].strip()
+        else:
+            json_str = failure_cause
+        
+        task_data = json.loads(json_str)
+        
+        # Get task ARN
+        task_arn = task_data.get('TaskArn')
+        
+        # Get stopped reason
+        stopped_reason = task_data.get('StoppedReason', 'Unknown error')
+        
+        # Get container name from Containers array
+        containers = task_data.get('Containers', [])
+        if containers:
+            container = containers[0]
+            container_name = container.get('Name', 'unknown')
+            
+            # Get exit code if available
+            exit_code = container.get('ExitCode')
+            if exit_code is not None and exit_code != 0:
+                stopped_reason = f"{stopped_reason} (exit code: {exit_code})"
+        
+        # Also check task definition to identify which stage failed
+        task_def_arn = task_data.get('TaskDefinitionArn', '')
+        if 'AltText' in task_def_arn:
+            container_name = 'alt-text-generator'
+        elif 'Autotag' in task_def_arn:
+            container_name = 'adobe-autotag'
+            
+    except (json.JSONDecodeError, ValueError, KeyError) as e:
+        logger.warning(f"Could not parse ECS failure details: {e}")
+    
+    return container_name, stopped_reason, task_arn
+
+
+def lookup_ecs_error_from_logs(container_name: str, task_arn: str, chunk_key: str) -> Optional[str]:
+    """
+    Look up the actual error message from ECS container logs.
+    
+    Args:
+        container_name: Name of the container (adobe-autotag or alt-text-generator)
+        task_arn: The ECS task ARN
+        chunk_key: The chunk key being processed (for filtering)
+        
+    Returns:
+        The actual error message if found, None otherwise
+    """
+    # Determine which log group to search
+    if 'alt-text' in container_name.lower():
+        log_group = ALT_TEXT_LOG_GROUP
+    else:
+        log_group = ADOBE_AUTOTAG_LOG_GROUP
+    
+    # Extract task ID from ARN for log stream prefix
+    # Task ARN format: arn:aws:ecs:region:account:task/cluster/task-id
+    task_id = None
+    if task_arn:
+        parts = task_arn.split('/')
+        if len(parts) >= 3:
+            task_id = parts[-1]
+    
+    # Extract filename from chunk_key for filtering
+    filename = None
+    if chunk_key:
+        filename = chunk_key.split('/')[-1].replace('.pdf', '')
+    
+    try:
+        # Search for error messages in the log group
+        # Look back 30 minutes from now
+        end_time = int(datetime.utcnow().timestamp() * 1000)
+        start_time = end_time - (30 * 60 * 1000)  # 30 minutes ago
+        
+        # Build filter pattern to find errors
+        filter_patterns = [
+            'ERROR',
+            'Exception',
+            'Traceback',
+            'failed',
+            'Error:'
+        ]
+        
+        for pattern in filter_patterns:
+            try:
+                response = logs.filter_log_events(
+                    logGroupName=log_group,
+                    startTime=start_time,
+                    endTime=end_time,
+                    filterPattern=pattern,
+                    limit=50
+                )
+                
+                events = response.get('events', [])
+                
+                # Filter events that match our task or filename
+                for event in events:
+                    message = event.get('message', '')
+                    log_stream = event.get('logStreamName', '')
+                    
+                    # Check if this log is from our task
+                    is_our_task = False
+                    if task_id and task_id in log_stream:
+                        is_our_task = True
+                    elif filename and filename in message:
+                        is_our_task = True
+                    
+                    if is_our_task:
+                        # Extract the meaningful part of the error
+                        # Skip generic log prefixes
+                        if 'ERROR' in message or 'Exception' in message or 'Traceback' in message:
+                            # Clean up the message
+                            clean_message = message.strip()
+                            # Truncate if too long
+                            if len(clean_message) > 500:
+                                clean_message = clean_message[:500] + '...'
+                            return clean_message
+                            
+            except ClientError as e:
+                logger.warning(f"Error searching logs with pattern '{pattern}': {e}")
+                continue
+                
+    except ClientError as e:
+        logger.error(f"Error looking up ECS logs: {e}")
+    
+    return None
+
+
+def build_clean_failure_reason(failure_cause: str, chunk_key: str = None) -> str:
+    """
+    Build a clean, human-readable failure reason from the raw failure data.
+    
+    Args:
+        failure_cause: The raw failure cause from Step Functions
+        chunk_key: The chunk key being processed (for log lookup)
+        
+    Returns:
+        A clean failure reason string
+    """
+    # Check for common failure types
+    if "States.Timeout" in failure_cause:
+        return "Task timed out"
+    
+    if "States.TaskFailed" in failure_cause:
+        container_name, stopped_reason, task_arn = extract_ecs_failure_details(failure_cause)
+        
+        # Try to look up the actual error from logs
+        actual_error = lookup_ecs_error_from_logs(container_name, task_arn, chunk_key)
+        
+        if actual_error:
+            # Found the actual error in logs
+            return f"ECS Task Failed ({container_name}): {actual_error}"
+        else:
+            # Fall back to the stopped reason
+            return f"ECS Task Failed ({container_name}): {stopped_reason}"
+    
+    if "Lambda.ServiceException" in failure_cause:
+        return "Lambda service error"
+    
+    if "Lambda.AWSLambdaException" in failure_cause:
+        return "Lambda execution error"
+    
+    # If it's a short message, return as-is
+    if len(failure_cause) < 200:
+        return failure_cause
+    
+    # Otherwise, truncate
+    return failure_cause[:200] + "..."
 
 
 def extract_pdf_key_from_execution(execution_input: dict) -> Optional[str]:
@@ -289,12 +481,20 @@ def handler(event, context):
         logger.error("Failed to parse execution input")
         execution_input = {}
     
-    # Get failure reason
-    failure_reason = detail.get('error', '')
+    # Get the chunk key for log lookup
+    chunk_key = None
+    if 'chunks' in execution_input and execution_input['chunks']:
+        chunk_key = execution_input['chunks'][0].get('chunk_key')
+    
+    # Get failure reason - build a clean version
+    raw_failure_reason = detail.get('error', '')
     if detail.get('cause'):
-        failure_reason += f": {detail.get('cause')}"
-    if not failure_reason:
-        failure_reason = f"Execution {status}"
+        raw_failure_reason += f": {detail.get('cause')}"
+    if not raw_failure_reason:
+        raw_failure_reason = f"Execution {status}"
+    
+    # Build clean failure reason with log lookup
+    failure_reason = build_clean_failure_reason(raw_failure_reason, chunk_key)
     
     # Extract PDF key from execution input
     pdf_key = extract_pdf_key_from_execution(execution_input)

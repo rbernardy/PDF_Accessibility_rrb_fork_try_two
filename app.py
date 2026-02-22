@@ -689,7 +689,12 @@ class PDFAccessibility(Stack):
             function_name="pdf-failure-cleanup-handler",
             runtime=lambda_.Runtime.PYTHON_3_12,
             handler="main.handler",
-            code=lambda_.Code.from_docker_build("lambda/pdf-failure-cleanup"),
+            code=lambda_.Code.from_docker_build(
+                "lambda/pdf-failure-cleanup",
+                build_args={
+                    "BUILD_DATE": datetime.datetime.now().isoformat()
+                }
+            ),
             memory_size=256,
             timeout=Duration.minutes(5),
             architecture=lambda_arch,
@@ -712,6 +717,21 @@ class PDFAccessibility(Stack):
                 effect=iam.Effect.ALLOW,
                 actions=["cloudtrail:LookupEvents"],
                 resources=["*"]
+            )
+        )
+        
+        # CloudWatch Logs read permissions for looking up actual ECS task errors
+        pdf_failure_cleanup_lambda.add_to_role_policy(
+            iam.PolicyStatement(
+                effect=iam.Effect.ALLOW,
+                actions=[
+                    "logs:FilterLogEvents",
+                    "logs:GetLogEvents"
+                ],
+                resources=[
+                    f"arn:aws:logs:{region}:{account_id}:log-group:/ecs/pdf-remediation/adobe-autotag:*",
+                    f"arn:aws:logs:{region}:{account_id}:log-group:/ecs/pdf-remediation/alt-text-generator:*"
+                ]
             )
         )
         
