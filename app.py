@@ -927,9 +927,9 @@ class PDFAccessibility(Stack):
                 log_group_names=[adobe_autotag_log_group.log_group_name],
                 query_string='''fields @timestamp, @message
                     | filter @message like /Rate limit status:/
-                    | parse @message /Filename : (?<filename>[^|]+)/ 
-                    | parse @message /Rate limit status: (?<current>\\d+)\\/(?<limit>\\d+) requests this minute/
-                    | display @timestamp, filename, current, limit
+                    | parse @message "Filename : * | Rate limit status: *" as filename, rate_info
+                    | parse rate_info "* requests this minute" as usage
+                    | display @timestamp, filename, usage
                     | sort @timestamp desc
                     | limit 50''',
                 width=12,
