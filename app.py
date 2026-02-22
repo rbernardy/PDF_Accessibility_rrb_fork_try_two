@@ -810,6 +810,21 @@ class PDFAccessibility(Stack):
             )
         )
         
+        # CloudWatch Logs permissions to read ECS container logs for detailed error lookup
+        pdf_failure_digest_lambda.add_to_role_policy(
+            iam.PolicyStatement(
+                effect=iam.Effect.ALLOW,
+                actions=[
+                    "logs:FilterLogEvents",
+                    "logs:GetLogEvents"
+                ],
+                resources=[
+                    f"arn:aws:logs:{region}:{account_id}:log-group:/ecs/pdf-remediation/adobe-autotag:*",
+                    f"arn:aws:logs:{region}:{account_id}:log-group:/ecs/pdf-remediation/alt-text-generator:*"
+                ]
+            )
+        )
+        
         # Schedule daily digest at 11:55 PM UTC
         pdf_digest_schedule = events.Rule(
             self, "PdfFailureDigestSchedule",

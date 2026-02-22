@@ -15,7 +15,8 @@ import json
 import os
 import boto3
 import logging
-from datetime import datetime, timezone
+import re
+from datetime import datetime, timezone, timedelta
 from collections import defaultdict
 from typing import Optional
 from botocore.exceptions import ClientError
@@ -29,6 +30,11 @@ dynamodb = boto3.resource('dynamodb')
 ses = boto3.client('ses')
 ssm = boto3.client('ssm')
 s3 = boto3.client('s3')
+logs = boto3.client('logs')
+
+# ECS log group names for looking up actual errors
+ADOBE_AUTOTAG_LOG_GROUP = '/ecs/pdf-remediation/adobe-autotag'
+ALT_TEXT_LOG_GROUP = '/ecs/pdf-remediation/alt-text-generator'
 
 # Environment variables
 FAILURE_TABLE = os.environ.get('FAILURE_TABLE', 'pdf-failure-records')
@@ -230,19 +236,155 @@ def extract_clean_failure_reason(failure_reason: str) -> str:
     return failure_reason[:150] + "..."
 
 
+def lookup_detailed_ecs_error(failure: dict) -> Optional[str]:
+    """
+    Look up detailed error from ECS container logs for a specific failure.
+    
+    Args:
+        failure: The failure record from DynamoDB
+        
+    Returns:
+        Detailed error message if found, None otherwise
+    """
+    failure_reason = failure.get('failure_reason', '')
+    pdf_key = failure.get('pdf_key', '')
+    timestamp_str = failure.get('timestamp', '')
+    
+    # Only look up for ECS task failures
+    if 'ECS Task Failed' not in failure_reason:
+        return None
+    
+    # Determine which log group to search based on container name
+    if 'adobe-autotag' in failure_reason.lower():
+        log_group = ADOBE_AUTOTAG_LOG_GROUP
+    elif 'alt-text' in failure_reason.lower():
+        log_group = ALT_TEXT_LOG_GROUP
+    else:
+        return None
+    
+    # Extract filename from pdf_key for filtering
+    filename = None
+    if pdf_key:
+        filename = pdf_key.split('/')[-1].replace('.pdf', '')
+    
+    if not filename:
+        return None
+    
+    try:
+        # Parse the failure timestamp and search around that time
+        # Look 30 minutes before and after the failure
+        if timestamp_str:
+            try:
+                failure_time = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+            except ValueError:
+                failure_time = datetime.now(timezone.utc)
+        else:
+            failure_time = datetime.now(timezone.utc)
+        
+        start_time = int((failure_time - timedelta(minutes=30)).timestamp() * 1000)
+        end_time = int((failure_time + timedelta(minutes=30)).timestamp() * 1000)
+        
+        # Search for error messages containing the filename
+        # The adobe-autotag container logs errors like:
+        # "Filename : {file_key} | Adobe API Error: {e}"
+        # "Filename : {file_key} | Unexpected Error: {e}"
+        
+        try:
+            response = logs.filter_log_events(
+                logGroupName=log_group,
+                startTime=start_time,
+                endTime=end_time,
+                filterPattern=f'"{filename}"',
+                limit=100
+            )
+            
+            events = response.get('events', [])
+            
+            # Look for error messages
+            error_messages = []
+            for event in events:
+                message = event.get('message', '')
+                
+                # Check if this is an error message for our file
+                if filename in message:
+                    # Look for specific error patterns
+                    if any(pattern in message for pattern in ['ERROR', 'Error:', 'Exception', 'failed', 'Failed']):
+                        # Extract the meaningful part
+                        # Pattern: "Filename : xxx | Error Type: actual error"
+                        if '|' in message:
+                            parts = message.split('|')
+                            if len(parts) >= 2:
+                                error_part = parts[-1].strip()
+                                error_messages.append(error_part)
+                        else:
+                            # Just use the whole message
+                            error_messages.append(message.strip())
+            
+            if error_messages:
+                # Return the most specific error (usually the last one logged)
+                # Filter out generic messages
+                specific_errors = [
+                    e for e in error_messages 
+                    if not e.startswith('Filename :') or 'Error' in e or 'Exception' in e
+                ]
+                
+                if specific_errors:
+                    # Get the most detailed error
+                    best_error = max(specific_errors, key=len)
+                    # Clean up and truncate if needed
+                    if len(best_error) > 300:
+                        best_error = best_error[:300] + '...'
+                    return best_error
+                    
+        except ClientError as e:
+            logger.warning(f"Error searching logs in {log_group}: {e}")
+            
+    except Exception as e:
+        logger.error(f"Error looking up ECS logs: {e}")
+    
+    return None
+
+
+def get_detailed_failure_info(failure: dict) -> dict:
+    """
+    Enhance failure record with detailed error information from ECS logs.
+    
+    Args:
+        failure: The failure record from DynamoDB
+        
+    Returns:
+        Enhanced failure dict with 'detailed_error' field if found
+    """
+    detailed_error = lookup_detailed_ecs_error(failure)
+    
+    if detailed_error:
+        failure['detailed_error'] = detailed_error
+        logger.info(f"Found detailed error for {failure.get('pdf_key', 'unknown')}: {detailed_error[:100]}...")
+    
+    return failure
+
+
 def format_failure_entry(failure: dict, index: int) -> str:
     """Format a single failure entry for the report."""
     pdf_key = failure.get('pdf_key', 'unknown')
     filename = pdf_key.split('/')[-1] if pdf_key else 'unknown'
     clean_reason = extract_clean_failure_reason(failure.get('failure_reason', ''))
+    detailed_error = failure.get('detailed_error', '')
     
-    return f"""
+    entry = f"""
 {index}. {filename}
    - Original location: {pdf_key}
-   - Failure reason: {clean_reason}
+   - Failure reason: {clean_reason}"""
+    
+    if detailed_error:
+        entry += f"""
+   - Detailed error: {detailed_error}"""
+    
+    entry += f"""
    - Temp files deleted: {failure.get('temp_files_deleted', 0)}
    - Failed at: {failure.get('timestamp', 'Unknown')}
 """
+    return entry
 
 
 def format_failure_entry_html(failure: dict, index: int) -> str:
@@ -250,6 +392,14 @@ def format_failure_entry_html(failure: dict, index: int) -> str:
     pdf_key = failure.get('pdf_key', 'unknown')
     filename = pdf_key.split('/')[-1] if pdf_key else 'unknown'
     clean_reason = extract_clean_failure_reason(failure.get('failure_reason', ''))
+    detailed_error = failure.get('detailed_error', '')
+    
+    detailed_html = ""
+    if detailed_error:
+        detailed_html = f"""<br>
+                <span style="color: #c62828; font-size: 12px;">
+                    <strong>Detailed error:</strong> {detailed_error}
+                </span>"""
     
     return f"""
     <tr>
@@ -257,7 +407,7 @@ def format_failure_entry_html(failure: dict, index: int) -> str:
             <strong>{index}. {filename}</strong><br>
             <span style="color: #666; font-size: 12px;">
                 Location: <code>{pdf_key}</code><br>
-                Reason: {clean_reason}<br>
+                Reason: {clean_reason}{detailed_html}<br>
                 Temp files deleted: {failure.get('temp_files_deleted', 0)}<br>
                 Failed at: {failure.get('timestamp', 'Unknown')}
             </span>
@@ -422,11 +572,13 @@ def handler(event, context):
         logger.info("No failures to process today")
         return {'statusCode': 200, 'body': 'No failures to process'}
     
-    # Group failures by username
+    # Group failures by username and enhance with detailed error info
     failures_by_user = defaultdict(list)
     for failure in failures:
-        username = failure.get('iam_username', 'unknown')
-        failures_by_user[username].append(failure)
+        # Look up detailed error from ECS logs
+        enhanced_failure = get_detailed_failure_info(failure)
+        username = enhanced_failure.get('iam_username', 'unknown')
+        failures_by_user[username].append(enhanced_failure)
     
     logger.info(f"Processing failures for {len(failures_by_user)} users")
     
