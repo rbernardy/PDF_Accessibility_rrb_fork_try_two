@@ -87,6 +87,7 @@ from adobe.pdfservices.operation.pdfjobs.params.autotag_pdf.autotag_pdf_params i
 from adobe.pdfservices.operation.pdfjobs.result.autotag_pdf_result import AutotagPDFResult
 
 from custom_cloudwatch_logger import get_custom_logger
+from rate_limiter import acquire_token, get_current_usage
 
 logger = logging.getLogger(__name__)
 
@@ -195,6 +196,14 @@ def autotag_pdf_with_options(filename, client_id, client_secret):
         ServiceUsageException: If there's a usage-related error.
         SdkException: If there's an SDK-related error.
     """
+    # Acquire rate limit token before making API call
+    logging.info(f'Filename : {filename} | Waiting for rate limit token (autotag)...')
+    if not acquire_token('autotag'):
+        raise RuntimeError(f"Failed to acquire rate limit token for autotag API call")
+    
+    usage = get_current_usage()
+    logging.info(f'Filename : {filename} | Rate limit status: {usage["count"]}/{usage["limit"]} requests this minute')
+    
     # Log the API call to custom CloudWatch stream
     custom_cw_logger.log_adobe_api_call(filename, filename, api_type="autotag")
     
@@ -271,6 +280,14 @@ def extract_api(filename, client_id, client_secret):
         ServiceUsageException: If there's a usage-related error.
         SdkException: If there's an SDK-related error.
     """
+    # Acquire rate limit token before making API call
+    logging.info(f'Filename : {filename} | Waiting for rate limit token (extract)...')
+    if not acquire_token('extract'):
+        raise RuntimeError(f"Failed to acquire rate limit token for extract API call")
+    
+    usage = get_current_usage()
+    logging.info(f'Filename : {filename} | Rate limit status: {usage["count"]}/{usage["limit"]} requests this minute')
+    
     # Log the API call to custom CloudWatch stream
     custom_cw_logger.log_adobe_api_call(filename, filename, api_type="extract")
     

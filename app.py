@@ -18,6 +18,7 @@ from aws_cdk import (
     aws_events as events,
     aws_events_targets as targets,
     aws_dynamodb as dynamodb,
+    aws_ssm as ssm,
 )
 from constructs import Construct
 import platform
@@ -43,6 +44,33 @@ class PDFAccessibility(Stack):
         # Get account and region for use throughout the stack
         account_id = Stack.of(self).account
         region = Stack.of(self).region
+
+        # ============================================================
+        # Adobe API Rate Limiting Infrastructure
+        # ============================================================
+        
+        # SSM Parameter for Adobe API RPM limit (configurable without redeployment)
+        adobe_api_rpm_param_name = '/pdf-processing/adobe-api-rpm'
+        adobe_api_rpm_param = ssm.StringParameter(
+            self, "AdobeApiRpmParam",
+            parameter_name=adobe_api_rpm_param_name,
+            string_value="200",  # Default: 200 requests per minute
+            description="Adobe PDF Services API rate limit (requests per minute)"
+        )
+        
+        # DynamoDB table for distributed rate limiting across ECS tasks
+        # Uses minute-based keys with atomic counters to track API calls
+        adobe_rate_limit_table = dynamodb.Table(
+            self, "AdobeRateLimitTable",
+            table_name="adobe-api-rate-limit",
+            partition_key=dynamodb.Attribute(
+                name="minute_key",
+                type=dynamodb.AttributeType.STRING
+            ),
+            billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
+            removal_policy=cdk.RemovalPolicy.DESTROY,
+            time_to_live_attribute="ttl"  # Auto-cleanup old entries
+        )
 
         # Docker images with zstd compression for faster Fargate cold starts
         # zstd decompresses ~2-3x faster than gzip, reducing container startup time
@@ -151,6 +179,22 @@ class PDFAccessibility(Stack):
                 f"arn:aws:logs:{region}:{account_id}:log-group:/custom/pdf-remediation/metrics:*"
             ],
         ))
+        
+        # DynamoDB permissions for Adobe API rate limiting
+        ecs_task_role.add_to_policy(iam.PolicyStatement(
+            actions=[
+                "dynamodb:GetItem",
+                "dynamodb:UpdateItem",
+            ],
+            resources=[adobe_rate_limit_table.table_arn],
+        ))
+        
+        # SSM permissions for reading Adobe API RPM configuration
+        ecs_task_role.add_to_policy(iam.PolicyStatement(
+            actions=["ssm:GetParameter"],
+            resources=[f"arn:aws:ssm:{region}:{account_id}:parameter{adobe_api_rpm_param_name}"],
+        ))
+        
         # Grant S3 read/write access to ECS Task Role
         pdf_processing_bucket.grant_read_write(ecs_task_execution_role)
         # Create ECS Task Log Groups explicitly
@@ -223,9 +267,17 @@ class PDFAccessibility(Stack):
                                                   name="S3_CHUNK_KEY",
                                                   value=sfn.JsonPath.string_at("$.chunk_key")
                                               ),
-                                            tasks.TaskEnvironmentVariable(
+                                              tasks.TaskEnvironmentVariable(
                                                   name="AWS_REGION",
                                                   value=region
+                                              ),
+                                              tasks.TaskEnvironmentVariable(
+                                                  name="RATE_LIMIT_TABLE",
+                                                  value=adobe_rate_limit_table.table_name
+                                              ),
+                                              tasks.TaskEnvironmentVariable(
+                                                  name="ADOBE_API_RPM_PARAM",
+                                                  value=adobe_api_rpm_param_name
                                               ),
                                           ]
                                       )],
@@ -269,10 +321,10 @@ class PDFAccessibility(Stack):
                                       )
 
         # Step Function Map State
-        # max_concurrency controls parallel Adobe API calls
-        # Adobe rate limit is 25 requests/minute
-        # Each chunk makes 2 Adobe API calls (autotag + extract)
-        # Setting back to 100 after our RPM rate increase to 200
+        # max_concurrency controls parallel ECS tasks
+        # Rate limiting is now handled by the DynamoDB-based rate limiter in the ECS container
+        # The rate limiter ensures API calls stay within the ADOBE_API_RPM SSM parameter limit
+        # Higher concurrency is now safe - tasks will wait for rate limit tokens as needed
         pdf_chunks_map_state = sfn.Map(self, "ProcessPdfChunksInParallel",
                             max_concurrency=100,
                             items_path=sfn.JsonPath.string_at("$.chunks"),
@@ -779,6 +831,29 @@ class PDFAccessibility(Stack):
                     | limit 100''',
                 width=24,
                 height=6
+            ),
+            cloudwatch.LogQueryWidget(
+                title="Adobe API Rate Limiting",
+                log_group_names=[adobe_autotag_log_group.log_group_name],
+                query_string='''fields @timestamp, @message
+                    | filter @message like /Rate limit/
+                    | parse @message 'Rate limit status: */* requests this minute' as current, limit
+                    | display @timestamp, current, limit
+                    | sort @timestamp desc
+                    | limit 50''',
+                width=12,
+                height=4
+            ),
+            cloudwatch.GraphWidget(
+                title="Adobe API Rate Limit Table Activity",
+                left=[
+                    adobe_rate_limit_table.metric_consumed_write_capacity_units(
+                        statistic="Sum",
+                        period=Duration.minutes(1)
+                    ),
+                ],
+                width=12,
+                height=4
             ),
             cloudwatch.LogQueryWidget(
                 title="File status",
