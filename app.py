@@ -1040,10 +1040,10 @@ class PDFAccessibility(Stack):
                 log_group_names=[pdf_cleanup_log_group_name],
                 query_string='''fields @timestamp, @message
                     | filter @message like /PIPELINE_FAILURE_CLEANUP/
-                    | parse @message /"deleted_pdf"\s*:\s*"(?<deleted_pdf>[^"]+)"/
-                    | parse @message /"uploaded_by"\s*:\s*"(?<uploaded_by>[^"]+)"/
-                    | parse @message /"failure_reason"\s*:\s*"(?<failure_reason>[^"]+)"/
-                    | parse @message /"temp_files_deleted"\s*:\s*(?<temp_files>\d+)/
+                    | parse @message /"deleted_pdf"\\s*:\\s*"(?<deleted_pdf>[^"]+)"/
+                    | parse @message /"uploaded_by"\\s*:\\s*"(?<uploaded_by>[^"]+)"/
+                    | parse @message /"failure_reason"\\s*:\\s*"(?<failure_reason>[^"]+)"/
+                    | parse @message /"temp_files_deleted"\\s*:\\s*(?<temp_files>\\d+)/
                     | display @timestamp, deleted_pdf, uploaded_by, failure_reason, temp_files
                     | sort @timestamp desc
                     | limit 50''',
@@ -1055,7 +1055,7 @@ class PDFAccessibility(Stack):
                 log_group_names=[pdf_cleanup_log_group_name],
                 query_string='''fields @timestamp, @message
                     | filter @message like /PIPELINE_FAILURE_CLEANUP/
-                    | parse @message /"uploaded_by"\s*:\s*"(?<user>[^"]+)"/
+                    | parse @message /"uploaded_by"\\s*:\\s*"(?<user>[^"]+)"/
                     | filter ispresent(user)
                     | stats count(*) as failure_count by user
                     | sort failure_count desc''',
@@ -1067,7 +1067,7 @@ class PDFAccessibility(Stack):
                 log_group_names=[pdf_cleanup_log_group_name],
                 query_string='''fields @timestamp, @message
                     | filter @message like /PIPELINE_FAILURE_CLEANUP/
-                    | parse @message /"failure_reason"\s*:\s*"(?<reason>[^"]+)"/
+                    | parse @message /"failure_reason"\\s*:\\s*"(?<reason>[^"]+)"/
                     | filter ispresent(reason)
                     | stats count(*) as count by reason
                     | sort count desc
