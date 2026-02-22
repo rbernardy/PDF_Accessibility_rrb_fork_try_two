@@ -927,8 +927,8 @@ class PDFAccessibility(Stack):
                 log_group_names=[adobe_autotag_log_group.log_group_name],
                 query_string='''fields @timestamp, @message
                     | filter @message like /Rate limit status:/
-                    | parse @message "Filename : * | Rate limit status: *" as filename, rate_info
-                    | parse rate_info "* requests this minute" as usage
+                    | parse @message "Filename : *" as rest
+                    | parse rest "* Rate limit status: * requests this minute" as filename, usage
                     | display @timestamp, filename, usage
                     | sort @timestamp desc
                     | limit 50''',
@@ -1090,10 +1090,10 @@ class PDFAccessibility(Stack):
                 log_group_names=[pdf_cleanup_log_group_name],
                 query_string='''fields @timestamp, @message
                     | filter @message like /PIPELINE_FAILURE_CLEANUP/
-                    | parse @message /"deleted_pdf"\\s*:\\s*"(?<deleted_pdf>[^"]+)"/
-                    | parse @message /"uploaded_by"\\s*:\\s*"(?<uploaded_by>[^"]+)"/
-                    | parse @message /"failure_reason"\\s*:\\s*"(?<failure_reason>(?:[^"\\\\]|\\\\.)*)"/
-                    | parse @message /"temp_files_deleted"\\s*:\\s*(?<temp_files>\\d+)/
+                    | parse @message '"deleted_pdf":"*"' as deleted_pdf
+                    | parse @message '"uploaded_by":"*"' as uploaded_by
+                    | parse @message '"failure_reason":"*"' as failure_reason
+                    | parse @message '"temp_files_deleted":*,' as temp_files
                     | display @timestamp, deleted_pdf, uploaded_by, failure_reason, temp_files
                     | sort @timestamp desc
                     | limit 50''',
@@ -1105,7 +1105,7 @@ class PDFAccessibility(Stack):
                 log_group_names=[pdf_cleanup_log_group_name],
                 query_string='''fields @timestamp, @message
                     | filter @message like /PIPELINE_FAILURE_CLEANUP/
-                    | parse @message /"uploaded_by"\\s*:\\s*"(?<user>[^"]+)"/
+                    | parse @message '"uploaded_by":"*"' as user
                     | filter ispresent(user)
                     | stats count(*) as failure_count by user
                     | sort failure_count desc''',
@@ -1117,8 +1117,8 @@ class PDFAccessibility(Stack):
                 log_group_names=[pdf_cleanup_log_group_name],
                 query_string='''fields @timestamp, @message
                     | filter @message like /PIPELINE_FAILURE_CLEANUP/
-                    | parse @message /"deleted_pdf"\\s*:\\s*"(?<filename>[^"]+)"/
-                    | parse @message /"failure_reason"\\s*:\\s*"(?<reason>(?:[^"\\\\]|\\\\.)*)"/
+                    | parse @message '"deleted_pdf":"*"' as filename
+                    | parse @message '"failure_reason":"*"' as reason
                     | filter ispresent(reason)
                     | display @timestamp, filename, reason
                     | sort @timestamp desc
