@@ -927,8 +927,8 @@ class PDFAccessibility(Stack):
                 log_group_names=[adobe_autotag_log_group.log_group_name],
                 query_string='''fields @timestamp, @message
                     | filter @message like /Rate limit status:/
-                    | parse @message 'Filename : * |' as filename
-                    | parse @message 'Rate limit status: */* requests this minute' as current, limit
+                    | parse @message /Filename : (?<filename>[^|]+)/ 
+                    | parse @message /Rate limit status: (?<current>\\d+)\\/(?<limit>\\d+) requests this minute/
                     | display @timestamp, filename, current, limit
                     | sort @timestamp desc
                     | limit 50''',
@@ -1117,11 +1117,12 @@ class PDFAccessibility(Stack):
                 log_group_names=[pdf_cleanup_log_group_name],
                 query_string='''fields @timestamp, @message
                     | filter @message like /PIPELINE_FAILURE_CLEANUP/
+                    | parse @message /"deleted_pdf"\\s*:\\s*"(?<filename>[^"]+)"/
                     | parse @message /"failure_reason"\\s*:\\s*"(?<reason>(?:[^"\\\\]|\\\\.)*)"/
                     | filter ispresent(reason)
-                    | stats count(*) as count by reason
-                    | sort count desc
-                    | limit 20''',
+                    | display @timestamp, filename, reason
+                    | sort @timestamp desc
+                    | limit 50''',
                 width=12,
                 height=6
             ),
