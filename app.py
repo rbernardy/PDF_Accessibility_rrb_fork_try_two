@@ -837,6 +837,38 @@ class PDFAccessibility(Stack):
         # Store log group name for dashboard
         pdf_cleanup_log_group_name = pdf_cleanup_log_group.log_group_name
 
+        # =============================================================================
+        # Rate Limit Widget Lambda - Custom CloudWatch widget for real-time queue status
+        # =============================================================================
+        
+        rate_limit_widget_lambda = lambda_.Function(
+            self, "RateLimitWidgetLambda",
+            function_name="rate-limit-widget",
+            runtime=lambda_.Runtime.PYTHON_3_12,
+            handler="main.lambda_handler",
+            code=lambda_.Code.from_asset("lambda/rate-limit-widget"),
+            memory_size=128,
+            timeout=Duration.seconds(10),
+            architecture=lambda_arch,
+            environment={
+                "RATE_LIMIT_TABLE": adobe_rate_limit_table.table_name,
+                "ADOBE_API_RPM_PARAM": adobe_api_rpm_param_name
+            }
+        )
+        
+        # Grant permissions to read from DynamoDB and SSM
+        adobe_rate_limit_table.grant_read_data(rate_limit_widget_lambda)
+        rate_limit_widget_lambda.add_to_role_policy(
+            iam.PolicyStatement(
+                effect=iam.Effect.ALLOW,
+                actions=["ssm:GetParameter"],
+                resources=[f"arn:aws:ssm:{region}:{account_id}:parameter{adobe_api_rpm_param_name}"]
+            )
+        )
+        
+        # Grant CloudWatch permission to invoke the custom widget Lambda
+        rate_limit_widget_lambda.grant_invoke(iam.ServicePrincipal("cloudwatch.amazonaws.com"))
+
         timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         dashboard_name = f"PDF_Processing_Dashboard-{timestamp}"
         dashboard = cloudwatch.Dashboard(self, "PdfRemediationMonitoringDashboard", dashboard_name=dashboard_name,
@@ -852,6 +884,7 @@ class PDFAccessibility(Stack):
                                          )
         # Add Widgets to the Dashboard
         dashboard.add_widgets(
+            # Row 1: Pipeline Status (full width)
             cloudwatch.LogQueryWidget(
                 title="Pipeline Status",
                 log_group_names=[pipeline_status_log_group_name],
@@ -867,13 +900,36 @@ class PDFAccessibility(Stack):
                 width=24,
                 height=6
             ),
+            # Row 2: Rate Limit Queue Status (custom widget - full width)
+            cloudwatch.CustomWidget(
+                title="Adobe API Rate Limit Queue (Real-time)",
+                function_arn=rate_limit_widget_lambda.function_arn,
+                width=24,
+                height=4,
+                update_on_refresh=True,
+                update_on_resize=False,
+                update_on_time_range_change=False
+            ),
+            # Row 3: File Status (full width) - moved up
             cloudwatch.LogQueryWidget(
-                title="Adobe API Rate Limiting",
+                title="File Status",
+                log_group_names=[pdf_splitter_lambda_log_group_name, pdf_merger_lambda_log_group_name, adobe_autotag_log_group.log_group_name, alt_text_generator_log_group.log_group_name],
+                query_string='''fields @timestamp, @message
+                    | parse @message "File: *, Status: *" as file, status
+                    | stats latest(status) as latestStatus, max(@timestamp) as lastUpdated by file
+                    | sort file asc ''',
+                width=24,
+                height=6
+            ),
+            # Row 4: Rate Limiting logs and DynamoDB activity (side by side)
+            cloudwatch.LogQueryWidget(
+                title="Adobe API Rate Limiting (Logs)",
                 log_group_names=[adobe_autotag_log_group.log_group_name],
                 query_string='''fields @timestamp, @message
-                    | filter @message like /Rate limit/
+                    | filter @message like /Rate limit status:/
+                    | parse @message 'Filename : * |' as filename
                     | parse @message 'Rate limit status: */* requests this minute' as current, limit
-                    | display @timestamp, current, limit
+                    | display @timestamp, filename, current, limit
                     | sort @timestamp desc
                     | limit 50''',
                 width=12,
@@ -890,16 +946,7 @@ class PDFAccessibility(Stack):
                 width=12,
                 height=4
             ),
-            cloudwatch.LogQueryWidget(
-                title="File status",
-                log_group_names=[pdf_splitter_lambda_log_group_name, pdf_merger_lambda_log_group_name, adobe_autotag_log_group.log_group_name,  alt_text_generator_log_group.log_group_name],
-                query_string='''fields @timestamp, @message
-                    | parse @message "File: *, Status: *" as file, status
-                    | stats latest(status) as latestStatus, max(@timestamp) as lastUpdated by file
-                    | sort file asc ''',
-                width=24,
-                height=6
-            ),
+            # Row 5: Adobe API Calls (full width)
             cloudwatch.LogQueryWidget(
                 title="Adobe API Calls",
                 log_group_names=[pdf_processing_metrics_log_group.log_group_name],
@@ -910,6 +957,7 @@ class PDFAccessibility(Stack):
                 width=24,
                 height=6
             ),
+            # Row 6: Adobe API Errors (full width)
             cloudwatch.LogQueryWidget(
                 title="Adobe API Errors",
                 log_group_names=[pdf_processing_metrics_log_group.log_group_name],
@@ -920,6 +968,7 @@ class PDFAccessibility(Stack):
                 width=24,
                 height=6
             ),
+            # Row 7: Processing Failures (full width)
             cloudwatch.LogQueryWidget(
                 title="Processing Failures",
                 log_group_names=[pdf_cleanup_log_group_name],
@@ -930,6 +979,7 @@ class PDFAccessibility(Stack):
                 width=24,
                 height=6
             ),
+            # Row 8: Split PDF Lambda Logs (full width)
             cloudwatch.LogQueryWidget(
                 title="Split PDF Lambda Logs",
                 log_group_names=[pdf_splitter_lambda_log_group_name],
