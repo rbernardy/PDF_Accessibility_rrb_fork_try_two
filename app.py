@@ -1077,7 +1077,7 @@ class PDFAccessibility(Stack):
                 query_string='''fields @timestamp, @message
                     | filter @logStream like /adobe-api-errors/
                     | sort @timestamp desc
-                    | limit 50''',
+                    | limit 200''',
                 width=24,
                 height=6
             ),
