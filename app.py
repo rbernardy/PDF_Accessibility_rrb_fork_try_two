@@ -860,6 +860,41 @@ class PDFAccessibility(Stack):
         pdf_cleanup_log_group_name = pdf_cleanup_log_group.log_group_name
 
         # =============================================================================
+        # PDF Failure Analysis Lambda - Analyzes PDFs that fail Adobe API processing
+        # =============================================================================
+        
+        # Log group for failure analysis
+        pdf_failure_analysis_log_group = logs.LogGroup(
+            self, "PdfFailureAnalysisLogGroup",
+            log_group_name="/lambda/pdf-failure-analysis",
+            retention=logs.RetentionDays.ONE_MONTH,
+            removal_policy=cdk.RemovalPolicy.DESTROY
+        )
+        
+        pdf_failure_analysis_lambda = lambda_.DockerImageFunction(
+            self, "PdfFailureAnalysisLambda",
+            function_name="pdf-failure-analysis",
+            code=lambda_.DockerImageCode.from_image_asset("lambda/pdf-failure-analysis"),
+            memory_size=1024,
+            timeout=Duration.seconds(60),
+            ephemeral_storage_size=cdk.Size.mebibytes(1024),
+            architecture=lambda_arch,
+            environment={
+                "REPORT_BUCKET": pdf_processing_bucket.bucket_name,
+                "SAVE_REPORTS_TO_S3": "true"
+            },
+            log_group=pdf_failure_analysis_log_group
+        )
+        
+        # Grant S3 read access for downloading PDFs to analyze
+        pdf_processing_bucket.grant_read(pdf_failure_analysis_lambda)
+        # Grant S3 write access for saving reports
+        pdf_processing_bucket.grant_write(pdf_failure_analysis_lambda, "reports/failure_analysis/*")
+        
+        # Store log group name for dashboard
+        pdf_failure_analysis_log_group_name = pdf_failure_analysis_log_group.log_group_name
+
+        # =============================================================================
         # Rate Limit Widget Lambda - Custom CloudWatch widget for real-time in-flight status
         # =============================================================================
         
@@ -1036,7 +1071,26 @@ class PDFAccessibility(Stack):
                 width=24,
                 height=6
             ),
-            # Row 7: Processing Failures (full width)
+            # Row 7: PDF Failure Analysis Results (full width)
+            cloudwatch.LogQueryWidget(
+                title="PDF Failure Analysis",
+                log_group_names=[pdf_failure_analysis_log_group_name],
+                query_string='''fields @timestamp, @message
+                    | filter @message like /PDF_FAILURE_ANALYSIS/
+                    | parse @message 'PDF_FAILURE_ANALYSIS: *' as analysis_json
+                    | parse analysis_json '"filename":"*"' as filename
+                    | parse analysis_json '"api_type":"*"' as api_type
+                    | parse analysis_json '"likely_cause":"*"' as likely_cause
+                    | parse analysis_json '"file_size_mb":*,' as file_size_mb
+                    | parse analysis_json '"page_count":*,' as page_count
+                    | parse analysis_json '"image_count":*,' as image_count
+                    | display @timestamp, filename, api_type, file_size_mb, page_count, image_count, likely_cause
+                    | sort @timestamp desc
+                    | limit 50''',
+                width=24,
+                height=6
+            ),
+            # Row 8: Processing Failures (full width)
             cloudwatch.LogQueryWidget(
                 title="Processing Failures",
                 log_group_names=[pdf_cleanup_log_group_name],

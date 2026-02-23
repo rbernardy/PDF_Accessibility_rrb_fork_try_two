@@ -1,0 +1,21 @@
+# PDF Failure Analysis Lambda - WITH POPPLER TOOLS
+# Use this Dockerfile if you need Poppler CLI tools (pdfinfo, pdffonts, pdfimages, etc.)
+# 
+# To use: rename this file to Dockerfile (or update CDK to reference this file)
+
+FROM public.ecr.aws/lambda/python:3.12
+
+# Install Poppler tools
+RUN dnf install -y poppler-utils && dnf clean all
+
+# Copy requirements and install dependencies
+COPY requirements.txt ${LAMBDA_TASK_ROOT}/
+RUN pip install --no-cache-dir -r ${LAMBDA_TASK_ROOT}/requirements.txt
+
+# Copy function code
+COPY main.py ${LAMBDA_TASK_ROOT}/
+COPY analyzer.py ${LAMBDA_TASK_ROOT}/
+COPY poppler_analyzer.py ${LAMBDA_TASK_ROOT}/
+
+# Set the handler
+CMD ["main.lambda_handler"]
