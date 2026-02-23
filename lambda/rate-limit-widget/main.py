@@ -74,11 +74,11 @@ def lambda_handler(event, context):
         # Get current in-flight count
         response = table.get_item(Key={'counter_id': IN_FLIGHT_COUNTER_ID})
         item = response.get('Item', {})
-        in_flight = int(item.get('in_flight', 0))
+        in_flight = max(0, int(item.get('in_flight', 0)))  # Clamp to 0 minimum
         last_updated = item.get('last_updated', 'Never')
         
         # Get current RPM count
-        current_rpm = get_current_rpm_count(table)
+        current_rpm = max(0, get_current_rpm_count(table))  # Clamp to 0 minimum
         
         available = max(0, max_in_flight - in_flight)
         rpm_available = max(0, max_rpm - current_rpm)
