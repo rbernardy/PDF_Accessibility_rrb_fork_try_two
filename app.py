@@ -199,6 +199,9 @@ class PDFAccessibility(Stack):
             actions=[
                 "dynamodb:GetItem",
                 "dynamodb:UpdateItem",
+                "dynamodb:PutItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:Scan",
             ],
             resources=[adobe_rate_limit_table.table_arn],
         ))
