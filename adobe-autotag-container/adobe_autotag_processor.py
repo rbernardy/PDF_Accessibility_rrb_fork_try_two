@@ -96,6 +96,46 @@ custom_cw_logger = get_custom_logger()
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 s3 = boto3.client('s3')
+lambda_client = boto3.client('lambda')
+
+
+def invoke_failure_analysis(bucket: str, key: str, filename: str, error: str, api_type: str):
+    """
+    Invoke the PDF failure analysis Lambda to analyze why a PDF failed.
+    
+    Skips invocation for rate limit errors (429) as those are transient.
+    
+    Args:
+        bucket: S3 bucket containing the PDF
+        key: S3 key of the PDF
+        filename: Local filename
+        error: Error message from the Adobe API
+        api_type: Type of API that failed ('autotag' or 'extract')
+    """
+    error_str = str(error)
+    
+    # Skip rate limit errors - those are handled by retry logic
+    if '429' in error_str or 'Too Many Requests' in error_str:
+        logging.info(f'Filename : {filename} | Skipping failure analysis for rate limit error')
+        return
+    
+    try:
+        payload = {
+            'bucket': bucket,
+            'key': key,
+            'filename': filename,
+            'original_error': error_str,
+            'api_type': api_type
+        }
+        
+        lambda_client.invoke(
+            FunctionName='pdf-failure-analysis',
+            InvocationType='Event',  # Async invocation
+            Payload=json.dumps(payload)
+        )
+        logging.info(f'Filename : {filename} | Invoked failure analysis Lambda')
+    except Exception as e:
+        logging.warning(f'Filename : {filename} | Failed to invoke failure analysis: {e}')
 
 def download_file_from_s3(bucket_name, file_key, local_path):
     """
@@ -182,7 +222,7 @@ def add_viewer_preferences(pdf_path, filename):
         writer.write(f)
     logger.info(f'Filename : {filename} | Viewer preferences added to the PDF')
 
-def autotag_pdf_with_options(filename, client_id, client_secret):
+def autotag_pdf_with_options(filename, client_id, client_secret, s3_bucket=None, s3_key=None):
     """
     Auto-tags a PDF for accessibility using Adobe PDF Services.
     
@@ -194,6 +234,8 @@ def autotag_pdf_with_options(filename, client_id, client_secret):
         filename (str): The path to the PDF file.
         client_id (str): Adobe API client ID.
         client_secret (str): Adobe API client secret.
+        s3_bucket (str): S3 bucket name (for failure analysis).
+        s3_key (str): S3 key of the original PDF (for failure analysis).
         
     Raises:
         ServiceApiException: If Adobe API returns an error.
@@ -269,12 +311,15 @@ def autotag_pdf_with_options(filename, client_id, client_secret):
         logging.error(f'Filename : {filename} | Adobe Autotag API failed: {e}')
         # Log Adobe API error to custom CloudWatch stream
         custom_cw_logger.log_adobe_api_error(filename, api_type="autotag", error=e)
+        # Invoke failure analysis Lambda for non-rate-limit errors
+        if s3_bucket and s3_key:
+            invoke_failure_analysis(s3_bucket, s3_key, filename, e, 'autotag')
         raise  # Re-raise to stop the container
     finally:
         # CRITICAL: Always release the slot, whether success or failure
         release_slot('autotag', filename=filename)
         logging.info(f'Filename : {filename} | Released rate limit slot (autotag)')
-def extract_api(filename, client_id, client_secret):
+def extract_api(filename, client_id, client_secret, s3_bucket=None, s3_key=None):
     """
     Extracts text, tables, and figures from a PDF using Adobe PDF Services.
     
@@ -286,6 +331,8 @@ def extract_api(filename, client_id, client_secret):
         filename (str): The path to the PDF file.
         client_id (str): Adobe API client ID.
         client_secret (str): Adobe API client secret.
+        s3_bucket (str): S3 bucket name (for failure analysis).
+        s3_key (str): S3 key of the original PDF (for failure analysis).
         
     Raises:
         ServiceApiException: If Adobe API returns an error.
@@ -352,6 +399,9 @@ def extract_api(filename, client_id, client_secret):
         logging.error(f'Filename : {filename} | Adobe Extract API failed: {e}')
         # Log Adobe API error to custom CloudWatch stream
         custom_cw_logger.log_adobe_api_error(filename, api_type="extract", error=e)
+        # Invoke failure analysis Lambda for non-rate-limit errors
+        if s3_bucket and s3_key:
+            invoke_failure_analysis(s3_bucket, s3_key, filename, e, 'extract')
         raise  # Re-raise to stop the container
     finally:
         # CRITICAL: Always release the slot, whether success or failure
@@ -722,11 +772,11 @@ def main():
 
         # Run Adobe Autotag API
         logging.info(f'Filename : {file_key} | Running Adobe Autotag API...')
-        autotag_pdf_with_options(filename, client_id, client_secret)
+        autotag_pdf_with_options(filename, client_id, client_secret, s3_bucket=bucket_name, s3_key=s3_chunk_key)
 
         # Run Adobe Extract API
         logging.info(f'Filename : {file_key} | Running Adobe Extract API...')
-        extract_api(filename, client_id, client_secret)
+        extract_api(filename, client_id, client_secret, s3_bucket=bucket_name, s3_key=s3_chunk_key)
 
         extract_api_zip_path = f"output/ExtractTextInfoFromPDF/extract${filename}.zip"
         extract_to = f"output/zipfile/{filename}"

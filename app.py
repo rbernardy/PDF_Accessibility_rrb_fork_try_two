@@ -215,6 +215,12 @@ class PDFAccessibility(Stack):
             ],
         ))
         
+        # Lambda invoke permission for PDF failure analysis
+        ecs_task_role.add_to_policy(iam.PolicyStatement(
+            actions=["lambda:InvokeFunction"],
+            resources=[f"arn:aws:lambda:{region}:{account_id}:function:pdf-failure-analysis"],
+        ))
+        
         # Grant S3 read/write access to ECS Task Role
         pdf_processing_bucket.grant_read_write(ecs_task_execution_role)
         # Create ECS Task Log Groups explicitly
