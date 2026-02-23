@@ -48,7 +48,11 @@ def get_current_rpm_count(table) -> int:
     window_id = f"{RPM_COUNTER_PREFIX}{now.strftime('%Y%m%d_%H%M')}"
     
     try:
-        response = table.get_item(Key={'counter_id': window_id})
+        response = table.get_item(
+            Key={'counter_id': window_id},
+            ProjectionExpression='#rc',
+            ExpressionAttributeNames={'#rc': 'request_count'}
+        )
         return int(response.get('Item', {}).get('request_count', 0))
     except ClientError:
         return 0
