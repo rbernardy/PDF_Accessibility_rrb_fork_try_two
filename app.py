@@ -76,12 +76,11 @@ class PDFAccessibility(Stack):
             self, "AdobeRateLimitTable",
             table_name="adobe-api-rate-limit",
             partition_key=dynamodb.Attribute(
-                name="counter_id",  # Changed from minute_key to counter_id for in-flight tracking
+                name="counter_id",
                 type=dynamodb.AttributeType.STRING
             ),
             billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
             removal_policy=cdk.RemovalPolicy.DESTROY
-            # Removed TTL - in-flight counter is persistent, not time-based
         )
 
         # Docker images with zstd compression for faster Fargate cold starts
