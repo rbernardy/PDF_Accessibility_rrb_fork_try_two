@@ -175,7 +175,7 @@ def _get_table():
 def acquire_slot(api_type: str = 'adobe_api', max_wait_seconds: int = 300, filename: str = None) -> bool:
     """
     Acquire a slot for an Adobe API call by:
-    1. Checking the RPM limit for the current minute window
+    1. Checking and incrementing the RPM counter for the current minute window
     2. Incrementing the in-flight counter
     
     This function will block until both conditions are met or max_wait_seconds is exceeded.
@@ -202,17 +202,42 @@ def acquire_slot(api_type: str = 'adobe_api', max_wait_seconds: int = 300, filen
     while (time.time() - start_time) < max_wait_seconds:
         attempt += 1
         
-        # First check: RPM limit
-        if not _check_rpm_limit(table, max_rpm):
-            current_rpm = _get_current_rpm_count(table)
-            # Calculate seconds until next minute window
-            now = datetime.now(timezone.utc)
-            seconds_until_next_minute = 60 - now.second
-            wait_time = min(seconds_until_next_minute + 1, 10)  # Wait until next minute, max 10s
-            logger.info(f"[{api_type}] RPM limit reached ({current_rpm}/{max_rpm}), "
-                       f"waiting {wait_time:.1f}s for next minute window (attempt {attempt})...")
-            time.sleep(wait_time)
-            continue
+        # First check: RPM limit - try to atomically increment if under limit
+        rpm_acquired = False
+        try:
+            window_id = _get_current_minute_window()
+            rpm_response = table.update_item(
+                Key={'counter_id': window_id},
+                UpdateExpression='SET request_count = if_not_exists(request_count, :zero) + :inc, '
+                                'last_updated = :now, '
+                                'ttl = :ttl',
+                ConditionExpression='attribute_not_exists(request_count) OR request_count < :max',
+                ExpressionAttributeValues={
+                    ':zero': 0,
+                    ':inc': 1,
+                    ':max': max_rpm,
+                    ':now': datetime.now(timezone.utc).isoformat(),
+                    ':ttl': int(time.time()) + 120  # Auto-expire after 2 minutes
+                },
+                ReturnValues='UPDATED_NEW'
+            )
+            rpm_count = int(rpm_response['Attributes']['request_count'])
+            rpm_acquired = True
+            
+        except ClientError as e:
+            if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
+                # At RPM limit - wait for next minute window
+                current_rpm = _get_current_rpm_count(table)
+                now = datetime.now(timezone.utc)
+                seconds_until_next_minute = 60 - now.second
+                wait_time = min(seconds_until_next_minute + 1, 10)
+                logger.info(f"[{api_type}] RPM limit reached ({current_rpm}/{max_rpm}), "
+                           f"waiting {wait_time:.1f}s for next minute window (attempt {attempt})...")
+                time.sleep(wait_time)
+                continue
+            else:
+                logger.error(f"DynamoDB error checking RPM limit: {e}")
+                raise
         
         # Second check: In-flight limit
         try:
@@ -233,9 +258,6 @@ def acquire_slot(api_type: str = 'adobe_api', max_wait_seconds: int = 300, filen
             
             new_count = int(response['Attributes']['in_flight'])
             
-            # Now increment the RPM counter (after successfully acquiring in-flight slot)
-            rpm_count = _increment_rpm_counter(table)
-            
             logger.info(f"[{api_type}] Acquired slot: {new_count}/{max_in_flight} in-flight, "
                        f"{rpm_count}/{max_rpm} RPM")
             
@@ -247,7 +269,8 @@ def acquire_slot(api_type: str = 'adobe_api', max_wait_seconds: int = 300, filen
             
         except ClientError as e:
             if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
-                # At capacity - wait and retry
+                # At in-flight capacity - we already incremented RPM, but that's okay
+                # (it will expire, and we're still under the limit)
                 current = get_current_in_flight()
                 wait_time = min(2 + (attempt * 0.5), 10)  # Exponential backoff, max 10s
                 logger.info(f"[{api_type}] At in-flight capacity ({current}/{max_in_flight}), "

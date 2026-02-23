@@ -1082,10 +1082,10 @@ class PDFAccessibility(Stack):
                     | parse analysis_json '"filename":"*"' as filename
                     | parse analysis_json '"api_type":"*"' as api_type
                     | parse analysis_json '"likely_cause":"*"' as likely_cause
-                    | parse analysis_json '"file_size_mb":*,' as file_size_mb
-                    | parse analysis_json '"page_count":*,' as page_count
-                    | parse analysis_json '"image_count":*,' as image_count
-                    | display @timestamp, filename, api_type, file_size_mb, page_count, image_count, likely_cause
+                    | parse analysis_json '"file_size_mb":*,' as file_size
+                    | parse analysis_json '"page_count":*,' as pages
+                    | parse analysis_json '"image_count":*,' as images
+                    | display @timestamp, filename, api_type, file_size, pages, images, likely_cause
                     | sort @timestamp desc
                     | limit 50''',
                 width=24,

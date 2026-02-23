@@ -207,7 +207,7 @@ def autotag_pdf_with_options(filename, client_id, client_secret):
         raise RuntimeError(f"Failed to acquire rate limit slot for autotag API call")
     
     usage = get_current_usage()
-    logging.info(f'Filename : {filename} | In-flight status: {usage["in_flight"]}/{usage["max"]} ({usage["utilization_pct"]}% utilized)')
+    logging.info(f'Filename : {filename} | In-flight status: {usage["in_flight"]}/{usage["max_in_flight"]} ({usage["utilization_pct"]}% utilized)')
     
     # Log the API call to custom CloudWatch stream
     custom_cw_logger.log_adobe_api_call(filename, filename, api_type="autotag")
@@ -299,7 +299,7 @@ def extract_api(filename, client_id, client_secret):
         raise RuntimeError(f"Failed to acquire rate limit slot for extract API call")
     
     usage = get_current_usage()
-    logging.info(f'Filename : {filename} | In-flight status: {usage["in_flight"]}/{usage["max"]} ({usage["utilization_pct"]}% utilized)')
+    logging.info(f'Filename : {filename} | In-flight status: {usage["in_flight"]}/{usage["max_in_flight"]} ({usage["utilization_pct"]}% utilized)')
     
     # Log the API call to custom CloudWatch stream
     custom_cw_logger.log_adobe_api_call(filename, filename, api_type="extract")
