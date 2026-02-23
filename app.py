@@ -200,10 +200,13 @@ class PDFAccessibility(Stack):
             resources=[adobe_rate_limit_table.table_arn],
         ))
         
-        # SSM permissions for reading Adobe API RPM configuration
+        # SSM permissions for reading Adobe API configuration (RPM and max in-flight)
         ecs_task_role.add_to_policy(iam.PolicyStatement(
             actions=["ssm:GetParameter"],
-            resources=[f"arn:aws:ssm:{region}:{account_id}:parameter{adobe_api_rpm_param_name}"],
+            resources=[
+                f"arn:aws:ssm:{region}:{account_id}:parameter{adobe_api_rpm_param_name}",
+                f"arn:aws:ssm:{region}:{account_id}:parameter{adobe_api_max_in_flight_param_name}",
+            ],
         ))
         
         # Grant S3 read/write access to ECS Task Role
