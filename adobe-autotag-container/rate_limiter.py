@@ -1,16 +1,19 @@
 """
-Adobe API Rate Limiter with In-Flight Tracking
+Adobe API Rate Limiter with In-Flight Tracking and RPM Limiting
 
 This module provides rate limiting for Adobe PDF Services API calls using DynamoDB
-to track in-flight requests. Unlike simple per-minute counters, this tracks:
+to track in-flight requests AND enforce requests-per-minute limits. It tracks:
 - When requests START (increment in_flight)
 - When requests COMPLETE (decrement in_flight)
+- How many requests started in the current minute window (RPM tracking)
 
-This ensures we never exceed the configured maximum concurrent API calls,
-regardless of how fast ECS tasks spin up.
+This ensures we never exceed:
+1. The configured maximum concurrent API calls (in-flight limit)
+2. The configured requests per minute (RPM limit)
 
 Configuration:
 - ADOBE_API_MAX_IN_FLIGHT: SSM parameter for max concurrent requests (default: 150)
+- ADOBE_API_RPM_PARAM: SSM parameter for max requests per minute (default: 190)
 - RATE_LIMIT_TABLE: DynamoDB table name for rate limiting
 """
 
@@ -36,6 +39,9 @@ SSM_CACHE_TTL = 300  # 5 minutes
 
 # Counter ID for the single in-flight tracker
 IN_FLIGHT_COUNTER_ID = "adobe_api_in_flight"
+
+# Counter ID prefix for RPM tracking (one per minute window)
+RPM_COUNTER_PREFIX = "rpm_window_"
 
 # Prefix for individual file tracking entries
 IN_FLIGHT_FILE_PREFIX = "file_"
@@ -83,6 +89,81 @@ def get_max_in_flight() -> int:
         return 150
 
 
+def get_max_rpm() -> int:
+    """
+    Get the maximum allowed requests per minute from SSM.
+    
+    Default is 190 to stay safely under Adobe's 200 RPM hard limit,
+    with a 10 request buffer for timing variations.
+    """
+    param_name = os.environ.get('ADOBE_API_RPM_PARAM', '/pdf-processing/adobe-api-rpm')
+    value_str = get_ssm_parameter(param_name, '190')
+    try:
+        return int(value_str)
+    except ValueError:
+        logger.warning(f"Invalid max_rpm value '{value_str}', using default 190")
+        return 190
+
+
+def _get_current_minute_window() -> str:
+    """
+    Get the current minute window identifier.
+    Format: rpm_window_YYYYMMDD_HHMM
+    """
+    now = datetime.now(timezone.utc)
+    return f"{RPM_COUNTER_PREFIX}{now.strftime('%Y%m%d_%H%M')}"
+
+
+def _increment_rpm_counter(table) -> int:
+    """
+    Increment the RPM counter for the current minute window.
+    Returns the new count for this window.
+    """
+    window_id = _get_current_minute_window()
+    
+    try:
+        response = table.update_item(
+            Key={'counter_id': window_id},
+            UpdateExpression='SET request_count = if_not_exists(request_count, :zero) + :inc, '
+                            'last_updated = :now, '
+                            'ttl = :ttl',
+            ExpressionAttributeValues={
+                ':zero': 0,
+                ':inc': 1,
+                ':now': datetime.now(timezone.utc).isoformat(),
+                ':ttl': int(time.time()) + 120  # Auto-expire after 2 minutes
+            },
+            ReturnValues='UPDATED_NEW'
+        )
+        return int(response['Attributes']['request_count'])
+    except ClientError as e:
+        logger.error(f"Error incrementing RPM counter: {e}")
+        return 0
+
+
+def _get_current_rpm_count(table) -> int:
+    """
+    Get the current request count for this minute window.
+    """
+    window_id = _get_current_minute_window()
+    
+    try:
+        response = table.get_item(Key={'counter_id': window_id})
+        return int(response.get('Item', {}).get('request_count', 0))
+    except ClientError as e:
+        logger.error(f"Error getting RPM count: {e}")
+        return 0
+
+
+def _check_rpm_limit(table, max_rpm: int) -> bool:
+    """
+    Check if we're under the RPM limit for the current minute window.
+    Returns True if we can proceed, False if at limit.
+    """
+    current_count = _get_current_rpm_count(table)
+    return current_count < max_rpm
+
+
 def _get_table():
     """Get the DynamoDB table resource."""
     table_name = os.environ.get('RATE_LIMIT_TABLE')
@@ -93,10 +174,12 @@ def _get_table():
 
 def acquire_slot(api_type: str = 'adobe_api', max_wait_seconds: int = 300, filename: str = None) -> bool:
     """
-    Acquire a slot for an Adobe API call by incrementing the in-flight counter.
+    Acquire a slot for an Adobe API call by:
+    1. Checking the RPM limit for the current minute window
+    2. Incrementing the in-flight counter
     
-    This function will block until a slot is available or max_wait_seconds is exceeded.
-    It uses DynamoDB conditional updates to ensure we never exceed max_in_flight.
+    This function will block until both conditions are met or max_wait_seconds is exceeded.
+    It uses DynamoDB conditional updates to ensure we never exceed limits.
     
     Args:
         api_type: The type of API call (for logging)
@@ -112,12 +195,26 @@ def acquire_slot(api_type: str = 'adobe_api', max_wait_seconds: int = 300, filen
         return True
     
     max_in_flight = get_max_in_flight()
+    max_rpm = get_max_rpm()
     start_time = time.time()
     attempt = 0
     
     while (time.time() - start_time) < max_wait_seconds:
         attempt += 1
         
+        # First check: RPM limit
+        if not _check_rpm_limit(table, max_rpm):
+            current_rpm = _get_current_rpm_count(table)
+            # Calculate seconds until next minute window
+            now = datetime.now(timezone.utc)
+            seconds_until_next_minute = 60 - now.second
+            wait_time = min(seconds_until_next_minute + 1, 10)  # Wait until next minute, max 10s
+            logger.info(f"[{api_type}] RPM limit reached ({current_rpm}/{max_rpm}), "
+                       f"waiting {wait_time:.1f}s for next minute window (attempt {attempt})...")
+            time.sleep(wait_time)
+            continue
+        
+        # Second check: In-flight limit
         try:
             # Try to increment in_flight counter, but only if below max
             response = table.update_item(
@@ -135,7 +232,12 @@ def acquire_slot(api_type: str = 'adobe_api', max_wait_seconds: int = 300, filen
             )
             
             new_count = int(response['Attributes']['in_flight'])
-            logger.info(f"[{api_type}] Acquired slot: {new_count}/{max_in_flight} in-flight")
+            
+            # Now increment the RPM counter (after successfully acquiring in-flight slot)
+            rpm_count = _increment_rpm_counter(table)
+            
+            logger.info(f"[{api_type}] Acquired slot: {new_count}/{max_in_flight} in-flight, "
+                       f"{rpm_count}/{max_rpm} RPM")
             
             # Track individual file if filename provided
             if filename:
@@ -148,7 +250,7 @@ def acquire_slot(api_type: str = 'adobe_api', max_wait_seconds: int = 300, filen
                 # At capacity - wait and retry
                 current = get_current_in_flight()
                 wait_time = min(2 + (attempt * 0.5), 10)  # Exponential backoff, max 10s
-                logger.info(f"[{api_type}] At capacity ({current}/{max_in_flight}), "
+                logger.info(f"[{api_type}] At in-flight capacity ({current}/{max_in_flight}), "
                            f"waiting {wait_time:.1f}s (attempt {attempt})...")
                 time.sleep(wait_time)
             else:
@@ -267,16 +369,23 @@ def get_current_usage() -> dict:
     Get the current rate limit usage for monitoring.
     
     Returns:
-        Dictionary with in_flight count, max, and available slots
+        Dictionary with in_flight count, max, available slots, and RPM info
     """
+    table = _get_table()
     max_in_flight = get_max_in_flight()
-    current = get_current_in_flight()
+    max_rpm = get_max_rpm()
+    current_in_flight = get_current_in_flight()
+    current_rpm = _get_current_rpm_count(table) if table else 0
     
     return {
-        'in_flight': current,
-        'max': max_in_flight,
-        'available': max(0, max_in_flight - current),
-        'utilization_pct': round((current / max_in_flight) * 100, 1) if max_in_flight > 0 else 0
+        'in_flight': current_in_flight,
+        'max_in_flight': max_in_flight,
+        'available': max(0, max_in_flight - current_in_flight),
+        'utilization_pct': round((current_in_flight / max_in_flight) * 100, 1) if max_in_flight > 0 else 0,
+        'rpm_current': current_rpm,
+        'rpm_max': max_rpm,
+        'rpm_available': max(0, max_rpm - current_rpm),
+        'rpm_utilization_pct': round((current_rpm / max_rpm) * 100, 1) if max_rpm > 0 else 0
     }
 
 
@@ -380,7 +489,6 @@ def acquire_token(api_type: str = 'adobe_api', max_retries: int = 60) -> bool:
 
 def get_rpm_limit() -> int:
     """
-    Legacy function - returns max_in_flight instead.
-    Kept for backward compatibility with monitoring code.
+    Get the configured RPM limit.
     """
-    return get_max_in_flight()
+    return get_max_rpm()

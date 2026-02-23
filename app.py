@@ -59,13 +59,14 @@ class PDFAccessibility(Stack):
             description="Adobe PDF Services API max concurrent in-flight requests"
         )
         
-        # Legacy SSM Parameter for backward compatibility (kept for monitoring widgets)
+        # SSM Parameter for max requests per minute (RPM limit)
+        # Set to 190 to stay safely under Adobe's 200 RPM hard limit with a 10 request buffer
         adobe_api_rpm_param_name = '/pdf-processing/adobe-api-rpm'
         adobe_api_rpm_param = ssm.StringParameter(
             self, "AdobeApiRpmParam",
             parameter_name=adobe_api_rpm_param_name,
-            string_value="200",  # Reference value for Adobe's actual limit
-            description="Adobe PDF Services API rate limit reference (requests per minute)"
+            string_value="190",  # 190 RPM limit (10 under Adobe's 200 hard limit for safety buffer)
+            description="Adobe PDF Services API max requests per minute (RPM limit)"
         )
         
         # DynamoDB table for distributed in-flight tracking across ECS tasks
