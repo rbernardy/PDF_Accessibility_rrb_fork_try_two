@@ -18,6 +18,7 @@ import os
 import time
 import logging
 import boto3
+import uuid
 from datetime import datetime, timezone
 from botocore.exceptions import ClientError
 from contextlib import contextmanager
@@ -35,6 +36,9 @@ SSM_CACHE_TTL = 300  # 5 minutes
 
 # Counter ID for the single in-flight tracker
 IN_FLIGHT_COUNTER_ID = "adobe_api_in_flight"
+
+# Prefix for individual file tracking entries
+IN_FLIGHT_FILE_PREFIX = "file_"
 
 
 def get_ssm_parameter(param_name: str, default: str = None) -> str:
@@ -87,7 +91,7 @@ def _get_table():
     return dynamodb.Table(table_name)
 
 
-def acquire_slot(api_type: str = 'adobe_api', max_wait_seconds: int = 300) -> bool:
+def acquire_slot(api_type: str = 'adobe_api', max_wait_seconds: int = 300, filename: str = None) -> bool:
     """
     Acquire a slot for an Adobe API call by incrementing the in-flight counter.
     
@@ -97,6 +101,7 @@ def acquire_slot(api_type: str = 'adobe_api', max_wait_seconds: int = 300) -> bo
     Args:
         api_type: The type of API call (for logging)
         max_wait_seconds: Maximum seconds to wait for a slot (default: 5 minutes)
+        filename: Optional filename to track which file is using this slot
         
     Returns:
         True if slot acquired, False if timed out
@@ -131,6 +136,11 @@ def acquire_slot(api_type: str = 'adobe_api', max_wait_seconds: int = 300) -> bo
             
             new_count = int(response['Attributes']['in_flight'])
             logger.info(f"[{api_type}] Acquired slot: {new_count}/{max_in_flight} in-flight")
+            
+            # Track individual file if filename provided
+            if filename:
+                _track_file_in_flight(table, filename, api_type)
+            
             return True
             
         except ClientError as e:
@@ -149,7 +159,48 @@ def acquire_slot(api_type: str = 'adobe_api', max_wait_seconds: int = 300) -> bo
     return False
 
 
-def release_slot(api_type: str = 'adobe_api') -> bool:
+def _track_file_in_flight(table, filename: str, api_type: str):
+    """Track an individual file as in-flight in DynamoDB."""
+    try:
+        # Use a unique ID to allow same file to have multiple in-flight calls
+        entry_id = f"{IN_FLIGHT_FILE_PREFIX}{uuid.uuid4().hex[:8]}_{os.path.basename(filename)}"
+        table.put_item(
+            Item={
+                'counter_id': entry_id,
+                'filename': os.path.basename(filename),
+                'api_type': api_type,
+                'started_at': datetime.now(timezone.utc).isoformat(),
+                'ttl': int(time.time()) + 3600  # Auto-expire after 1 hour as safety net
+            }
+        )
+        logger.debug(f"Tracked file in-flight: {filename} ({api_type})")
+    except ClientError as e:
+        logger.warning(f"Failed to track file in-flight: {e}")
+
+
+def _untrack_file_in_flight(table, filename: str, api_type: str):
+    """Remove an individual file from in-flight tracking."""
+    try:
+        # Scan for matching file entries and delete one
+        response = table.scan(
+            FilterExpression='begins_with(counter_id, :prefix) AND filename = :filename AND api_type = :api_type',
+            ExpressionAttributeValues={
+                ':prefix': IN_FLIGHT_FILE_PREFIX,
+                ':filename': os.path.basename(filename),
+                ':api_type': api_type
+            },
+            Limit=1
+        )
+        
+        if response.get('Items'):
+            item = response['Items'][0]
+            table.delete_item(Key={'counter_id': item['counter_id']})
+            logger.debug(f"Untracked file from in-flight: {filename} ({api_type})")
+    except ClientError as e:
+        logger.warning(f"Failed to untrack file from in-flight: {e}")
+
+
+def release_slot(api_type: str = 'adobe_api', filename: str = None) -> bool:
     """
     Release a slot after an Adobe API call completes (success or failure).
     
@@ -158,6 +209,7 @@ def release_slot(api_type: str = 'adobe_api') -> bool:
     
     Args:
         api_type: The type of API call (for logging)
+        filename: Optional filename to untrack from in-flight list
         
     Returns:
         True if released successfully, False on error
@@ -181,6 +233,11 @@ def release_slot(api_type: str = 'adobe_api') -> bool:
         
         new_count = max(0, int(response['Attributes'].get('in_flight', 0)))
         logger.info(f"[{api_type}] Released slot: {new_count} now in-flight")
+        
+        # Untrack individual file if filename provided
+        if filename:
+            _untrack_file_in_flight(table, filename, api_type)
+        
         return True
         
     except ClientError as e:
@@ -221,6 +278,42 @@ def get_current_usage() -> dict:
         'available': max(0, max_in_flight - current),
         'utilization_pct': round((current / max_in_flight) * 100, 1) if max_in_flight > 0 else 0
     }
+
+
+def get_in_flight_files() -> list:
+    """
+    Get the list of files currently in-flight.
+    
+    Returns:
+        List of dicts with filename, api_type, and started_at for each in-flight file
+    """
+    table = _get_table()
+    if not table:
+        return []
+    
+    try:
+        response = table.scan(
+            FilterExpression='begins_with(counter_id, :prefix)',
+            ExpressionAttributeValues={
+                ':prefix': IN_FLIGHT_FILE_PREFIX
+            }
+        )
+        
+        files = []
+        for item in response.get('Items', []):
+            files.append({
+                'filename': item.get('filename', 'unknown'),
+                'api_type': item.get('api_type', 'unknown'),
+                'started_at': item.get('started_at', '')
+            })
+        
+        # Sort by started_at
+        files.sort(key=lambda x: x['started_at'])
+        return files
+        
+    except ClientError as e:
+        logger.error(f"Error getting in-flight files: {e}")
+        return []
 
 
 @contextmanager

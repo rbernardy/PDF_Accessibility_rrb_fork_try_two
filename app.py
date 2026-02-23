@@ -72,6 +72,7 @@ class PDFAccessibility(Stack):
         # Uses a single counter that tracks requests currently in progress
         # - Incremented when API call starts
         # - Decremented when API call completes (success or failure)
+        # Also stores individual file entries for the in-flight files widget
         adobe_rate_limit_table = dynamodb.Table(
             self, "AdobeInFlightTable",
             table_name="adobe-api-in-flight-tracker",
@@ -80,7 +81,8 @@ class PDFAccessibility(Stack):
                 type=dynamodb.AttributeType.STRING
             ),
             billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
-            removal_policy=cdk.RemovalPolicy.DESTROY
+            removal_policy=cdk.RemovalPolicy.DESTROY,
+            time_to_live_attribute="ttl"  # Auto-expire file tracking entries after 1 hour
         )
 
         # Docker images with zstd compression for faster Fargate cold starts
@@ -893,6 +895,40 @@ class PDFAccessibility(Stack):
         # Grant CloudWatch permission to invoke the custom widget Lambda
         rate_limit_widget_lambda.grant_invoke(iam.ServicePrincipal("cloudwatch.amazonaws.com"))
 
+        # =============================================================================
+        # In-Flight Files Widget Lambda - Shows list of files currently using API slots
+        # =============================================================================
+        
+        in_flight_files_widget_lambda = lambda_.Function(
+            self, "InFlightFilesWidgetLambda",
+            function_name="in-flight-files-widget",
+            runtime=lambda_.Runtime.PYTHON_3_12,
+            handler="main.lambda_handler",
+            code=lambda_.Code.from_asset("lambda/in-flight-files-widget"),
+            memory_size=128,
+            timeout=Duration.seconds(10),
+            architecture=lambda_arch,
+            environment={
+                "RATE_LIMIT_TABLE": adobe_rate_limit_table.table_name,
+                "ADOBE_API_MAX_IN_FLIGHT_PARAM": adobe_api_max_in_flight_param_name
+            }
+        )
+        
+        # Grant permissions to read from DynamoDB and SSM
+        adobe_rate_limit_table.grant_read_data(in_flight_files_widget_lambda)
+        in_flight_files_widget_lambda.add_to_role_policy(
+            iam.PolicyStatement(
+                effect=iam.Effect.ALLOW,
+                actions=["ssm:GetParameter"],
+                resources=[
+                    f"arn:aws:ssm:{region}:{account_id}:parameter{adobe_api_max_in_flight_param_name}"
+                ]
+            )
+        )
+        
+        # Grant CloudWatch permission to invoke the custom widget Lambda
+        in_flight_files_widget_lambda.grant_invoke(iam.ServicePrincipal("cloudwatch.amazonaws.com"))
+
         timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         dashboard_name = f"PDF_Processing_Dashboard-{timestamp}"
         dashboard = cloudwatch.Dashboard(self, "PdfRemediationMonitoringDashboard", dashboard_name=dashboard_name,
@@ -928,7 +964,17 @@ class PDFAccessibility(Stack):
             cloudwatch.CustomWidget(
                 title="Adobe API In-Flight Requests (Real-time)",
                 function_arn=rate_limit_widget_lambda.function_arn,
-                width=24,
+                width=12,
+                height=4,
+                update_on_refresh=True,
+                update_on_resize=False,
+                update_on_time_range_change=False
+            ),
+            # Row 2: In-Flight Files List (custom widget - side by side)
+            cloudwatch.CustomWidget(
+                title="Files Currently In-Flight",
+                function_arn=in_flight_files_widget_lambda.function_arn,
+                width=12,
                 height=4,
                 update_on_refresh=True,
                 update_on_resize=False,

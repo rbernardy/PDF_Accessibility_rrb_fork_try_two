@@ -203,7 +203,7 @@ def autotag_pdf_with_options(filename, client_id, client_secret):
     """
     # Acquire in-flight slot before making API call
     logging.info(f'Filename : {filename} | Waiting for rate limit slot (autotag)...')
-    if not acquire_slot('autotag'):
+    if not acquire_slot('autotag', filename=filename):
         raise RuntimeError(f"Failed to acquire rate limit slot for autotag API call")
     
     usage = get_current_usage()
@@ -272,7 +272,7 @@ def autotag_pdf_with_options(filename, client_id, client_secret):
         raise  # Re-raise to stop the container
     finally:
         # CRITICAL: Always release the slot, whether success or failure
-        release_slot('autotag')
+        release_slot('autotag', filename=filename)
         logging.info(f'Filename : {filename} | Released rate limit slot (autotag)')
 def extract_api(filename, client_id, client_secret):
     """
@@ -295,7 +295,7 @@ def extract_api(filename, client_id, client_secret):
     """
     # Acquire in-flight slot before making API call
     logging.info(f'Filename : {filename} | Waiting for rate limit slot (extract)...')
-    if not acquire_slot('extract'):
+    if not acquire_slot('extract', filename=filename):
         raise RuntimeError(f"Failed to acquire rate limit slot for extract API call")
     
     usage = get_current_usage()
@@ -355,7 +355,7 @@ def extract_api(filename, client_id, client_secret):
         raise  # Re-raise to stop the container
     finally:
         # CRITICAL: Always release the slot, whether success or failure
-        release_slot('extract')
+        release_slot('extract', filename=filename)
         logging.info(f'Filename : {filename} | Released rate limit slot (extract)')
 
 def unzip_file(filename,zip_path, extract_to):
