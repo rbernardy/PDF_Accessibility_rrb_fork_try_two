@@ -1,0 +1,2820 @@
+PDF Processing Failure Summary
+==============================
+
+Date: February 23, 2026
+User: unknown
+
+The following PDFs failed processing and have been automatically cleaned up:
+
+1. arts_pub_24.pdf
+   - Original location: pdf/pdfs-test-failures-03_31count/arts_pub_24.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:51,103 - ERROR - File: arts_pub_24_chunk_2.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 5
+   - Failed at: 2026-02-23T13:31:19.244443Z
+
+2. Jerningon_Robert.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Jerningon_Robert.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:54,476 - ERROR - File: Jerningon_Robert_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:22.794789Z
+
+3. Jenkins_George.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Jenkins_George.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:53,680 - ERROR - File: Jenkins_George_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:25.188980Z
+
+4. Garner_James.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Garner_James.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:08,711 - ERROR - File: Garner_James_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:42.509279Z
+
+5. Whiteside_Junnetta.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Whiteside_Junnetta.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:29,702 - ERROR - File: Whiteside_Junnetta_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:58.860022Z
+
+6. Potter_Infant.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Potter_Infant.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:43,594 - ERROR - File: Potter_Infant_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:12.632522Z
+
+7. Lesane_Nancy.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Lesane_Nancy.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:52,577 - ERROR - File: Lesane_Nancy_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:23.455799Z
+
+8. U23-00147.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00147.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-23 13:22:29,139 - ERROR - Error incrementing RPM counter: An error occurred (ValidationException) when calling the UpdateItem operation: Invalid UpdateExpression: Attribute name is a reserved ...
+   - Detailed error: 2026-02-23 13:22:29,163 - ERROR - File: U23-00147_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:22:59.226090Z
+
+9. Cooper_Framintha.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Cooper_Framintha.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:22,901 - ERROR - File: Cooper_Framintha_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:52.641067Z
+
+10. U23-00001-transcript.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00001-transcript.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:18,887 - ERROR - File: U23-00001-transcript_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:46.424246Z
+
+11. U23-00154.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00154.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-23 13:22:36,317 - ERROR - Error incrementing RPM counter: An error occurred (ValidationException) when calling the UpdateItem operation: Invalid UpdateExpression: Attribute name is a reserved ...
+   - Detailed error: 2026-02-23 13:22:36,339 - ERROR - File: U23-00154_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:04.126337Z
+
+12. Johnson_Lillian.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Johnson_Lillian.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:56,303 - ERROR - File: Johnson_Lillian_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:32.658529Z
+
+13. U23-00067.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00067.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:17,762 - ERROR - File: U23-00067_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:44.105327Z
+
+14. U23-00157.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00157.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-23 13:22:41,248 - ERROR - Error incrementing RPM counter: An error occurred (ValidationException) when calling the UpdateItem operation: Invalid UpdateExpression: Attribute name is a reserved ...
+   - Detailed error: 2026-02-23 13:22:41,279 - ERROR - File: U23-00157_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:08.589447Z
+
+15. U23-00062.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00062.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:18,094 - ERROR - File: U23-00062_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:49.061544Z
+
+16. Green_Aron.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Green_Aron.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:54,888 - ERROR - File: Green_Aron_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:23.747949Z
+
+17. Dix_Isiah.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Dix_Isiah.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:09,618 - ERROR - File: Dix_Isiah_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:38.017392Z
+
+18. Clark_Infant.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Clark_Infant.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:11,099 - ERROR - File: Clark_Infant_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:44.338981Z
+
+19. 73_cedr.pdf
+   - Original location: pdf/pdfs-test-failures-04-marlena-cedr_17count/73_cedr.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:29:01,133 - ERROR - File: 73_cedr_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:37.876565Z
+
+20. Barns_Pearl.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Barns_Pearl.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:19,144 - ERROR - File: Barns_Pearl_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:57.385839Z
+
+21. Allen_Levon.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Allen_Levon.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:15,726 - ERROR - File: Allen_Levon_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:55.832386Z
+
+22. Johnson_Vina.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Johnson_Vina.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:58,788 - ERROR - File: Johnson_Vina_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:37.243323Z
+
+23. Green_John_H.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Green_John_H.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:54,086 - ERROR - File: Green_John_H_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:23.114007Z
+
+24. McCray_Alvin.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/McCray_Alvin.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:41,729 - ERROR - File: McCray_Alvin_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:10.318349Z
+
+25. Jelson_Baymon_Junious_Jr.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Jelson_Baymon_Junious_Jr.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:54,400 - ERROR - File: Jelson_Baymon_Junious_Jr_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:23.006887Z
+
+26. Gambla_E_G.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Gambla_E_G.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:07,852 - ERROR - File: Gambla_E_G_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:35.124637Z
+
+27. arts_pub_1.pdf
+   - Original location: pdf/pdfs-test-failures-03_31count/arts_pub_1.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:29:18,255 - ERROR - File: arts_pub_11_chunk_2.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 3
+   - Failed at: 2026-02-23T13:31:02.406213Z
+
+28. 40_cedr.pdf
+   - Original location: pdf/pdfs-test-failures-04-marlena-cedr_17count/40_cedr.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:54,267 - ERROR - File: 40_cedr_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 3
+   - Failed at: 2026-02-23T13:29:22.203266Z
+
+29. U23-00144.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00144.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-23 13:22:29,442 - ERROR - Error incrementing RPM counter: An error occurred (ValidationException) when calling the UpdateItem operation: Invalid UpdateExpression: Attribute name is a reserved ...
+   - Detailed error: 2026-02-23 13:22:29,462 - ERROR - File: U23-00144_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:22:57.363917Z
+
+30. Johnson_Benjamin.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Johnson_Benjamin.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:57,954 - ERROR - File: Johnson_Benjamin_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:36.848578Z
+
+31. U23-00043.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00043.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:13,841 - ERROR - File: U23-00043_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:41.082413Z
+
+32. Polk_Fred.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Polk_Fred.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:40,979 - ERROR - File: Polk_Fred_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:09.962717Z
+
+33. U23-00098.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00098.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:22:56,821 - ERROR - File: U23-00098_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:25.979231Z
+
+34. Worthy_Saddie.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Worthy_Saddie.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:26,344 - ERROR - File: Worthy_Saddie_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:54.069578Z
+
+35. Payne_Thomas.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Payne_Thomas.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:46,396 - ERROR - File: Payne_Thomas_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:17.144314Z
+
+36. McCullin_Child.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/McCullin_Child.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:44,575 - ERROR - File: McCullin_Child_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:12.598732Z
+
+37. U23-00148.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00148.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-23 13:22:35,498 - ERROR - Error incrementing RPM counter: An error occurred (ValidationException) when calling the UpdateItem operation: Invalid UpdateExpression: Attribute name is a reserved ...
+   - Detailed error: 2026-02-23 13:22:35,637 - ERROR - File: U23-00148_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:02.372030Z
+
+38. Adams_Infant.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Adams_Infant.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:18,143 - ERROR - File: Adams_Infant_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:57.464581Z
+
+39. Kittles_Neomi_Leona.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Kittles_Neomi_Leona.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:51,950 - ERROR - File: Kittles_Neomi_Leona_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:21.534991Z
+
+40. Love_Infant.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Love_Infant.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:58,098 - ERROR - File: Love_Infant_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:25.606609Z
+
+41. Grew_Mattie_Petty.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Grew_Mattie_Petty.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:56,190 - ERROR - File: Grew_Mattie_Petty_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:25.104185Z
+
+42. U23-00052.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00052.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:12,674 - ERROR - File: U23-00052_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:40.852774Z
+
+43. Washington_Martha.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Washington_Martha.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:24,043 - ERROR - File: Washington_Martha_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:56.740255Z
+
+44. William_Major.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/William_Major.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:28,093 - ERROR - File: William_Major_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:24:01.103090Z
+
+45. U23-00003-transcript.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00003-transcript.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:17,362 - ERROR - File: U23-00003-transcript_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:45.276164Z
+
+46. 27_cedr.pdf
+   - Original location: pdf/pdfs-test-failures-04-marlena-cedr_17count/27_cedr.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:58,458 - ERROR - File: 27_cedr_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 3
+   - Failed at: 2026-02-23T13:29:29.640122Z
+
+47. Albert_Robert_L.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Albert_Robert_L.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:15,184 - ERROR - File: Albert_Robert_L_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:50.354382Z
+
+48. Walker_Ruth.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Walker_Ruth.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:23,355 - ERROR - File: Walker_Ruth_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:53.878352Z
+
+49. aa_sheet_music_72.pdf
+   - Original location: pdf/pdfs-test-large-02_2count/aa_sheet_music_72.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:51,210 - ERROR - File: aa_sheet_music_72_chunk_2.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 3
+   - Failed at: 2026-02-23T13:31:18.383089Z
+
+50. U23-00050.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00050.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:18,878 - ERROR - File: U23-00050_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:24:00.178052Z
+
+51. Kirkland_Nelsey.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Kirkland_Nelsey.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:52,638 - ERROR - File: Kirkland_Nelsey_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:21.933473Z
+
+52. U23-00017-transcript.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00017-transcript.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:18,808 - ERROR - File: U23-00017-transcript_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:48.887507Z
+
+53. Carson_Nancy.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Carson_Nancy.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:12,913 - ERROR - File: Carson_Nancy_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:50.451208Z
+
+54. Grooner_Dennie.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Grooner_Dennie.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:58,328 - ERROR - File: Grooner_Dennie_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:25.769362Z
+
+55. U23-00018.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00018.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:21,284 - ERROR - File: U23-00018_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:24:00.015884Z
+
+56. arts_pub_47.pdf
+   - Original location: pdf/pdfs-test-failures-03_31count/arts_pub_47.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:02,591 - ERROR - File: arts_pub_47_chunk_2.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 3
+   - Failed at: 2026-02-23T13:31:29.428243Z
+
+57. U23-00109.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00109.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:06,944 - ERROR - File: U23-00109_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:33.461200Z
+
+58. arts_pub_9.pdf
+   - Original location: pdf/pdfs-test-failures-03_31count/arts_pub_9.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:17,152 - ERROR - File: arts_pub_9_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 3
+   - Failed at: 2026-02-23T13:30:45.479546Z
+
+59. 7_shaughraun.pdf
+   - Original location: pdf/pdfs-test-large-04_3count/7_shaughraun.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:29:38,943 - ERROR - File: 7_shaughraun_chunk_2.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 4
+   - Failed at: 2026-02-23T13:30:06.149709Z
+
+60. U23-00007-transcript.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00007-transcript.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:18,445 - ERROR - File: U23-00007-transcript_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:47.333118Z
+
+61. U23-00104.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00104.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:00,247 - ERROR - File: U23-00104_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:26.583462Z
+
+62. Massey_Infant.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Massey_Infant.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:43,845 - ERROR - File: Massey_Infant_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:13.698964Z
+
+63. Hall_Haines.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Hall_Haines.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:57,478 - ERROR - File: Hall_Haines_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:26.035623Z
+
+64. Gardiner_Felix.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Gardiner_Felix.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:06,235 - ERROR - File: Gardiner_Felix_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:35.444225Z
+
+65. Haines_Marion.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Haines_Marion.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:55,872 - ERROR - File: Haines_Marion_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:23.797149Z
+
+66. McNealy_Promis.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/McNealy_Promis.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:48,230 - ERROR - File: McNealy_Promis_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:23.565024Z
+
+67. Williams_Infant_Female.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Williams_Infant_Female.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:24,302 - ERROR - File: Williams_Infant_Female_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:24:00.008042Z
+
+68. altrusa_records_45.pdf
+   - Original location: pdf/pdfs-test-large-03_5count/altrusa_records_45.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:14,727 - ERROR - File: altrusa_records_45_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:47.640804Z
+
+69. 97_cedr.pdf
+   - Original location: pdf/pdfs-test-failures-04-marlena-cedr_17count/97_cedr.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:29:04,439 - ERROR - File: 97_cedr_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:41.853454Z
+
+70. U23-00040.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00040.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:22,080 - ERROR - File: U23-00040_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:52.139987Z
+
+71. Church_Monroe.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Church_Monroe.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:09,697 - ERROR - File: Church_Monroe_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:37.590542Z
+
+72. 5_cedr.pdf
+   - Original location: pdf/pdfs-test-failures-04-marlena-cedr_17count/5_cedr.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:29:00,664 - ERROR - File: 35_cedr_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 3
+   - Failed at: 2026-02-23T13:29:42.074929Z
+
+73. U23-00093.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00093.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:22:52,841 - ERROR - File: U23-00093_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:19.525002Z
+
+74. Prest_Alce.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Prest_Alce.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:37,055 - ERROR - File: Prest_Alce_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:24:12.066681Z
+
+75. U23-00111.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00111.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:12,865 - ERROR - File: U23-00111_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:41.189581Z
+
+76. U23-00152.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00152.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-23 13:22:40,632 - ERROR - Error incrementing RPM counter: An error occurred (ValidationException) when calling the UpdateItem operation: Invalid UpdateExpression: Attribute name is a reserved ...
+   - Detailed error: 2026-02-23 13:22:40,710 - ERROR - File: U23-00152_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:08.744890Z
+
+77. Bezell_Henry.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Bezell_Henry.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:19,648 - ERROR - File: Bezell_Henry_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:56.459977Z
+
+78. McDuffy_Laura.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/McDuffy_Laura.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:51,947 - ERROR - File: McDuffy_Laura_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:21.634695Z
+
+79. Brockington_Lillie.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Brockington_Lillie.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:17,183 - ERROR - File: Brockington_Lillie_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:47.820754Z
+
+80. U23-00100.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00100.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:22:59,137 - ERROR - File: U23-00100_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:27.039089Z
+
+81. Sweet_Wade.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Sweet_Wade.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:35,491 - ERROR - File: Sweet_Wade_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:24:11.026710Z
+
+82. arts_pub_6.pdf
+   - Original location: pdf/pdfs-test-failures-03_31count/arts_pub_6.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:11,899 - ERROR - File: arts_pub_6_chunk_2.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 3
+   - Failed at: 2026-02-23T13:30:41.101409Z
+
+83. U23-00012.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00012.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:17,198 - ERROR - File: U23-00012_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:44.568467Z
+
+84. arts_pub_22.pdf
+   - Original location: pdf/pdfs-test-failures-03_31count/arts_pub_22.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:42,865 - ERROR - File: arts_pub_22_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 3
+   - Failed at: 2026-02-23T13:31:11.832525Z
+
+85. Whitehurst_J_Arthur_Brother.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Whitehurst_J_Arthur_Brother.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:33,566 - ERROR - File: Whitehurst_J_Arthur_Brother_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:24:07.167199Z
+
+86. Stephens_Charlie.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Stephens_Charlie.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:38,521 - ERROR - File: Stephens_Charlie_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:05.857199Z
+
+87. Wheeler_Abe.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Wheeler_Abe.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:22,454 - ERROR - File: Wheeler_Abe_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:56.445624Z
+
+88. McColum_Lawrence.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/McColum_Lawrence.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:43,014 - ERROR - File: McColum_Lawrence_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:25.964397Z
+
+89. Roberson_Mariah.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Roberson_Mariah.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:39,437 - ERROR - File: Roberson_Mariah_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:07.148073Z
+
+90. Jones_Mathis.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Jones_Mathis.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:45,929 - ERROR - File: Jones_Mathis_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:25.185305Z
+
+91. U23-00092.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00092.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:22:50,781 - ERROR - File: U23-00092_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:19.179169Z
+
+92. Bing_Margret.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Bing_Margret.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:19,705 - ERROR - File: Bing_Margret_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:50.640995Z
+
+93. Dunnawood_Hannah.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Dunnawood_Hannah.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:01,167 - ERROR - File: Dunnawood_Hannah_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:28.215491Z
+
+94. 72_cedr.pdf
+   - Original location: pdf/pdfs-test-failures-04-marlena-cedr_17count/72_cedr.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:32,725 - ERROR - File: 72_cedr_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:01.487390Z
+
+95. U23-00206.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00206.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-23 13:22:48,079 - ERROR - Error incrementing RPM counter: An error occurred (ValidationException) when calling the UpdateItem operation: Invalid UpdateExpression: Attribute name is a reserved ...
+   - Detailed error: 2026-02-23 13:22:48,109 - ERROR - File: U23-00206_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:14.387018Z
+
+96. Grover_JennieBell.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Grover_JennieBell.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:56,354 - ERROR - File: Grover_JennieBell_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:23.151966Z
+
+97. Chaney_Infant.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Chaney_Infant.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:09,685 - ERROR - File: Chaney_Infant_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:42.658414Z
+
+98. Burney_Ruby Lee.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Burney_Ruby Lee.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:23,115 - ERROR - File: Burney_Ruby Lee_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:54.013643Z
+
+99. Jones_Willie_J.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Jones_Willie_J.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:46,020 - ERROR - File: Jones_Willie_J_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:16.119612Z
+
+100. Heller_Infant.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Heller_Infant.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:00,774 - ERROR - File: Heller_Infant_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:27.975141Z
+
+101. U23-00196-transcript.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00196-transcript.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-23 13:22:46,355 - ERROR - Error incrementing RPM counter: An error occurred (ValidationException) when calling the UpdateItem operation: Invalid UpdateExpression: Attribute name is a reserved ...
+   - Detailed error: 2026-02-23 13:22:46,393 - ERROR - File: U23-00196-transcript_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:14.504840Z
+
+102. Williamson_Mack.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Williamson_Mack.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:28,168 - ERROR - File: Williamson_Mack_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:57.509000Z
+
+103. Busch_Willie_Mae_Mother_of_Willie_Mae_Busch_1925.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Busch_Willie_Mae_Mother_of_Willie_Mae_Busch_1925.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:09,562 - ERROR - File: Busch_Willie_Mae_Mother_of_Willie_Mae_Busch_1925_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:39.041660Z
+
+104. Waldron_Pinkey.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Waldron_Pinkey.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:21,327 - ERROR - File: Waldron_Pinkey_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:53.058109Z
+
+105. U23-00094.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00094.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:22:58,128 - ERROR - File: U23-00094_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:24.744444Z
+
+106. U23-00101.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00101.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:22:59,227 - ERROR - File: U23-00101_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:26.354029Z
+
+107. U23-00059.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00059.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:15,942 - ERROR - File: U23-00059_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:43.069580Z
+
+108. Dixon_Matildy.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Dixon_Matildy.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:06,185 - ERROR - File: Dixon_Matildy_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:33.780586Z
+
+109. Blake_Henry.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Blake_Henry.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:16,984 - ERROR - File: Blake_Henry_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:46.701055Z
+
+110. Moya_Infant.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Moya_Infant.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:46,772 - ERROR - File: Moya_Infant_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:14.582010Z
+
+111. U23-00011.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00011.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:13,515 - ERROR - File: U23-00011_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:57.215532Z
+
+112. U23-00057.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00057.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:15,881 - ERROR - File: U23-00057_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:43.774401Z
+
+113. U23-00103.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00103.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:04,205 - ERROR - File: U23-00103_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:30.871267Z
+
+114. Dorn_Ella.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Dorn_Ella.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:03,563 - ERROR - File: Dorn_Ella_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:30.969797Z
+
+115. Craft_William.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Craft_William.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:10,167 - ERROR - File: Craft_William_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:38.512010Z
+
+116. Young_William_Henry.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Young_William_Henry.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:17,153 - ERROR - File: Young_William_Henry_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:44.165318Z
+
+117. Tate_Robert.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Tate_Robert.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:33,897 - ERROR - File: Tate_Robert_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:24:10.443102Z
+
+118. U23-00021.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00021.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:23,672 - ERROR - File: U23-00021_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:24:02.199953Z
+
+119. Kitchen_Nanie_May.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Kitchen_Nanie_May.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:49,960 - ERROR - File: Kitchen_Nanie_May_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:23.702281Z
+
+120. U23-00058.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00058.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:29,773 - ERROR - File: U23-00058_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:57.886229Z
+
+121. Jones_Hilma_J.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Jones_Hilma_J.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:45,592 - ERROR - File: Jones_Hilma_J_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:16.864176Z
+
+122. Benjamin_Infant.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Benjamin_Infant.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:32:19,296 - ERROR - File: Benjamin_Infant_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:32:47.386169Z
+
+123. McGee_Eugene.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/McGee_Eugene.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:46,972 - ERROR - File: McGee_Eugene_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:27.266010Z
+
+124. Allen_Arthur.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Allen_Arthur.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:16,096 - ERROR - File: Allen_Arthur_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:46.952198Z
+
+125. Kirby_Henry.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Kirby_Henry.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:49,079 - ERROR - File: Kirby_Henry_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:21.392005Z
+
+126. arts_pub_41.pdf
+   - Original location: pdf/pdfs-test-failures-03_31count/arts_pub_41.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:31,559 - ERROR - File: arts_pub_41_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 3
+   - Failed at: 2026-02-23T13:30:58.822627Z
+
+127. Simmons_Annie.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Simmons_Annie.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:32,812 - ERROR - File: Simmons_Annie_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:59.606399Z
+
+128. 13_cedr.pdf
+   - Original location: pdf/pdfs-test-failures-04-marlena-cedr_17count/13_cedr.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:59,308 - ERROR - File: 13_cedr_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:38.456395Z
+
+129. U23-00113.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00113.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:09,771 - ERROR - File: U23-00113_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:36.456577Z
+
+130. U23-00048-transcript.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00048-transcript.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:14,696 - ERROR - File: U23-00048-transcript_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:42.705389Z
+
+131. U23-00140.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00140.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:15,506 - ERROR - File: U23-00140_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:43.139056Z
+
+132. Capus_Infant.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Capus_Infant.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:15,586 - ERROR - File: Capus_Infant_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:54.398578Z
+
+133. Patrick_Infant.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Patrick_Infant.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:14,354 - ERROR - File: Patrick_Infant_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:30:43.242301Z
+
+134. Sanders_Fibie.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Sanders_Fibie.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:33,446 - ERROR - File: Sanders_Fibie_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:24:14.389042Z
+
+135. Graham_Stillborn.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Graham_Stillborn.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:01,916 - ERROR - File: Graham_Stillborn_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:30.155017Z
+
+136. Redding_Rosa.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Redding_Rosa.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:52,820 - ERROR - File: Redding_Rosa_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:25.316105Z
+
+137. U23-00045.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00045.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:13,442 - ERROR - File: U23-00045_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:40.151648Z
+
+138. Abrams_Johnnie.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Abrams_Johnnie.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:11,906 - ERROR - File: Abrams_Johnnie_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:41.603220Z
+
+139. U23-00006-transcript.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00006-transcript.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:19,753 - ERROR - File: U23-00006-transcript_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:56.240996Z
+
+140. Holley_Infant.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Holley_Infant.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:51,878 - ERROR - File: Holley_Infant_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:21.840307Z
+
+141. Green_Gladiola.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Green_Gladiola.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:52,764 - ERROR - File: Green_Gladiola_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:20.496584Z
+
+142. Stephens_Nathaniel.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Stephens_Nathaniel.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:34,504 - ERROR - File: Stephens_Nathaniel_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:24:12.408963Z
+
+143. Henderson_Infant.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Henderson_Infant.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:03,556 - ERROR - File: Henderson_Infant_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:32.983507Z
+
+144. altrusa_records_93.pdf
+   - Original location: pdf/pdfs-test-large-03_5count/altrusa_records_93.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:45,935 - ERROR - File: altrusa_records_93_chunk_2.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 3
+   - Failed at: 2026-02-23T13:31:14.495239Z
+
+145. Levat_Lela.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Levat_Lela.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:52,912 - ERROR - File: Levat_Lela_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:23.780965Z
+
+146. Simpkin_Gunnie.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Simpkin_Gunnie.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:33,215 - ERROR - File: Simpkin_Gunnie_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:24:01.381288Z
+
+147. Gibson_Claudie_Jr.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Gibson_Claudie_Jr.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:06,261 - ERROR - File: Gibson_Claudie_Jr_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:33.884366Z
+
+148. Holmes_John_Jr.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Holmes_John_Jr.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:54,278 - ERROR - File: Holmes_John_Jr_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:23.045806Z
+
+149. 74_cedr.pdf
+   - Original location: pdf/pdfs-test-failures-04-marlena-cedr_17count/74_cedr.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:29:02,439 - ERROR - File: 74_cedr_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:41.602679Z
+
+150. aa_sheet_music_9.pdf
+   - Original location: pdf/pdfs-test-failures-00_1count/aa_sheet_music_9.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:50,079 - ERROR - File: aa_sheet_music_9_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:23.018725Z
+
+151. Rutledge_Elious.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Rutledge_Elious.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:31,683 - ERROR - File: Rutledge_Elious_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:24:05.509682Z
+
+152. Glover_Elizabeth.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Glover_Elizabeth.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:57,183 - ERROR - File: Glover_Elizabeth_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:25.808101Z
+
+153. arts_pub_30.pdf
+   - Original location: pdf/pdfs-test-failures-03_31count/arts_pub_30.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:17,364 - ERROR - File: arts_pub_30_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:30:44.683619Z
+
+154. altrusa_records_47.pdf
+   - Original location: pdf/pdfs-test-large-03_5count/altrusa_records_47.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:35,560 - ERROR - File: altrusa_records_47_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:04.227811Z
+
+155. Left_Willard.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Left_Willard.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:55,401 - ERROR - File: Left_Willard_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:25.614733Z
+
+156. aa_sheet_music_46.pdf
+   - Original location: pdf/pdfs-test-large-02_2count/aa_sheet_music_46.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:30,527 - ERROR - File: aa_sheet_music_46_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:30:58.607150Z
+
+157. U23-00056.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00056.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:08,128 - ERROR - File: U23-00056_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:35.337944Z
+
+158. Lain_L_C.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Lain_L_C.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:49,958 - ERROR - File: Lain_L_C_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:16.735623Z
+
+159. Armstrong_Robert.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Armstrong_Robert.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:12,407 - ERROR - File: Armstrong_Robert_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:46.611920Z
+
+160. Wright_Lillie.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Wright_Lillie.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:30,571 - ERROR - File: Wright_Lillie_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:24:02.785919Z
+
+161. Gibbs_Infant_Jan_1925.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Gibbs_Infant_Jan_1925.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:08,481 - ERROR - File: Gibbs_Infant_Jan_1925_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:39.714839Z
+
+162. Bradley_William.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Bradley_William.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:18,121 - ERROR - File: Bradley_William_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:56.257429Z
+
+163. arts_pub_7.pdf
+   - Original location: pdf/pdfs-test-failures-03_31count/arts_pub_7.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:23,671 - ERROR - File: arts_pub_7_chunk_2.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 3
+   - Failed at: 2026-02-23T13:30:52.125280Z
+
+164. U23-00016.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00016.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:20,839 - ERROR - File: U23-00016_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:52.844390Z
+
+165. U23-00134.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00134.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:12,375 - ERROR - File: U23-00134_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:39.825304Z
+
+166. U23-00208-J.M. Tschiderer.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00208-J.M. Tschiderer.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-23 13:22:26,134 - ERROR - Error incrementing RPM counter: An error occurred (ValidationException) when calling the UpdateItem operation: Invalid UpdateExpression: Attribute name is a reserved ...
+   - Detailed error: 2026-02-23 13:22:26,155 - ERROR - File: U23-00208-J.M. Tschiderer_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:22:54.868532Z
+
+167. U23-00146.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00146.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-23 13:22:29,357 - ERROR - Error incrementing RPM counter: An error occurred (ValidationException) when calling the UpdateItem operation: Invalid UpdateExpression: Attribute name is a reserved ...
+   - Detailed error: 2026-02-23 13:22:29,384 - ERROR - File: U23-00146_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:22:56.173423Z
+
+168. Tisdale_Jariot.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Tisdale_Jariot.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:40,293 - ERROR - File: Tisdale_Jariot_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:09.206952Z
+
+169. Williams_Almaria.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Williams_Almaria.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:24,138 - ERROR - File: Williams_Almaria_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:51.536723Z
+
+170. Sneed_Leroy.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Sneed_Leroy.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:37,461 - ERROR - File: Sneed_Leroy_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:24:05.937738Z
+
+171. Johnson_Melvin.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Johnson_Melvin.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:29:03,227 - ERROR - File: Johnson_Melvin_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:42.359389Z
+
+172. arts_pub_44.pdf
+   - Original location: pdf/pdfs-test-failures-03_31count/arts_pub_44.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:46,877 - ERROR - File: arts_pub_44_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:32:14.146610Z
+
+173. Glover_Maggie.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Glover_Maggie.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:53,076 - ERROR - File: Glover_Maggie_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:20.725586Z
+
+174. U23-00096.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00096.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:22:58,237 - ERROR - File: U23-00096_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:26.042374Z
+
+175. Washington_Infant.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Washington_Infant.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:30,554 - ERROR - File: Washington_Infant_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:24:00.287265Z
+
+176. Walls_Jimmie_Jr.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Walls_Jimmie_Jr.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:23,995 - ERROR - File: Walls_Jimmie_Jr_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:57.472784Z
+
+177. Haywood_Infant_1923.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Haywood_Infant_1923.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:58,027 - ERROR - File: Haywood_Infant_1923_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:26.325037Z
+
+178. Thomas_Elder.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Thomas_Elder.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:35,360 - ERROR - File: Thomas_Elder_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:24:01.917389Z
+
+179. Gibson_Elizabeth.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Gibson_Elizabeth.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:07,879 - ERROR - File: Gibson_Elizabeth_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:35.485187Z
+
+180. Roberts_Annie_Bell.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Roberts_Annie_Bell.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:40,918 - ERROR - File: Roberts_Annie_Bell_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:09.801295Z
+
+181. arts_pub_50.pdf
+   - Original location: pdf/pdfs-test-failures-03_31count/arts_pub_50.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:09,306 - ERROR - File: arts_pub_50_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 3
+   - Failed at: 2026-02-23T13:30:36.839021Z
+
+182. Berry_Mary Artimish.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Berry_Mary Artimish.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:16,447 - ERROR - File: Berry_Mary Artimish_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:48.772808Z
+
+183. Jones_Arthur.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Jones_Arthur.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:44,981 - ERROR - File: Jones_Arthur_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:12.863856Z
+
+184. Pope_Infant.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Pope_Infant.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:29:06,118 - ERROR - File: Pope_Infant_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:42.950962Z
+
+185. U23-00054.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00054.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:13,692 - ERROR - File: U23-00054_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:43.242441Z
+
+186. Rackley_Willie_Stillborn.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Rackley_Willie_Stillborn.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:38,493 - ERROR - File: Rackley_Willie_Stillborn_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:06.359747Z
+
+187. Protho_Mary_Stillborn.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Protho_Mary_Stillborn.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:35,796 - ERROR - File: Protho_Mary_Stillborn_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:24:14.764550Z
+
+188. Hill_Ethel_Lee.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Hill_Ethel_Lee.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:00,850 - ERROR - File: Hill_Ethel_Lee_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:29.777235Z
+
+189. Haywood_Infant_1924.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Haywood_Infant_1924.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:02,952 - ERROR - File: Haywood_Infant_1924_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:30.153577Z
+
+190. Roundtree_Pearl.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Roundtree_Pearl.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:40,075 - ERROR - File: Roundtree_Pearl_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:08.890864Z
+
+191. U23-00069.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00069.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:18,402 - ERROR - File: U23-00069_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:49.320055Z
+
+192. 6_shaughraun.pdf
+   - Original location: pdf/pdfs-test-large-04_3count/6_shaughraun.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:29:27,193 - ERROR - File: 6_shaughraun_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 3
+   - Failed at: 2026-02-23T13:29:54.695178Z
+
+193. Minor_Vivian.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Minor_Vivian.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:45,132 - ERROR - File: Minor_Vivian_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:22.606704Z
+
+194. Morris_Fannie.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Morris_Fannie.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:46,205 - ERROR - File: Morris_Fannie_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:22.974514Z
+
+195. Smith_Willie_Jr_Stillborn.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Smith_Willie_Jr_Stillborn.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:27,100 - ERROR - File: Smith_Willie_Jr_Stillborn_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:58.212145Z
+
+196. U23-00042.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00042.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:20,680 - ERROR - File: U23-00042_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:52.736125Z
+
+197. Brockington_Zola.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Brockington_Zola.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:17,494 - ERROR - File: Brockington_Zola_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:46.599220Z
+
+198. Collins_Ida.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Collins_Ida.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:12,743 - ERROR - File: Collins_Ida_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:51.224390Z
+
+199. McSwain_Burne.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/McSwain_Burne.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:44,121 - ERROR - File: McSwain_Burne_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:10.758352Z
+
+200. Couch_Hampton.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Couch_Hampton.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:16,092 - ERROR - File: Couch_Hampton_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:52.197242Z
+
+201. Hicks_Eunice.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Hicks_Eunice.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:01,173 - ERROR - File: Hicks_Eunice_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:29.462524Z
+
+202. Monroe_Mary_Jane.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Monroe_Mary_Jane.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:47,497 - ERROR - File: Monroe_Mary_Jane_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:23.521518Z
+
+203. Harris_A_H.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Harris_A_H.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:56,279 - ERROR - File: Harris_A_H_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:25.138620Z
+
+204. Murrey_Ellie.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Murrey_Ellie.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:44,713 - ERROR - File: Murrey_Ellie_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:21.242930Z
+
+205. U23-00066.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00066.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:14,485 - ERROR - File: U23-00066_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:41.862339Z
+
+206. Dozier_Moses.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Dozier_Moses.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:03,587 - ERROR - File: Dozier_Moses_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:33.350756Z
+
+207. U23-00107.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00107.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:08,272 - ERROR - File: U23-00107_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:36.892000Z
+
+208. U23-00014-transcript.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00014-transcript.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:26,724 - ERROR - File: U23-00014-transcript_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:24:03.312684Z
+
+209. arts_pub_48.pdf
+   - Original location: pdf/pdfs-test-failures-03_31count/arts_pub_48.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:59,949 - ERROR - File: arts_pub_48_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 4
+   - Failed at: 2026-02-23T13:31:27.945421Z
+
+210. altrusa_records_94.pdf
+   - Original location: pdf/pdfs-test-large-03_5count/altrusa_records_94.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:49,088 - ERROR - File: altrusa_records_94_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:18.243754Z
+
+211. Williams_Joe.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Williams_Joe.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:26,222 - ERROR - File: Williams_Joe_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:57.708961Z
+
+212. U23-00005-transcript.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00005-transcript.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:16,757 - ERROR - File: U23-00005-transcript_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:45.968947Z
+
+213. Love_Willie.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Love_Willie.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:53,103 - ERROR - File: Love_Willie_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:22.221242Z
+
+214. 35_cedr.pdf
+   - Original location: pdf/pdfs-test-failures-04-marlena-cedr_17count/35_cedr.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:29:00,664 - ERROR - File: 35_cedr_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 3
+   - Failed at: 2026-02-23T13:29:39.797465Z
+
+215. Clyelt_Joseph.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Clyelt_Joseph.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:11,727 - ERROR - File: Clyelt_Joseph_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:46.460065Z
+
+216. arts_pub_20.pdf
+   - Original location: pdf/pdfs-test-failures-03_31count/arts_pub_20.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:50,617 - ERROR - File: arts_pub_20_chunk_2.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 4
+   - Failed at: 2026-02-23T13:31:19.644744Z
+
+217. Johnson_Infant.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Johnson_Infant.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:55,170 - ERROR - File: Johnson_Infant_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:29.312220Z
+
+218. U23-00008-transcript.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00008-transcript.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:17,169 - ERROR - File: U23-00008-transcript_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:43.559294Z
+
+219. U23-00149.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00149.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-23 13:22:32,505 - ERROR - Error incrementing RPM counter: An error occurred (ValidationException) when calling the UpdateItem operation: Invalid UpdateExpression: Attribute name is a reserved ...
+   - Detailed error: 2026-02-23 13:22:32,526 - ERROR - File: U23-00149_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:22:58.903163Z
+
+220. Littleton_Indiana.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Littleton_Indiana.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:51,637 - ERROR - File: Littleton_Indiana_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:22.809930Z
+
+221. U23-00047.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00047.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:18,216 - ERROR - File: U23-00047_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:44.760680Z
+
+222. Tucker_Annie.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Tucker_Annie.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:38,658 - ERROR - File: Tucker_Annie_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:07.566824Z
+
+223. Gilchrist_Louis.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Gilchrist_Louis.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:11,337 - ERROR - File: Gilchrist_Louis_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:58.497949Z
+
+224. 58_cedr.pdf
+   - Original location: pdf/pdfs-test-failures-04-marlena-cedr_17count/58_cedr.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:29:59,400 - ERROR - File: 58_cedr_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:30:27.725803Z
+
+225. U23-00097.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00097.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:05,517 - ERROR - File: U23-00097_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:32.077040Z
+
+226. Robinson_Laura.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Robinson_Laura.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:41,855 - ERROR - File: Robinson_Laura_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:09.628344Z
+
+227. Roberts_Louise_A.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Roberts_Louise_A.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:41,588 - ERROR - File: Roberts_Louise_A_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:08.829598Z
+
+228. Abrams_Theodore.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Abrams_Theodore.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:20,884 - ERROR - File: Abrams_Theodore_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:48.574995Z
+
+229. McDaniel_Rebecca.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/McDaniel_Rebecca.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:46,864 - ERROR - File: McDaniel_Rebecca_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:14.916272Z
+
+230. Jones_Carrie.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Jones_Carrie.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:48,902 - ERROR - File: Jones_Carrie_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:22.054719Z
+
+231. U23-00200.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00200.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-23 13:22:46,812 - ERROR - Error incrementing RPM counter: An error occurred (ValidationException) when calling the UpdateItem operation: Invalid UpdateExpression: Attribute name is a reserved ...
+   - Detailed error: 2026-02-23 13:22:46,846 - ERROR - File: U23-00200_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:14.840287Z
+
+232. Williams_Bessie_E.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Williams_Bessie_E.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:23,401 - ERROR - File: Williams_Bessie_E_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:53.209468Z
+
+233. Miller_John.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Miller_John.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:45,575 - ERROR - File: Miller_John_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:13.802776Z
+
+234. Love_Carrie.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Love_Carrie.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:54,414 - ERROR - File: Love_Carrie_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:22.949905Z
+
+235. Campbell_Mamie.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Campbell_Mamie.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:10,787 - ERROR - File: Campbell_Mamie_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:46.724754Z
+
+236. 75_cedr.pdf
+   - Original location: pdf/pdfs-test-failures-04-marlena-cedr_17count/75_cedr.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:29:01,884 - ERROR - File: 75_cedr_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 3
+   - Failed at: 2026-02-23T13:29:39.107973Z
+
+237. Sams_Eddie.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Sams_Eddie.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:26,884 - ERROR - File: Sams_Eddie_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:57.719846Z
+
+238. arts_pub_8.pdf
+   - Original location: pdf/pdfs-test-failures-03_31count/arts_pub_8.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:52,954 - ERROR - File: arts_pub_8_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 3
+   - Failed at: 2026-02-23T13:29:33.202177Z
+
+239. U23-00046.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00046.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:14,484 - ERROR - File: U23-00046_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:42.242208Z
+
+240. Sawyer_Infant_Daughter.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Sawyer_Infant_Daughter.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:25,566 - ERROR - File: Sawyer_Infant_Daughter_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:56.251386Z
+
+241. U23-00155.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00155.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-23 13:22:39,110 - ERROR - Error incrementing RPM counter: An error occurred (ValidationException) when calling the UpdateItem operation: Invalid UpdateExpression: Attribute name is a reserved ...
+   - Detailed error: 2026-02-23 13:22:39,137 - ERROR - File: U23-00155_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:07.291376Z
+
+242. Griffin_Dorothy_Mae.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Griffin_Dorothy_Mae.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:55,855 - ERROR - File: Griffin_Dorothy_Mae_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:24.560745Z
+
+243. Montgomery_Jeams.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Montgomery_Jeams.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:44,216 - ERROR - File: Montgomery_Jeams_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:11.542288Z
+
+244. Drake_Lutha.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Drake_Lutha.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:04,604 - ERROR - File: Drake_Lutha_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:43.064543Z
+
+245. Dozier_Ruth_Henning.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Dozier_Ruth_Henning.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:02,414 - ERROR - File: Dozier_Ruth_Henning_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:29.268614Z
+
+246. U23-00044.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00044.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:14,708 - ERROR - File: U23-00044_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:42.027949Z
+
+247. U23-00156.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00156.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-23 13:22:38,054 - ERROR - Error incrementing RPM counter: An error occurred (ValidationException) when calling the UpdateItem operation: Invalid UpdateExpression: Attribute name is a reserved ...
+   - Detailed error: 2026-02-23 13:22:38,169 - ERROR - File: U23-00156_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:04.229271Z
+
+248. Mobley_Sallie.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Mobley_Sallie.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:46,206 - ERROR - File: Mobley_Sallie_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:15.131038Z
+
+249. Brockington_Infant.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Brockington_Infant.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:18,258 - ERROR - File: Brockington_Infant_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:47.086416Z
+
+250. U23-00207-shimberg-mandell.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00207-shimberg-mandell.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-23 13:22:49,408 - ERROR - Error incrementing RPM counter: An error occurred (ValidationException) when calling the UpdateItem operation: Invalid UpdateExpression: Attribute name is a reserved ...
+   - Detailed error: 2026-02-23 13:22:49,428 - ERROR - File: U23-00207-shimberg-mandell_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:15.739396Z
+
+251. U23-00110.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00110.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:08,010 - ERROR - File: U23-00110_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:35.110510Z
+
+252. Simpkins_Infant.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Simpkins_Infant.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:30,064 - ERROR - File: Simpkins_Infant_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:57.553556Z
+
+253. U23-00019-bowers-richard.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00019-bowers-richard.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:21,289 - ERROR - File: U23-00019-bowers-richard_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:50.159437Z
+
+254. arts_pub_5.pdf
+   - Original location: pdf/pdfs-test-failures-03_31count/arts_pub_5.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:09,306 - ERROR - File: arts_pub_50_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 4
+   - Failed at: 2026-02-23T13:31:29.335670Z
+
+255. 8_shaughraun.pdf
+   - Original location: pdf/pdfs-test-large-04_3count/8_shaughraun.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:00,636 - ERROR - File: 8_shaughraun_chunk_2.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 5
+   - Failed at: 2026-02-23T13:30:27.841129Z
+
+256. U23-00090.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00090.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-23 13:22:45,798 - ERROR - Error incrementing RPM counter: An error occurred (ValidationException) when calling the UpdateItem operation: Invalid UpdateExpression: Attribute name is a reserved ...
+   - Detailed error: 2026-02-23 13:22:45,820 - ERROR - File: U23-00090_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:21.832774Z
+
+257. U23-00022.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00022.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:18,065 - ERROR - File: U23-00022_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:45.957241Z
+
+258. arts_pub_11.pdf
+   - Original location: pdf/pdfs-test-failures-03_31count/arts_pub_11.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:29:18,255 - ERROR - File: arts_pub_11_chunk_2.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 3
+   - Failed at: 2026-02-23T13:29:45.755586Z
+
+259. Comer_John_W.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Comer_John_W.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:11,452 - ERROR - File: Comer_John_W_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:52.362131Z
+
+260. Burgess_Laura.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Burgess_Laura.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:19,725 - ERROR - File: Burgess_Laura_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:50.439675Z
+
+261. Cook_Clarence.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Cook_Clarence.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:16,927 - ERROR - File: Cook_Clarence_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:46.325991Z
+
+262. Jones_Maggie.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Jones_Maggie.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:46,537 - ERROR - File: Jones_Maggie_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:24.077961Z
+
+263. U23-00060.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00060.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:15,942 - ERROR - File: U23-00060_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:46.724264Z
+
+264. U23-00099.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00099.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:22:55,786 - ERROR - File: U23-00099_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:22.189572Z
+
+265. arts_pub_43.pdf
+   - Original location: pdf/pdfs-test-failures-03_31count/arts_pub_43.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:41,662 - ERROR - File: arts_pub_43_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:09.221073Z
+
+266. Richard_Infant.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Richard_Infant.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:39,404 - ERROR - File: Richard_Infant_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:06.697500Z
+
+267. Jenkins_Lela.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Jenkins_Lela.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:55,611 - ERROR - File: Jenkins_Lela_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:23.490387Z
+
+268. Gibson_Rosetta.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Gibson_Rosetta.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:09,179 - ERROR - File: Gibson_Rosetta_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:49.955540Z
+
+269. Roberts_Annie_May.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Roberts_Annie_May.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:42,025 - ERROR - File: Roberts_Annie_May_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:09.839491Z
+
+270. arts_pub_10.pdf
+   - Original location: pdf/pdfs-test-failures-03_31count/arts_pub_10.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:35,089 - ERROR - File: arts_pub_10_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 3
+   - Failed at: 2026-02-23T13:31:03.452704Z
+
+271. Curry_Infant.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Curry_Infant.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:17,432 - ERROR - File: Curry_Infant_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:46.667368Z
+
+272. arts_pub_45.pdf
+   - Original location: pdf/pdfs-test-failures-03_31count/arts_pub_45.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:49,162 - ERROR - File: arts_pub_45_chunk_2.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 3
+   - Failed at: 2026-02-23T13:31:16.485905Z
+
+273. LeCounts_Mae.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/LeCounts_Mae.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:47,395 - ERROR - File: LeCounts_Mae_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:15.075495Z
+
+274. Thompson_George.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Thompson_George.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:36,312 - ERROR - File: Thompson_George_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:24:07.062807Z
+
+275. Whitehurst_Mattie_Sister.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Whitehurst_Mattie_Sister.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:27,277 - ERROR - File: Whitehurst_Mattie_Sister_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:57.477086Z
+
+276. Smith_Walter.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Smith_Walter.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:39,654 - ERROR - File: Smith_Walter_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:07.534094Z
+
+277. Knights_Sam.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Knights_Sam.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:48,880 - ERROR - File: Knights_Sam_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:26.524558Z
+
+278. Moore_Ed.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Moore_Ed.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:49,091 - ERROR - File: Moore_Ed_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:22.166261Z
+
+279. U23-00064.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00064.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:14,498 - ERROR - File: U23-00064_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:43.133718Z
+
+280. arts_pub_51.pdf
+   - Original location: pdf/pdfs-test-failures-03_31count/arts_pub_51.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:09,609 - ERROR - File: arts_pub_51_chunk_2.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 4
+   - Failed at: 2026-02-23T13:30:37.110080Z
+
+281. U23-00142.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00142.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-23 13:22:29,226 - ERROR - Error incrementing RPM counter: An error occurred (ValidationException) when calling the UpdateItem operation: Invalid UpdateExpression: Attribute name is a reserved ...
+   - Detailed error: 2026-02-23 13:22:29,359 - ERROR - File: U23-00142_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:22:55.454624Z
+
+282. U23-00112.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00112.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:07,273 - ERROR - File: U23-00112_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:34.006069Z
+
+283. U23-00025.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00025.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:27,095 - ERROR - File: U23-00025_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:59.206731Z
+
+284. McBride_Lee.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/McBride_Lee.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:44,003 - ERROR - File: McBride_Lee_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:12.569647Z
+
+285. Powell_Pearl.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Powell_Pearl.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:39,632 - ERROR - File: Powell_Pearl_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:06.680396Z
+
+286. Crawford_Gertrude.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Crawford_Gertrude.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:15,066 - ERROR - File: Crawford_Gertrude_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:47.887275Z
+
+287. U23-00010.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00010.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:29:20,970 - ERROR - File: U23-00010_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:49.588014Z
+
+288. Johnson_Jinnie_Lee.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Johnson_Jinnie_Lee.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:56,676 - ERROR - File: Johnson_Jinnie_Lee_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:27.666907Z
+
+289. Rivers_Ullus_Jr.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Rivers_Ullus_Jr.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:38,273 - ERROR - File: Rivers_Ullus_Jr_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:06.474377Z
+
+290. 79_cedr.pdf
+   - Original location: pdf/pdfs-test-failures-04-marlena-cedr_17count/79_cedr.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:29:02,187 - ERROR - File: 79_cedr_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 3
+   - Failed at: 2026-02-23T13:29:35.062801Z
+
+291. U23-00143.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00143.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-23 13:22:30,619 - ERROR - Error incrementing RPM counter: An error occurred (ValidationException) when calling the UpdateItem operation: Invalid UpdateExpression: Attribute name is a reserved ...
+   - Detailed error: 2026-02-23 13:22:30,647 - ERROR - File: U23-00143_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:22:59.066583Z
+
+292. McKeeg_Joe_Jr.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/McKeeg_Joe_Jr.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:44,571 - ERROR - File: McKeeg_Joe_Jr_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:15.173642Z
+
+293. Hicks_Jemmie_Jr.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Hicks_Jemmie_Jr.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:03,819 - ERROR - File: Hicks_Jemmie_Jr_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:31.731973Z
+
+294. Gass_Alonso.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Gass_Alonso.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:05,997 - ERROR - File: Gass_Alonso_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:35.764667Z
+
+295. Brooks_Willard.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Brooks_Willard.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:17,002 - ERROR - File: Brooks_Willard_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:46.433041Z
+
+296. Slyke_Mabel_Houston_Jerome.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Slyke_Mabel_Houston_Jerome.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:37,021 - ERROR - File: Slyke_Mabel_Houston_Jerome_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:24:04.700232Z
+
+297. U23-00106.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00106.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:07,954 - ERROR - File: U23-00106_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:35.133592Z
+
+298. arts_pub_13.pdf
+   - Original location: pdf/pdfs-test-failures-03_31count/arts_pub_13.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:47,582 - ERROR - File: arts_pub_13_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 5
+   - Failed at: 2026-02-23T13:31:15.242786Z
+
+299. U23-00095.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00095.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:22:53,601 - ERROR - File: U23-00095_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:21.490583Z
+
+300. Smith_George.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Smith_George.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:32,363 - ERROR - File: Smith_George_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:24:09.895978Z
+
+301. Smith_Willie_Jr.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Smith_Willie_Jr.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:27,100 - ERROR - File: Smith_Willie_Jr_Stillborn_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:59.751187Z
+
+302. Thomas_Mable.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Thomas_Mable.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:36,559 - ERROR - File: Thomas_Mable_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:24:14.266527Z
+
+303. Cooper_James.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Cooper_James.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:23,678 - ERROR - File: Cooper_James_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:55.645549Z
+
+304. arts_pub_25.pdf
+   - Original location: pdf/pdfs-test-failures-03_31count/arts_pub_25.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:29:52,483 - ERROR - File: arts_pub_25_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 3
+   - Failed at: 2026-02-23T13:30:26.356552Z
+
+305. Cooper_Luther_Lewis.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Cooper_Luther_Lewis.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:10,520 - ERROR - File: Cooper_Luther_Lewis_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:39.328532Z
+
+306. arts_pub_28.pdf
+   - Original location: pdf/pdfs-test-failures-03_31count/arts_pub_28.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:53,662 - ERROR - File: arts_pub_28_chunk_2.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 5
+   - Failed at: 2026-02-23T13:31:20.962191Z
+
+307. U23-00015.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00015.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:20,860 - ERROR - File: U23-00015_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:49.710642Z
+
+308. Daily_Infant.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Daily_Infant.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:32:02,623 - ERROR - File: Daily_Infant_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:32:31.052449Z
+
+309. Perry_Henry.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Perry_Henry.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:40,702 - ERROR - File: Perry_Henry_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:10.199934Z
+
+310. Williams_Lizzie.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Williams_Lizzie.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:28,599 - ERROR - File: Williams_Lizzie_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:59.238142Z
+
+311. Collins_Margin.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Collins_Margin.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:09,269 - ERROR - File: Collins_Margin_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:38.127672Z
+
+312. Williams_Willie.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Williams_Willie.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:28,947 - ERROR - File: Williams_Willie_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:57.303340Z
+
+313. arts_pub_27.pdf
+   - Original location: pdf/pdfs-test-failures-03_31count/arts_pub_27.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:15,483 - ERROR - File: arts_pub_27_chunk_2.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 3
+   - Failed at: 2026-02-23T13:30:43.929142Z
+
+314. Rattrey_T_P.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Rattrey_T_P.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:42,798 - ERROR - File: Rattrey_T_P_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:12.121817Z
+
+315. arts_pub_37.pdf
+   - Original location: pdf/pdfs-test-failures-03_31count/arts_pub_37.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:55,673 - ERROR - File: arts_pub_37_chunk_2.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 5
+   - Failed at: 2026-02-23T13:31:23.911959Z
+
+316. Rhines_Joseph.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Rhines_Joseph.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:42,324 - ERROR - File: Rhines_Joseph_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:11.002179Z
+
+317. DeSaul_Infant.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/DeSaul_Infant.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:06,836 - ERROR - File: DeSaul_Infant_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:34.151854Z
+
+318. Bray_Infant.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Bray_Infant.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:16,998 - ERROR - File: Bray_Infant_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:45.048668Z
+
+319. U23-00102.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00102.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:00,873 - ERROR - File: U23-00102_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:29.045350Z
+
+320. 26_cedr.pdf
+   - Original location: pdf/pdfs-test-failures-04-marlena-cedr_17count/26_cedr.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:56,556 - ERROR - File: 26_cedr_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:29.697438Z
+
+321. Hollands_Leroy.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Hollands_Leroy.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:55,026 - ERROR - File: Hollands_Leroy_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:24.902025Z
+
+322. Lewis_Willie_Jr.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Lewis_Willie_Jr.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:54,433 - ERROR - File: Lewis_Willie_Jr_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:22.933334Z
+
+323. Davis_Infant.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Davis_Infant.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:04,301 - ERROR - File: Davis_Infant_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:33.139389Z
+
+324. Gardner_Infant.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Gardner_Infant.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:10,118 - ERROR - File: Gardner_Infant_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:39.226375Z
+
+325. Bush_Norman.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Bush_Norman.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:07,118 - ERROR - File: Bush_Norman_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:33.802957Z
+
+326. Williams_Infant_Male.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Williams_Infant_Male.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:24,415 - ERROR - File: Williams_Infant_Male_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:24:07.424374Z
+
+327. Cowell_Infant.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Cowell_Infant.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:13,578 - ERROR - File: Cowell_Infant_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:47.208870Z
+
+328. U23-00108.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00108.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:05,132 - ERROR - File: U23-00108_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:31.695330Z
+
+329. U23-00205-transcript.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00205-transcript.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-23 13:22:46,434 - ERROR - Error incrementing RPM counter: An error occurred (ValidationException) when calling the UpdateItem operation: Invalid UpdateExpression: Attribute name is a reserved ...
+   - Detailed error: 2026-02-23 13:22:46,473 - ERROR - File: U23-00205-transcript_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:14.065515Z
+
+330. Roberson_Willie_McClain.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Roberson_Willie_McClain.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:39,128 - ERROR - File: Roberson_Willie_McClain_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:07.807534Z
+
+331. Chinn_Addies.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Chinn_Addies.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:06,760 - ERROR - File: Chinn_Addies_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:56.909011Z
+
+332. arts_pub_2.pdf
+   - Original location: pdf/pdfs-test-failures-03_31count/arts_pub_2.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Temp files deleted: 4
+   - Failed at: 2026-02-23T13:31:07.746563Z
+
+333. U23-00151.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00151.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-23 13:22:38,241 - ERROR - Error incrementing RPM counter: An error occurred (ValidationException) when calling the UpdateItem operation: Invalid UpdateExpression: Attribute name is a reserved ...
+   - Detailed error: 2026-02-23 13:22:38,362 - ERROR - File: U23-00151_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:04.785509Z
+
+334. U23-00013.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00013.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:19,706 - ERROR - File: U23-00013_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:51.385061Z
+
+335. U23-00063.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00063.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:18,083 - ERROR - File: U23-00063_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:44.904900Z
+
+336. Burt_Thomas.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Burt_Thomas.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:10,586 - ERROR - File: Burt_Thomas_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:38.074988Z
+
+337. Isom_Mattie.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Isom_Mattie.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:59,106 - ERROR - File: Isom_Mattie_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:34.450726Z
+
+338. Roberson_Sallie.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Roberson_Sallie.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:34,721 - ERROR - File: Roberson_Sallie_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:24:05.865373Z
+
+339. U23-00009-transcript.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00009-transcript.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:17,717 - ERROR - File: U23-00009-transcript_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:46.421074Z
+
+340. Gibbs_Infant_Dec_1925.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Gibbs_Infant_Dec_1925.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:08,211 - ERROR - File: Gibbs_Infant_Dec_1925_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:39.847797Z
+
+341. U23-00204.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00204.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:22:49,791 - ERROR - File: U23-00204_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:16.447917Z
+
+342. Bullard_Warren.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Bullard_Warren.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:18,026 - ERROR - File: Bullard_Warren_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:46.951022Z
+
+343. U23-00145.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00145.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-23 13:22:28,352 - ERROR - Error incrementing RPM counter: An error occurred (ValidationException) when calling the UpdateItem operation: Invalid UpdateExpression: Attribute name is a reserved ...
+   - Detailed error: 2026-02-23 13:22:28,465 - ERROR - File: U23-00145_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:22:56.981321Z
+
+344. Stoots_Clara.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Stoots_Clara.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:32,571 - ERROR - File: Stoots_Clara_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:59.827685Z
+
+345. Lee_Moril.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Lee_Moril.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:48,912 - ERROR - File: Lee_Moril_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:16.189259Z
+
+346. Gatewood_Howard.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Gatewood_Howard.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:06,434 - ERROR - File: Gatewood_Howard_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:33.548843Z
+
+347. altrusa_records_92.pdf
+   - Original location: pdf/pdfs-test-large-03_5count/altrusa_records_92.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:04,806 - ERROR - File: altrusa_records_92_chunk_2.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 3
+   - Failed at: 2026-02-23T13:30:34.416631Z
+
+348. Green_Sophia.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Green_Sophia.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:24,444 - ERROR - File: Green_Sophia_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:32:01.704441Z
+
+349. arts_pub_26.pdf
+   - Original location: pdf/pdfs-test-failures-03_31count/arts_pub_26.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:05,869 - ERROR - File: arts_pub_26_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:30:35.143485Z
+
+350. Williams_Mary_Jane.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Williams_Mary_Jane.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:28,713 - ERROR - File: Williams_Mary_Jane_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:58.159919Z
+
+351. Person_Olla_Annie.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Person_Olla_Annie.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:35,325 - ERROR - File: Person_Olla_Annie_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:24:10.185560Z
+
+352. Busch_Willie_Mae_Daughter_of_Willie_Mae_Busch.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Busch_Willie_Mae_Daughter_of_Willie_Mae_Busch.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:08,362 - ERROR - File: Busch_Willie_Mae_Daughter_of_Willie_Mae_Busch_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:37.513644Z
+
+353. U23-00051.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00051.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:12,944 - ERROR - File: U23-00051_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:40.547324Z
+
+354. arts_pub_46.pdf
+   - Original location: pdf/pdfs-test-failures-03_31count/arts_pub_46.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:56,985 - ERROR - File: arts_pub_46_chunk_2.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 3
+   - Failed at: 2026-02-23T13:31:28.310835Z
+
+355. U23-00055.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00055.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:17,401 - ERROR - File: U23-00055_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:45.267547Z
+
+356. Simmons_John.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Simmons_John.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:33,680 - ERROR - File: Simmons_John_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:24:01.466840Z
+
+357. U23-00158.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00158.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-23 13:22:44,593 - ERROR - Error incrementing RPM counter: An error occurred (ValidationException) when calling the UpdateItem operation: Invalid UpdateExpression: Attribute name is a reserved ...
+   - Detailed error: 2026-02-23 13:22:44,732 - ERROR - File: U23-00158_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:11.728517Z
+
+358. U23-00065-honker-andy.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00065-honker-andy.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:15,925 - ERROR - File: U23-00065-honker-andy_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:44.099302Z
+
+359. arts_pub_32.pdf
+   - Original location: pdf/pdfs-test-failures-03_31count/arts_pub_32.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:52,643 - ERROR - File: arts_pub_32_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 4
+   - Failed at: 2026-02-23T13:31:21.345506Z
+
+360. McCray_Jem.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/McCray_Jem.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:40,978 - ERROR - File: McCray_Jem_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:08.331607Z
+
+361. Lewis_Noah.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Lewis_Noah.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:53,337 - ERROR - File: Lewis_Noah_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:24.674740Z
+
+362. Dials_Ruth_Mary.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Dials_Ruth_Mary.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:09,052 - ERROR - File: Dials_Ruth_Mary_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:37.121010Z
+
+363. Tutson_Infant.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Tutson_Infant.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:26,560 - ERROR - File: Tutson_Infant_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:57.807905Z
+
+364. Black_Gus.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Black_Gus.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:18,871 - ERROR - File: Black_Gus_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:46.988255Z
+
+365. Sawyer_Infant_Son.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Sawyer_Infant_Son.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:29,077 - ERROR - File: Sawyer_Infant_Son_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:58.320734Z
+
+366. Bess_Beatrice.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Bess_Beatrice.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:16,955 - ERROR - File: Bess_Beatrice_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:51.468833Z
+
+367. U23-00160.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00160.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-23 13:22:43,433 - ERROR - Error incrementing RPM counter: An error occurred (ValidationException) when calling the UpdateItem operation: Invalid UpdateExpression: Attribute name is a reserved ...
+   - Detailed error: 2026-02-23 13:22:43,568 - ERROR - File: U23-00160_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:09.762177Z
+
+368. U23-00061.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00061.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:17,918 - ERROR - File: U23-00061_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:45.229840Z
+
+369. Rofile_Ruth.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Rofile_Ruth.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:55,358 - ERROR - File: Rofile_Ruth_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:34.836176Z
+
+370. arts_pub_40.pdf
+   - Original location: pdf/pdfs-test-failures-03_31count/arts_pub_40.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:28,837 - ERROR - File: arts_pub_40_chunk_2.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 3
+   - Failed at: 2026-02-23T13:30:57.958735Z
+
+371. U23-00153.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00153.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:37,088 - ERROR - File: U23-00153_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:24:10.409867Z
+
+372. Harries_Kettie_Newsom.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Harries_Kettie_Newsom.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:56,835 - ERROR - File: Harries_Kettie_Newsom_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:25.502450Z
+
+373. Williams_Edward.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Williams_Edward.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:40,732 - ERROR - File: Williams_Edward_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:09.898997Z
+
+374. Moody_Sam_Willie.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Moody_Sam_Willie.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:42,890 - ERROR - File: Moody_Sam_Willie_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:09.956589Z
+
+375. Laws_Rosa.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Laws_Rosa.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:49,469 - ERROR - File: Laws_Rosa_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:22.193906Z
+
+376. arts_pub_42.pdf
+   - Original location: pdf/pdfs-test-failures-03_31count/arts_pub_42.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:35,209 - ERROR - File: arts_pub_42_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:02.887041Z
+
+377. U23-00150.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00150.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-23 13:22:36,361 - ERROR - Error incrementing RPM counter: An error occurred (ValidationException) when calling the UpdateItem operation: Invalid UpdateExpression: Attribute name is a reserved ...
+   - Detailed error: 2026-02-23 13:22:36,513 - ERROR - File: U23-00150_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:02.705609Z
+
+378. Casell_David_Jr.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Casell_David_Jr.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:12,011 - ERROR - File: Casell_David_Jr_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:51.593316Z
+
+379. 20_cedr.pdf
+   - Original location: pdf/pdfs-test-failures-04-marlena-cedr_17count/20_cedr.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:29:06,799 - ERROR - File: 20_cedr_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:37.344498Z
+
+380. Baldwin_Thomas.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Baldwin_Thomas.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:14,644 - ERROR - File: Baldwin_Thomas_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:47.002776Z
+
+381. Walker_Henry.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Walker_Henry.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:24,923 - ERROR - File: Walker_Henry_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:57.072882Z
+
+382. Howard_Willie.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Howard_Willie.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:56,544 - ERROR - File: Howard_Willie_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:25.907531Z
+
+383. Lewis_Clara_Mae.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Lewis_Clara_Mae.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:51,254 - ERROR - File: Lewis_Clara_Mae_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:31.443704Z
+
+384. McDonald_Infant.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/McDonald_Infant.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:41,825 - ERROR - File: McDonald_Infant_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:08.643922Z
+
+385. U23-00002-transcript.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00002-transcript.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:17,204 - ERROR - File: U23-00002-transcript_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:44.572123Z
+
+386. U23-00198.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00198.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-23 13:22:49,067 - ERROR - Error incrementing RPM counter: An error occurred (ValidationException) when calling the UpdateItem operation: Invalid UpdateExpression: Attribute name is a reserved ...
+   - Detailed error: 2026-02-23 13:22:49,086 - ERROR - File: U23-00198_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:15.067452Z
+
+387. Green_Queen.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Green_Queen.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:57,900 - ERROR - File: Green_Queen_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:26.123015Z
+
+388. Hall_Mary_Louise.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Hall_Mary_Louise.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:58,197 - ERROR - File: Hall_Mary_Louise_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:25.053347Z
+
+389. 14_cedr.pdf
+   - Original location: pdf/pdfs-test-failures-04-marlena-cedr_17count/14_cedr.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:29:34,194 - ERROR - File: 14_cedr_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:30:01.031510Z
+
+390. Davies_Ellex.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Davies_Ellex.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:58,165 - ERROR - File: Davies_Ellex_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:27.091075Z
+
+391. Gilmore_Maryer.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Gilmore_Maryer.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:31:11,340 - ERROR - File: Gilmore_Maryer_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:39.558651Z
+
+392. U23-00041.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00041.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:23,002 - ERROR - File: U23-00041_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:55.687010Z
+
+393. 69_cedr.pdf
+   - Original location: pdf/pdfs-test-failures-04-marlena-cedr_17count/69_cedr.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:29:03,388 - ERROR - File: 69_cedr_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:42.104046Z
+
+394. Huger_Stephen_Allen.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Huger_Stephen_Allen.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:55,105 - ERROR - File: Huger_Stephen_Allen_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:33.639170Z
+
+395. Walker_Sarah.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Walker_Sarah.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:24,150 - ERROR - File: Walker_Sarah_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:53.860645Z
+
+396. Roberts_James.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Roberts_James.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:43,015 - ERROR - File: Roberts_James_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:12.864228Z
+
+397. Hall_Nathan.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Hall_Nathan.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:30:57,381 - ERROR - File: Hall_Nathan_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:31:24.296982Z
+
+398. 16_cedr.pdf
+   - Original location: pdf/pdfs-test-failures-04-marlena-cedr_17count/16_cedr.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:28:59,306 - ERROR - File: 16_cedr_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:29:33.363002Z
+
+399. U23-00053-transcript.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00053-transcript.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:15,303 - ERROR - File: U23-00053-transcript_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:43.979485Z
+
+400. Perry_Thelma_Louise.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Perry_Thelma_Louise.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:35,375 - ERROR - File: Perry_Thelma_Louise_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:24:07.289454Z
+
+401. U23-00105-orr-mark.pdf
+   - Original location: pdf/pdfs-test-failures-01_100count/U23-00105-orr-mark.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-23 13:23:03,631 - ERROR - File: U23-00105-orr-mark_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-23T13:23:31.282310Z
+
+
+Total failures today: 401
+
+To retry processing, please re-upload the original PDF files to the appropriate folder.
+
+This is an automated report.

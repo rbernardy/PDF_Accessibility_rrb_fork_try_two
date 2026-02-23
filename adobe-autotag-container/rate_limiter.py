@@ -124,9 +124,14 @@ def _increment_rpm_counter(table) -> int:
     try:
         response = table.update_item(
             Key={'counter_id': window_id},
-            UpdateExpression='SET request_count = if_not_exists(request_count, :zero) + :inc, '
-                            'last_updated = :now, '
-                            'ttl = :ttl',
+            UpdateExpression='SET #rc = if_not_exists(#rc, :zero) + :inc, '
+                            '#lu = :now, '
+                            '#ttl = :ttl',
+            ExpressionAttributeNames={
+                '#rc': 'request_count',
+                '#lu': 'last_updated',
+                '#ttl': 'ttl'
+            },
             ExpressionAttributeValues={
                 ':zero': 0,
                 ':inc': 1,
@@ -148,7 +153,11 @@ def _get_current_rpm_count(table) -> int:
     window_id = _get_current_minute_window()
     
     try:
-        response = table.get_item(Key={'counter_id': window_id})
+        response = table.get_item(
+            Key={'counter_id': window_id},
+            ProjectionExpression='#rc',
+            ExpressionAttributeNames={'#rc': 'request_count'}
+        )
         return int(response.get('Item', {}).get('request_count', 0))
     except ClientError as e:
         logger.error(f"Error getting RPM count: {e}")
@@ -208,10 +217,15 @@ def acquire_slot(api_type: str = 'adobe_api', max_wait_seconds: int = 300, filen
             window_id = _get_current_minute_window()
             rpm_response = table.update_item(
                 Key={'counter_id': window_id},
-                UpdateExpression='SET request_count = if_not_exists(request_count, :zero) + :inc, '
-                                'last_updated = :now, '
-                                'ttl = :ttl',
-                ConditionExpression='attribute_not_exists(request_count) OR request_count < :max',
+                UpdateExpression='SET #rc = if_not_exists(#rc, :zero) + :inc, '
+                                '#lu = :now, '
+                                '#ttl = :ttl',
+                ConditionExpression='attribute_not_exists(#rc) OR #rc < :max',
+                ExpressionAttributeNames={
+                    '#rc': 'request_count',
+                    '#lu': 'last_updated',
+                    '#ttl': 'ttl'
+                },
                 ExpressionAttributeValues={
                     ':zero': 0,
                     ':inc': 1,
