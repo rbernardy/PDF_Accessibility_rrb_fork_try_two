@@ -73,8 +73,8 @@ class PDFAccessibility(Stack):
         # - Incremented when API call starts
         # - Decremented when API call completes (success or failure)
         adobe_rate_limit_table = dynamodb.Table(
-            self, "AdobeRateLimitTable",
-            table_name="adobe-api-rate-limit",
+            self, "AdobeInFlightTable",
+            table_name="adobe-api-in-flight-tracker",
             partition_key=dynamodb.Attribute(
                 name="counter_id",
                 type=dynamodb.AttributeType.STRING

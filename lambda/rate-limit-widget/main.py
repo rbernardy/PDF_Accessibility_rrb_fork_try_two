@@ -44,7 +44,7 @@ def lambda_handler(event, context):
     
     Returns HTML content showing current in-flight request status.
     """
-    table_name = os.environ.get('RATE_LIMIT_TABLE', 'adobe-api-rate-limit')
+    table_name = os.environ.get('RATE_LIMIT_TABLE', 'adobe-api-in-flight-tracker')
     
     try:
         table = dynamodb.Table(table_name)

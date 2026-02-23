@@ -4,7 +4,7 @@
 
 set -e
 
-TABLE_NAME="adobe-api-rate-limit"
+TABLE_NAME="adobe-api-in-flight-tracker"
 COUNTER_ID="adobe_api_in_flight"
 
 echo "Adobe API In-Flight Counter Reset"

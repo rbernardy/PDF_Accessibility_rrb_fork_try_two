@@ -75,7 +75,7 @@ Key differences:
 
 ### 1. DynamoDB In-Flight Counter Table
 
-- **Table Name**: `adobe-api-rate-limit`
+- **Table Name**: `adobe-api-in-flight-tracker`
 - **Partition Key**: `counter_id` (string)
 - **Attributes**:
   - `in_flight`: Current number of API calls in progress
@@ -194,6 +194,6 @@ If an ECS task crashes without releasing its slot:
 For persistent issues, manually reset the counter:
 ```bash
 aws dynamodb put-item \
-    --table-name adobe-api-rate-limit \
+    --table-name adobe-api-in-flight-tracker \
     --item '{"counter_id": {"S": "adobe_api_in_flight"}, "in_flight": {"N": "0"}}'
 ```
