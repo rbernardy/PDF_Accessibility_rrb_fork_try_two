@@ -87,7 +87,7 @@ from adobe.pdfservices.operation.pdfjobs.params.autotag_pdf.autotag_pdf_params i
 from adobe.pdfservices.operation.pdfjobs.result.autotag_pdf_result import AutotagPDFResult
 
 from custom_cloudwatch_logger import get_custom_logger
-from rate_limiter import acquire_token, get_current_usage
+from rate_limiter import acquire_slot, release_slot, get_current_usage
 
 logger = logging.getLogger(__name__)
 
@@ -186,6 +186,10 @@ def autotag_pdf_with_options(filename, client_id, client_secret):
     """
     Auto-tags a PDF for accessibility using Adobe PDF Services.
     
+    Uses in-flight tracking to ensure we don't exceed Adobe's rate limits.
+    The slot is acquired before the API call and released after completion
+    (whether successful or not).
+    
     Args:
         filename (str): The path to the PDF file.
         client_id (str): Adobe API client ID.
@@ -195,14 +199,15 @@ def autotag_pdf_with_options(filename, client_id, client_secret):
         ServiceApiException: If Adobe API returns an error.
         ServiceUsageException: If there's a usage-related error.
         SdkException: If there's an SDK-related error.
+        RuntimeError: If unable to acquire rate limit slot.
     """
-    # Acquire rate limit token before making API call
-    logging.info(f'Filename : {filename} | Waiting for rate limit token (autotag)...')
-    if not acquire_token('autotag'):
-        raise RuntimeError(f"Failed to acquire rate limit token for autotag API call")
+    # Acquire in-flight slot before making API call
+    logging.info(f'Filename : {filename} | Waiting for rate limit slot (autotag)...')
+    if not acquire_slot('autotag'):
+        raise RuntimeError(f"Failed to acquire rate limit slot for autotag API call")
     
     usage = get_current_usage()
-    logging.info(f'Filename : {filename} | Rate limit status: {usage["count"]}/{usage["limit"]} requests this minute')
+    logging.info(f'Filename : {filename} | In-flight status: {usage["in_flight"]}/{usage["max"]} ({usage["utilization_pct"]}% utilized)')
     
     # Log the API call to custom CloudWatch stream
     custom_cw_logger.log_adobe_api_call(filename, filename, api_type="autotag")
@@ -210,7 +215,6 @@ def autotag_pdf_with_options(filename, client_id, client_secret):
     try:
         with open(filename, 'rb') as file:
             input_stream = file.read()
-        
 
         # Initial setup, create credentials instance
         credentials = ServicePrincipalCredentials(
@@ -266,9 +270,17 @@ def autotag_pdf_with_options(filename, client_id, client_secret):
         # Log Adobe API error to custom CloudWatch stream
         custom_cw_logger.log_adobe_api_error(filename, api_type="autotag", error=e)
         raise  # Re-raise to stop the container
+    finally:
+        # CRITICAL: Always release the slot, whether success or failure
+        release_slot('autotag')
+        logging.info(f'Filename : {filename} | Released rate limit slot (autotag)')
 def extract_api(filename, client_id, client_secret):
     """
     Extracts text, tables, and figures from a PDF using Adobe PDF Services.
+    
+    Uses in-flight tracking to ensure we don't exceed Adobe's rate limits.
+    The slot is acquired before the API call and released after completion
+    (whether successful or not).
     
     Args:
         filename (str): The path to the PDF file.
@@ -279,14 +291,15 @@ def extract_api(filename, client_id, client_secret):
         ServiceApiException: If Adobe API returns an error.
         ServiceUsageException: If there's a usage-related error.
         SdkException: If there's an SDK-related error.
+        RuntimeError: If unable to acquire rate limit slot.
     """
-    # Acquire rate limit token before making API call
-    logging.info(f'Filename : {filename} | Waiting for rate limit token (extract)...')
-    if not acquire_token('extract'):
-        raise RuntimeError(f"Failed to acquire rate limit token for extract API call")
+    # Acquire in-flight slot before making API call
+    logging.info(f'Filename : {filename} | Waiting for rate limit slot (extract)...')
+    if not acquire_slot('extract'):
+        raise RuntimeError(f"Failed to acquire rate limit slot for extract API call")
     
     usage = get_current_usage()
-    logging.info(f'Filename : {filename} | Rate limit status: {usage["count"]}/{usage["limit"]} requests this minute')
+    logging.info(f'Filename : {filename} | In-flight status: {usage["in_flight"]}/{usage["max"]} ({usage["utilization_pct"]}% utilized)')
     
     # Log the API call to custom CloudWatch stream
     custom_cw_logger.log_adobe_api_call(filename, filename, api_type="extract")
@@ -340,6 +353,10 @@ def extract_api(filename, client_id, client_secret):
         # Log Adobe API error to custom CloudWatch stream
         custom_cw_logger.log_adobe_api_error(filename, api_type="extract", error=e)
         raise  # Re-raise to stop the container
+    finally:
+        # CRITICAL: Always release the slot, whether success or failure
+        release_slot('extract')
+        logging.info(f'Filename : {filename} | Released rate limit slot (extract)')
 
 def unzip_file(filename,zip_path, extract_to):
     """

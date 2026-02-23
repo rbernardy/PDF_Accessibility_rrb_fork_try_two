@@ -46,30 +46,42 @@ class PDFAccessibility(Stack):
         region = Stack.of(self).region
 
         # ============================================================
-        # Adobe API Rate Limiting Infrastructure
+        # Adobe API Rate Limiting Infrastructure (In-Flight Tracking)
         # ============================================================
         
-        # SSM Parameter for Adobe API RPM limit (configurable without redeployment)
+        # SSM Parameter for max in-flight Adobe API requests (configurable without redeployment)
+        # This controls how many API calls can be "in progress" at any time across all ECS tasks
+        adobe_api_max_in_flight_param_name = '/pdf-processing/adobe-api-max-in-flight'
+        adobe_api_max_in_flight_param = ssm.StringParameter(
+            self, "AdobeApiMaxInFlightParam",
+            parameter_name=adobe_api_max_in_flight_param_name,
+            string_value="150",  # Default: 150 concurrent requests (safely under 200 RPM)
+            description="Adobe PDF Services API max concurrent in-flight requests"
+        )
+        
+        # Legacy SSM Parameter for backward compatibility (kept for monitoring widgets)
         adobe_api_rpm_param_name = '/pdf-processing/adobe-api-rpm'
         adobe_api_rpm_param = ssm.StringParameter(
             self, "AdobeApiRpmParam",
             parameter_name=adobe_api_rpm_param_name,
-            string_value="200",  # Default: 200 requests per minute
-            description="Adobe PDF Services API rate limit (requests per minute)"
+            string_value="200",  # Reference value for Adobe's actual limit
+            description="Adobe PDF Services API rate limit reference (requests per minute)"
         )
         
-        # DynamoDB table for distributed rate limiting across ECS tasks
-        # Uses minute-based keys with atomic counters to track API calls
+        # DynamoDB table for distributed in-flight tracking across ECS tasks
+        # Uses a single counter that tracks requests currently in progress
+        # - Incremented when API call starts
+        # - Decremented when API call completes (success or failure)
         adobe_rate_limit_table = dynamodb.Table(
             self, "AdobeRateLimitTable",
             table_name="adobe-api-rate-limit",
             partition_key=dynamodb.Attribute(
-                name="minute_key",
+                name="counter_id",  # Changed from minute_key to counter_id for in-flight tracking
                 type=dynamodb.AttributeType.STRING
             ),
             billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
-            removal_policy=cdk.RemovalPolicy.DESTROY,
-            time_to_live_attribute="ttl"  # Auto-cleanup old entries
+            removal_policy=cdk.RemovalPolicy.DESTROY
+            # Removed TTL - in-flight counter is persistent, not time-based
         )
 
         # Docker images with zstd compression for faster Fargate cold starts
@@ -276,6 +288,10 @@ class PDFAccessibility(Stack):
                                                   value=adobe_rate_limit_table.table_name
                                               ),
                                               tasks.TaskEnvironmentVariable(
+                                                  name="ADOBE_API_MAX_IN_FLIGHT_PARAM",
+                                                  value=adobe_api_max_in_flight_param_name
+                                              ),
+                                              tasks.TaskEnvironmentVariable(
                                                   name="ADOBE_API_RPM_PARAM",
                                                   value=adobe_api_rpm_param_name
                                               ),
@@ -321,10 +337,12 @@ class PDFAccessibility(Stack):
                                       )
 
         # Step Function Map State
-        # max_concurrency controls parallel ECS tasks
-        # Rate limiting is now handled by the DynamoDB-based rate limiter in the ECS container
-        # The rate limiter ensures API calls stay within the ADOBE_API_RPM SSM parameter limit
-        # Higher concurrency is now safe - tasks will wait for rate limit tokens as needed
+        # max_concurrency controls parallel ECS tasks - can be set high for fast processing
+        # Rate limiting is handled by in-flight tracking in the ECS container:
+        # - Each task acquires a "slot" before making Adobe API calls
+        # - Slots are released when API calls complete (success or failure)
+        # - Tasks wait if max_in_flight limit is reached
+        # This allows high concurrency for non-API work while preventing API rate limit errors
         pdf_chunks_map_state = sfn.Map(self, "ProcessPdfChunksInParallel",
                             max_concurrency=100,
                             items_path=sfn.JsonPath.string_at("$.chunks"),
@@ -838,7 +856,7 @@ class PDFAccessibility(Stack):
         pdf_cleanup_log_group_name = pdf_cleanup_log_group.log_group_name
 
         # =============================================================================
-        # Rate Limit Widget Lambda - Custom CloudWatch widget for real-time queue status
+        # Rate Limit Widget Lambda - Custom CloudWatch widget for real-time in-flight status
         # =============================================================================
         
         rate_limit_widget_lambda = lambda_.Function(
@@ -852,6 +870,7 @@ class PDFAccessibility(Stack):
             architecture=lambda_arch,
             environment={
                 "RATE_LIMIT_TABLE": adobe_rate_limit_table.table_name,
+                "ADOBE_API_MAX_IN_FLIGHT_PARAM": adobe_api_max_in_flight_param_name,
                 "ADOBE_API_RPM_PARAM": adobe_api_rpm_param_name
             }
         )
@@ -862,7 +881,10 @@ class PDFAccessibility(Stack):
             iam.PolicyStatement(
                 effect=iam.Effect.ALLOW,
                 actions=["ssm:GetParameter"],
-                resources=[f"arn:aws:ssm:{region}:{account_id}:parameter{adobe_api_rpm_param_name}"]
+                resources=[
+                    f"arn:aws:ssm:{region}:{account_id}:parameter{adobe_api_max_in_flight_param_name}",
+                    f"arn:aws:ssm:{region}:{account_id}:parameter{adobe_api_rpm_param_name}"
+                ]
             )
         )
         
@@ -900,9 +922,9 @@ class PDFAccessibility(Stack):
                 width=24,
                 height=6
             ),
-            # Row 2: Rate Limit Queue Status (custom widget - full width)
+            # Row 2: In-Flight API Status (custom widget - full width)
             cloudwatch.CustomWidget(
-                title="Adobe API Rate Limit Queue (Real-time)",
+                title="Adobe API In-Flight Requests (Real-time)",
                 function_arn=rate_limit_widget_lambda.function_arn,
                 width=24,
                 height=4,
@@ -921,12 +943,12 @@ class PDFAccessibility(Stack):
                 width=24,
                 height=6
             ),
-            # Row 4: Rate Limiting logs and DynamoDB activity (side by side)
+            # Row 4: In-Flight tracking logs and DynamoDB activity (side by side)
             cloudwatch.LogQueryWidget(
-                title="Adobe API Rate Limiting (Logs)",
+                title="Adobe API In-Flight Tracking (Logs)",
                 log_group_names=[adobe_autotag_log_group.log_group_name],
                 query_string='''fields @timestamp, @message
-                    | filter @message like /Rate limit status/
+                    | filter @message like /In-flight status/ or @message like /Released rate limit slot/ or @message like /Acquired slot/
                     | display @timestamp, @message
                     | sort @timestamp desc
                     | limit 50''',
@@ -934,7 +956,7 @@ class PDFAccessibility(Stack):
                 height=4
             ),
             cloudwatch.GraphWidget(
-                title="Adobe API Rate Limit Table Activity",
+                title="Adobe API In-Flight Table Activity",
                 left=[
                     adobe_rate_limit_table.metric_consumed_write_capacity_units(
                         statistic="Sum",

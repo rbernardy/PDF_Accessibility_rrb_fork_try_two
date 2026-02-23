@@ -1,17 +1,16 @@
 """
-Adobe API Rate Limiter
+Adobe API Rate Limiter with In-Flight Tracking
 
 This module provides rate limiting for Adobe PDF Services API calls using DynamoDB
-as a distributed counter. It ensures that API calls across all concurrent ECS tasks
-stay within the configured RPM (requests per minute) limit.
+to track in-flight requests. Unlike simple per-minute counters, this tracks:
+- When requests START (increment in_flight)
+- When requests COMPLETE (decrement in_flight)
 
-The rate limiter uses a token bucket approach where:
-- Each minute window has a counter in DynamoDB
-- Workers acquire tokens before making API calls
-- If the limit is reached, workers wait until the next minute window
+This ensures we never exceed the configured maximum concurrent API calls,
+regardless of how fast ECS tasks spin up.
 
 Configuration:
-- ADOBE_API_RPM: SSM parameter containing the RPM limit (default: 200)
+- ADOBE_API_MAX_IN_FLIGHT: SSM parameter for max concurrent requests (default: 150)
 - RATE_LIMIT_TABLE: DynamoDB table name for rate limiting
 """
 
@@ -21,6 +20,7 @@ import logging
 import boto3
 from datetime import datetime, timezone
 from botocore.exceptions import ClientError
+from contextlib import contextmanager
 
 logger = logging.getLogger(__name__)
 
@@ -33,21 +33,16 @@ _ssm_cache = {}
 _ssm_cache_time = {}
 SSM_CACHE_TTL = 300  # 5 minutes
 
+# Counter ID for the single in-flight tracker
+IN_FLIGHT_COUNTER_ID = "adobe_api_in_flight"
+
 
 def get_ssm_parameter(param_name: str, default: str = None) -> str:
     """
     Get parameter from SSM Parameter Store with caching.
-    
-    Args:
-        param_name: The SSM parameter name
-        default: Default value if parameter not found
-        
-    Returns:
-        The parameter value or default
     """
     current_time = time.time()
     
-    # Check cache
     if param_name in _ssm_cache:
         cache_age = current_time - _ssm_cache_time.get(param_name, 0)
         if cache_age < SSM_CACHE_TTL:
@@ -68,107 +63,146 @@ def get_ssm_parameter(param_name: str, default: str = None) -> str:
         return default
 
 
-def get_rpm_limit() -> int:
+def get_max_in_flight() -> int:
     """
-    Get the Adobe API RPM limit from SSM Parameter Store.
+    Get the maximum allowed in-flight Adobe API requests from SSM.
     
-    Returns:
-        The RPM limit (default: 200)
+    Default is 150 to stay safely under Adobe's 200 RPM limit,
+    accounting for request duration and timing variations.
     """
-    rpm_param = os.environ.get('ADOBE_API_RPM_PARAM', '/pdf-processing/adobe-api-rpm')
-    rpm_str = get_ssm_parameter(rpm_param, '200')
+    param_name = os.environ.get('ADOBE_API_MAX_IN_FLIGHT_PARAM', '/pdf-processing/adobe-api-max-in-flight')
+    value_str = get_ssm_parameter(param_name, '150')
     try:
-        return int(rpm_str)
+        return int(value_str)
     except ValueError:
-        logger.warning(f"Invalid RPM value '{rpm_str}', using default 200")
-        return 200
+        logger.warning(f"Invalid max_in_flight value '{value_str}', using default 150")
+        return 150
 
 
-def get_current_minute_key() -> str:
-    """
-    Get the current minute as a string key for DynamoDB.
-    
-    Returns:
-        String in format 'YYYY-MM-DD-HH-MM'
-    """
-    now = datetime.now(timezone.utc)
-    return now.strftime('%Y-%m-%d-%H-%M')
-
-
-def acquire_token(api_type: str = 'adobe_api', max_retries: int = 60) -> bool:
-    """
-    Attempt to acquire a rate limit token for an Adobe API call.
-    
-    This function will block until a token is available or max_retries is exceeded.
-    It uses DynamoDB atomic counters to ensure distributed rate limiting.
-    
-    Args:
-        api_type: The type of API call (for logging/metrics)
-        max_retries: Maximum number of seconds to wait for a token
-        
-    Returns:
-        True if token acquired, False if timed out
-        
-    Raises:
-        Exception: If DynamoDB operations fail unexpectedly
-    """
+def _get_table():
+    """Get the DynamoDB table resource."""
     table_name = os.environ.get('RATE_LIMIT_TABLE')
     if not table_name:
+        return None
+    return dynamodb.Table(table_name)
+
+
+def acquire_slot(api_type: str = 'adobe_api', max_wait_seconds: int = 300) -> bool:
+    """
+    Acquire a slot for an Adobe API call by incrementing the in-flight counter.
+    
+    This function will block until a slot is available or max_wait_seconds is exceeded.
+    It uses DynamoDB conditional updates to ensure we never exceed max_in_flight.
+    
+    Args:
+        api_type: The type of API call (for logging)
+        max_wait_seconds: Maximum seconds to wait for a slot (default: 5 minutes)
+        
+    Returns:
+        True if slot acquired, False if timed out
+    """
+    table = _get_table()
+    if not table:
         logger.warning("RATE_LIMIT_TABLE not set, skipping rate limiting")
         return True
     
-    rpm_limit = get_rpm_limit()
-    table = dynamodb.Table(table_name)
+    max_in_flight = get_max_in_flight()
+    start_time = time.time()
+    attempt = 0
     
-    for attempt in range(max_retries):
-        minute_key = get_current_minute_key()
+    while (time.time() - start_time) < max_wait_seconds:
+        attempt += 1
         
         try:
-            # Atomic increment with condition check
-            # Note: 'ttl' is a reserved keyword in DynamoDB, so we use ExpressionAttributeNames
+            # Try to increment in_flight counter, but only if below max
             response = table.update_item(
-                Key={
-                    'minute_key': minute_key
-                },
-                UpdateExpression='SET request_count = if_not_exists(request_count, :zero) + :inc, '
-                                '#ttl_attr = :ttl_val',
-                ConditionExpression='attribute_not_exists(request_count) OR request_count < :max',
-                ExpressionAttributeNames={
-                    '#ttl_attr': 'ttl'
-                },
+                Key={'counter_id': IN_FLIGHT_COUNTER_ID},
+                UpdateExpression='SET in_flight = if_not_exists(in_flight, :zero) + :inc, '
+                                'last_updated = :now',
+                ConditionExpression='attribute_not_exists(in_flight) OR in_flight < :max',
                 ExpressionAttributeValues={
                     ':zero': 0,
                     ':inc': 1,
-                    ':max': rpm_limit,
-                    ':ttl_val': int(time.time()) + 120  # TTL: 2 minutes after the minute ends
+                    ':max': max_in_flight,
+                    ':now': datetime.now(timezone.utc).isoformat()
                 },
                 ReturnValues='UPDATED_NEW'
             )
             
-            new_count = response['Attributes']['request_count']
-            logger.info(f"Rate limit token acquired for {api_type}: {new_count}/{rpm_limit} in minute {minute_key}")
+            new_count = int(response['Attributes']['in_flight'])
+            logger.info(f"[{api_type}] Acquired slot: {new_count}/{max_in_flight} in-flight")
             return True
             
         except ClientError as e:
             if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
-                # Rate limit reached for this minute
-                logger.info(f"Rate limit reached ({rpm_limit}/min), waiting for next minute window...")
-                
-                # Calculate time until next minute
-                now = datetime.now(timezone.utc)
-                seconds_until_next_minute = 60 - now.second
-                
-                # Wait until the next minute (with a small buffer)
-                wait_time = min(seconds_until_next_minute + 1, 61)
-                logger.info(f"Waiting {wait_time} seconds for next minute window...")
+                # At capacity - wait and retry
+                current = get_current_in_flight()
+                wait_time = min(2 + (attempt * 0.5), 10)  # Exponential backoff, max 10s
+                logger.info(f"[{api_type}] At capacity ({current}/{max_in_flight}), "
+                           f"waiting {wait_time:.1f}s (attempt {attempt})...")
                 time.sleep(wait_time)
-                
             else:
-                logger.error(f"DynamoDB error acquiring token: {e}")
+                logger.error(f"DynamoDB error acquiring slot: {e}")
                 raise
     
-    logger.error(f"Failed to acquire rate limit token after {max_retries} attempts")
+    logger.error(f"[{api_type}] Failed to acquire slot after {max_wait_seconds}s")
     return False
+
+
+def release_slot(api_type: str = 'adobe_api') -> bool:
+    """
+    Release a slot after an Adobe API call completes (success or failure).
+    
+    This decrements the in-flight counter. Must be called after every acquire_slot(),
+    regardless of whether the API call succeeded or failed.
+    
+    Args:
+        api_type: The type of API call (for logging)
+        
+    Returns:
+        True if released successfully, False on error
+    """
+    table = _get_table()
+    if not table:
+        return True
+    
+    try:
+        response = table.update_item(
+            Key={'counter_id': IN_FLIGHT_COUNTER_ID},
+            UpdateExpression='SET in_flight = if_not_exists(in_flight, :one) - :dec, '
+                            'last_updated = :now',
+            ExpressionAttributeValues={
+                ':one': 1,
+                ':dec': 1,
+                ':now': datetime.now(timezone.utc).isoformat()
+            },
+            ReturnValues='UPDATED_NEW'
+        )
+        
+        new_count = max(0, int(response['Attributes'].get('in_flight', 0)))
+        logger.info(f"[{api_type}] Released slot: {new_count} now in-flight")
+        return True
+        
+    except ClientError as e:
+        logger.error(f"DynamoDB error releasing slot: {e}")
+        # Don't raise - we don't want to fail the task just because we couldn't decrement
+        return False
+
+
+def get_current_in_flight() -> int:
+    """
+    Get the current number of in-flight requests.
+    """
+    table = _get_table()
+    if not table:
+        return 0
+    
+    try:
+        response = table.get_item(Key={'counter_id': IN_FLIGHT_COUNTER_ID})
+        return int(response.get('Item', {}).get('in_flight', 0))
+    except ClientError as e:
+        logger.error(f"Error getting in-flight count: {e}")
+        return 0
 
 
 def get_current_usage() -> dict:
@@ -176,49 +210,84 @@ def get_current_usage() -> dict:
     Get the current rate limit usage for monitoring.
     
     Returns:
-        Dictionary with current minute, count, and limit
+        Dictionary with in_flight count, max, and available slots
     """
-    table_name = os.environ.get('RATE_LIMIT_TABLE')
-    if not table_name:
-        return {'minute': 'N/A', 'count': 0, 'limit': 0, 'available': 0}
+    max_in_flight = get_max_in_flight()
+    current = get_current_in_flight()
     
-    rpm_limit = get_rpm_limit()
-    minute_key = get_current_minute_key()
-    table = dynamodb.Table(table_name)
+    return {
+        'in_flight': current,
+        'max': max_in_flight,
+        'available': max(0, max_in_flight - current),
+        'utilization_pct': round((current / max_in_flight) * 100, 1) if max_in_flight > 0 else 0
+    }
+
+
+@contextmanager
+def rate_limited_call(api_type: str = 'adobe_api'):
+    """
+    Context manager for rate-limited Adobe API calls.
     
+    Automatically acquires a slot before the call and releases it after,
+    regardless of success or failure.
+    
+    Usage:
+        with rate_limited_call('autotag') as acquired:
+            if acquired:
+                result = autotag_pdf(...)
+            else:
+                raise RuntimeError("Could not acquire rate limit slot")
+    
+    Or simpler:
+        with rate_limited_call('autotag'):
+            result = autotag_pdf(...)  # Will raise if slot not acquired
+    """
+    acquired = acquire_slot(api_type)
     try:
-        response = table.get_item(Key={'minute_key': minute_key})
-        count = response.get('Item', {}).get('request_count', 0)
-        return {
-            'minute': minute_key,
-            'count': count,
-            'limit': rpm_limit,
-            'available': max(0, rpm_limit - count)
-        }
-    except ClientError as e:
-        logger.error(f"Error getting rate limit usage: {e}")
-        return {'minute': minute_key, 'count': 0, 'limit': rpm_limit, 'available': rpm_limit}
+        yield acquired
+    finally:
+        if acquired:
+            release_slot(api_type)
 
 
 class RateLimitedAPICall:
     """
-    Context manager for rate-limited Adobe API calls.
+    Context manager class for rate-limited Adobe API calls.
     
     Usage:
         with RateLimitedAPICall('autotag') as allowed:
             if allowed:
-                # Make the API call
                 autotag_pdf(...)
     """
     
     def __init__(self, api_type: str = 'adobe_api'):
         self.api_type = api_type
-        self.token_acquired = False
+        self.slot_acquired = False
     
     def __enter__(self):
-        self.token_acquired = acquire_token(self.api_type)
-        return self.token_acquired
+        self.slot_acquired = acquire_slot(self.api_type)
+        return self.slot_acquired
     
     def __exit__(self, exc_type, exc_val, exc_tb):
-        # Could add metrics/logging here for API call completion
-        pass
+        if self.slot_acquired:
+            release_slot(self.api_type)
+
+
+# =============================================================================
+# Legacy compatibility - keep old function names working
+# =============================================================================
+
+def acquire_token(api_type: str = 'adobe_api', max_retries: int = 60) -> bool:
+    """
+    Legacy function - now calls acquire_slot().
+    Kept for backward compatibility.
+    """
+    return acquire_slot(api_type, max_wait_seconds=max_retries * 5)
+
+
+def get_rpm_limit() -> int:
+    """
+    Legacy function - returns max_in_flight instead.
+    Kept for backward compatibility with monitoring code.
+    """
+    return get_max_in_flight()
