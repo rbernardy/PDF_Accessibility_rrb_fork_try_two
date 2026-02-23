@@ -1077,17 +1077,9 @@ class PDFAccessibility(Stack):
                 title="PDF Failure Analysis",
                 log_group_names=[pdf_failure_analysis_log_group_name],
                 query_string='''fields @timestamp, @message
-                    | filter @message like /PDF_FAILURE_ANALYSIS/
-                    | parse @message 'PDF_FAILURE_ANALYSIS: *' as analysisjson
-                    | parse analysisjson '"filename":"*"' as filename
-                    | parse analysisjson '"api_type":"*"' as apitype
-                    | parse analysisjson '"likely_cause":"*"' as likelycause
-                    | parse analysisjson '"file_size_mb":*,' as filesize
-                    | parse analysisjson '"page_count":*,' as pagecount
-                    | parse analysisjson '"image_count":*,' as imagecount
-                    | display @timestamp, filename, apitype, filesize, pagecount, imagecount, likelycause
-                    | sort @timestamp desc
-                    | limit 50''',
+| filter @message like /PDF_FAILURE_ANALYSIS/
+| sort @timestamp desc
+| limit 50''',
                 width=24,
                 height=6
             ),

@@ -15,5 +15,11 @@ fi
 
 echo ""
 echo "Proceeding with TEST deployment..."
+echo "Cleaning CDK output directory..."
 rm -rf ./cdk.out/
+
+echo "Clearing Docker build cache..."
+docker builder prune -f 2>/dev/null || true
+
+echo "Starting CDK deployment..."
 cdk deploy PDFAccessibility -c source_bucket=pdfaccessibility-pdfaccessibilitybucket149b7021e-ljzn29qgmwog -c destination_bucket=usflibraries-pdfaccessibility-public --require-approval never --force
