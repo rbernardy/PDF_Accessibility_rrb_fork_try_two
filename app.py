@@ -1078,14 +1078,14 @@ class PDFAccessibility(Stack):
                 log_group_names=[pdf_failure_analysis_log_group_name],
                 query_string='''fields @timestamp, @message
                     | filter @message like /PDF_FAILURE_ANALYSIS/
-                    | parse @message 'PDF_FAILURE_ANALYSIS: *' as analysis_json
-                    | parse analysis_json '"filename":"*"' as filename
-                    | parse analysis_json '"api_type":"*"' as api_type
-                    | parse analysis_json '"likely_cause":"*"' as likely_cause
-                    | parse analysis_json '"file_size_mb":*,' as filesize
-                    | parse analysis_json '"page_count":*,' as pagecount
-                    | parse analysis_json '"image_count":*,' as imagecount
-                    | display @timestamp, filename, api_type, filesize, pagecount, imagecount, likely_cause
+                    | parse @message 'PDF_FAILURE_ANALYSIS: *' as analysisjson
+                    | parse analysisjson '"filename":"*"' as filename
+                    | parse analysisjson '"api_type":"*"' as apitype
+                    | parse analysisjson '"likely_cause":"*"' as likelycause
+                    | parse analysisjson '"file_size_mb":*,' as filesize
+                    | parse analysisjson '"page_count":*,' as pagecount
+                    | parse analysisjson '"image_count":*,' as imagecount
+                    | display @timestamp, filename, apitype, filesize, pagecount, imagecount, likelycause
                     | sort @timestamp desc
                     | limit 50''',
                 width=24,
