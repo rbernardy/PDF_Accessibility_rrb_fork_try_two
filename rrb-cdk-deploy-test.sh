@@ -23,3 +23,6 @@ docker builder prune -f 2>/dev/null || true
 
 echo "Starting CDK deployment..."
 cdk deploy PDFAccessibility -c source_bucket=pdfaccessibility-pdfaccessibilitybucket149b7021e-ljzn29qgmwog -c destination_bucket=usflibraries-pdfaccessibility-public --require-approval never --force
+
+echo ""
+echo "Deployment completed at: $(date '+%Y-%m-%d %H:%M:%S')"
