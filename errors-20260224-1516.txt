@@ -1,0 +1,549 @@
+1. [2026-02-24 20:08:12] AdobeAutotagLogs/adobe-autotag-container/48d65c441f784be4834495dd23f4d48a 2026-02-24 20:08:12,110 - ERROR - Filename : COMPLIANT_Williams_Mary_Jane_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=c708b775-ccff-476a-a6f2-5553ffd4688b; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+2. [2026-02-24 20:08:12] AdobeAutotagLogs/adobe-autotag-container/48d65c441f784be4834495dd23f4d48a 2026-02-24 20:08:12,136 - INFO - Filename : COMPLIANT_Williams_Mary_Jane_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+3. [2026-02-24 20:08:12] AdobeAutotagLogs/adobe-autotag-container/48d65c441f784be4834495dd23f4d48a 2026-02-24 20:08:12,163 - ERROR - Filename : Williams_Mary_Jane_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=c708b775-ccff-476a-a6f2-5553ffd4688b; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+4. [2026-02-24 20:08:12] AdobeAutotagLogs/adobe-autotag-container/2c497ee8854a43c6bbe5cfd4085f4543 2026-02-24 20:08:12,306 - ERROR - Filename : COMPLIANT_Sawyer_Infant_Daughter_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=8bc54ca6-11bc-11f1-bc87-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+5. [2026-02-24 20:08:12] AdobeAutotagLogs/adobe-autotag-container/2c497ee8854a43c6bbe5cfd4085f4543 2026-02-24 20:08:12,329 - INFO - Filename : COMPLIANT_Sawyer_Infant_Daughter_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+6. [2026-02-24 20:08:12] AdobeAutotagLogs/adobe-autotag-container/2c497ee8854a43c6bbe5cfd4085f4543 2026-02-24 20:08:12,383 - ERROR - Filename : Sawyer_Infant_Daughter_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=8bc54ca6-11bc-11f1-bc87-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+7. [2026-02-24 20:08:12] AdobeAutotagLogs/adobe-autotag-container/5bbd94fe5388408bb8f1079090a4a220 2026-02-24 20:08:12,999 - ERROR - Filename : COMPLIANT_Rofile_Ruth_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=8c30132e-11bc-11f1-9e33-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+8. [2026-02-24 20:08:13] AdobeAutotagLogs/adobe-autotag-container/5bbd94fe5388408bb8f1079090a4a220 2026-02-24 20:08:13,029 - INFO - Filename : COMPLIANT_Rofile_Ruth_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+9. [2026-02-24 20:08:13] AdobeAutotagLogs/adobe-autotag-container/5bbd94fe5388408bb8f1079090a4a220 2026-02-24 20:08:13,071 - ERROR - Filename : Rofile_Ruth_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=8c30132e-11bc-11f1-9e33-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+10. [2026-02-24 20:08:13] AdobeAutotagLogs/adobe-autotag-container/5a8ad7ad81d84d728975f83ef16ddf85 2026-02-24 20:08:13,469 - ERROR - Filename : COMPLIANT_Williams_Joe_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=e07e16a1-9a33-4828-85c4-fa109beb16b2; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+11. [2026-02-24 20:08:13] AdobeAutotagLogs/adobe-autotag-container/5a8ad7ad81d84d728975f83ef16ddf85 2026-02-24 20:08:13,492 - INFO - Filename : COMPLIANT_Williams_Joe_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+12. [2026-02-24 20:08:13] AdobeAutotagLogs/adobe-autotag-container/5a8ad7ad81d84d728975f83ef16ddf85 2026-02-24 20:08:13,523 - ERROR - Filename : Williams_Joe_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=e07e16a1-9a33-4828-85c4-fa109beb16b2; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+13. [2026-02-24 20:08:13] AdobeAutotagLogs/adobe-autotag-container/1bfb9f8b86224bbc901dcddb56888701 2026-02-24 20:08:13,818 - ERROR - Filename : COMPLIANT_Roberts_Annie_Bell_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=8cad64e6-11bc-11f1-93ae-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+14. [2026-02-24 20:08:13] AdobeAutotagLogs/adobe-autotag-container/1bfb9f8b86224bbc901dcddb56888701 2026-02-24 20:08:13,840 - INFO - Filename : COMPLIANT_Roberts_Annie_Bell_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+15. [2026-02-24 20:08:13] AdobeAutotagLogs/adobe-autotag-container/1bfb9f8b86224bbc901dcddb56888701 2026-02-24 20:08:13,881 - ERROR - Filename : Roberts_Annie_Bell_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=8cad64e6-11bc-11f1-93ae-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+16. [2026-02-24 20:08:14] AdobeAutotagLogs/adobe-autotag-container/97cdf165117a446295f964db7dbc04d0 2026-02-24 20:08:14,435 - ERROR - Filename : COMPLIANT_Tucker_Annie_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=7dc51ca8-9bb9-4ceb-a6b0-978c06204ba7; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+17. [2026-02-24 20:08:14] AdobeAutotagLogs/adobe-autotag-container/97cdf165117a446295f964db7dbc04d0 2026-02-24 20:08:14,460 - INFO - Filename : COMPLIANT_Tucker_Annie_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+18. [2026-02-24 20:08:14] AdobeAutotagLogs/adobe-autotag-container/97cdf165117a446295f964db7dbc04d0 2026-02-24 20:08:14,488 - ERROR - Filename : Tucker_Annie_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=7dc51ca8-9bb9-4ceb-a6b0-978c06204ba7; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+19. [2026-02-24 20:08:14] AdobeAutotagLogs/adobe-autotag-container/db0f2fc4782d420fb511c86440e6fa04 2026-02-24 20:08:14,512 - ERROR - Filename : COMPLIANT_Roberts_Louise_A_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=8d14ccbc-11bc-11f1-be54-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+20. [2026-02-24 20:08:14] AdobeAutotagLogs/adobe-autotag-container/db0f2fc4782d420fb511c86440e6fa04 2026-02-24 20:08:14,537 - INFO - Filename : COMPLIANT_Roberts_Louise_A_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+21. [2026-02-24 20:08:14] AdobeAutotagLogs/adobe-autotag-container/db0f2fc4782d420fb511c86440e6fa04 2026-02-24 20:08:14,591 - ERROR - Filename : Roberts_Louise_A_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=8d14ccbc-11bc-11f1-be54-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+22. [2026-02-24 20:08:14] AdobeAutotagLogs/adobe-autotag-container/4f8b6ef021bf44d997a025ed7aff29d5 2026-02-24 20:08:14,828 - ERROR - Filename : COMPLIANT_Montgomery_Jeams_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=8d48bf04-11bc-11f1-913c-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+23. [2026-02-24 20:08:14] AdobeAutotagLogs/adobe-autotag-container/4f8b6ef021bf44d997a025ed7aff29d5 2026-02-24 20:08:14,849 - INFO - Filename : COMPLIANT_Montgomery_Jeams_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+24. [2026-02-24 20:08:14] AdobeAutotagLogs/adobe-autotag-container/4f8b6ef021bf44d997a025ed7aff29d5 2026-02-24 20:08:14,890 - ERROR - Filename : Montgomery_Jeams_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=8d48bf04-11bc-11f1-913c-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+25. [2026-02-24 20:08:15] AdobeAutotagLogs/adobe-autotag-container/bf39705f54b747539fc53928852d04be 2026-02-24 20:08:15,045 - ERROR - Filename : COMPLIANT_Slyke_Mabel_Houston_Jerome_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=8d620e28-11bc-11f1-b10e-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+26. [2026-02-24 20:08:15] AdobeAutotagLogs/adobe-autotag-container/bf39705f54b747539fc53928852d04be 2026-02-24 20:08:15,067 - INFO - Filename : COMPLIANT_Slyke_Mabel_Houston_Jerome_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+27. [2026-02-24 20:08:15] AdobeAutotagLogs/adobe-autotag-container/bf39705f54b747539fc53928852d04be 2026-02-24 20:08:15,115 - ERROR - Filename : Slyke_Mabel_Houston_Jerome_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=8d620e28-11bc-11f1-b10e-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+28. [2026-02-24 20:08:15] AdobeAutotagLogs/adobe-autotag-container/eea1b38a531b4ac9ad9c5f686357fcf3 2026-02-24 20:08:15,340 - ERROR - Filename : COMPLIANT_Patrick_Infant_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=8d96fe12-11bc-11f1-ba6d-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+29. [2026-02-24 20:08:15] AdobeAutotagLogs/adobe-autotag-container/eea1b38a531b4ac9ad9c5f686357fcf3 2026-02-24 20:08:15,363 - INFO - Filename : COMPLIANT_Patrick_Infant_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+30. [2026-02-24 20:08:15] AdobeAutotagLogs/adobe-autotag-container/273ea07401e442e6bb765ca5355912ff 2026-02-24 20:08:15,397 - ERROR - Filename : COMPLIANT_Sneed_Leroy_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=b3300a61-f6a8-4a63-af90-4eaed25a1927; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+31. [2026-02-24 20:08:15] AdobeAutotagLogs/adobe-autotag-container/eea1b38a531b4ac9ad9c5f686357fcf3 2026-02-24 20:08:15,410 - ERROR - Filename : Patrick_Infant_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=8d96fe12-11bc-11f1-ba6d-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+32. [2026-02-24 20:08:15] AdobeAutotagLogs/adobe-autotag-container/273ea07401e442e6bb765ca5355912ff 2026-02-24 20:08:15,419 - INFO - Filename : COMPLIANT_Sneed_Leroy_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+33. [2026-02-24 20:08:15] AdobeAutotagLogs/adobe-autotag-container/273ea07401e442e6bb765ca5355912ff 2026-02-24 20:08:15,445 - ERROR - Filename : Sneed_Leroy_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=b3300a61-f6a8-4a63-af90-4eaed25a1927; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+34. [2026-02-24 20:08:15] AdobeAutotagLogs/adobe-autotag-container/5d6fd160232d4c0b8b299cf9bde31ea1 2026-02-24 20:08:15,627 - ERROR - Filename : COMPLIANT_Thomas_Elder_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=57222a16-af1d-4013-b902-b35127d87031; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+35. [2026-02-24 20:08:15] AdobeAutotagLogs/adobe-autotag-container/0e92fa07dd664291b1e9a2c7ea037a2c 2026-02-24 20:08:15,641 - ERROR - Filename : COMPLIANT_Rattrey_T_P_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=8dc015cc-11bc-11f1-afcf-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+36. [2026-02-24 20:08:15] AdobeAutotagLogs/adobe-autotag-container/5d6fd160232d4c0b8b299cf9bde31ea1 2026-02-24 20:08:15,649 - INFO - Filename : COMPLIANT_Thomas_Elder_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+37. [2026-02-24 20:08:15] AdobeAutotagLogs/adobe-autotag-container/0e92fa07dd664291b1e9a2c7ea037a2c 2026-02-24 20:08:15,665 - INFO - Filename : COMPLIANT_Rattrey_T_P_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+38. [2026-02-24 20:08:15] AdobeAutotagLogs/adobe-autotag-container/5d6fd160232d4c0b8b299cf9bde31ea1 2026-02-24 20:08:15,680 - ERROR - Filename : Thomas_Elder_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=57222a16-af1d-4013-b902-b35127d87031; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+39. [2026-02-24 20:08:15] AdobeAutotagLogs/adobe-autotag-container/0e92fa07dd664291b1e9a2c7ea037a2c 2026-02-24 20:08:15,783 - ERROR - Filename : Rattrey_T_P_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=8dc015cc-11bc-11f1-afcf-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+40. [2026-02-24 20:08:15] AdobeAutotagLogs/adobe-autotag-container/7b009c0dc781473695a635856ee5c850 2026-02-24 20:08:15,818 - ERROR - Filename : COMPLIANT_Williams_Edward_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=48d789ba-9864-4f80-b2ec-db8a9007793d; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+41. [2026-02-24 20:08:15] AdobeAutotagLogs/adobe-autotag-container/7b009c0dc781473695a635856ee5c850 2026-02-24 20:08:15,838 - INFO - Filename : COMPLIANT_Williams_Edward_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+42. [2026-02-24 20:08:15] AdobeAutotagLogs/adobe-autotag-container/7b009c0dc781473695a635856ee5c850 2026-02-24 20:08:15,864 - ERROR - Filename : Williams_Edward_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=48d789ba-9864-4f80-b2ec-db8a9007793d; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+43. [2026-02-24 20:08:16] AdobeAutotagLogs/adobe-autotag-container/210d727e24ac4b3686f7f29f5b6736cc 2026-02-24 20:08:16,623 - ERROR - Filename : COMPLIANT_Potter_Infant_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=8e5c30c4-11bc-11f1-85d2-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+44. [2026-02-24 20:08:16] AdobeAutotagLogs/adobe-autotag-container/210d727e24ac4b3686f7f29f5b6736cc 2026-02-24 20:08:16,646 - INFO - Filename : COMPLIANT_Potter_Infant_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+45. [2026-02-24 20:08:16] AdobeAutotagLogs/adobe-autotag-container/210d727e24ac4b3686f7f29f5b6736cc 2026-02-24 20:08:16,680 - ERROR - Filename : Potter_Infant_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=8e5c30c4-11bc-11f1-85d2-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+46. [2026-02-24 20:08:16] AdobeAutotagLogs/adobe-autotag-container/1b565639742442699d88dc4ef50891fb 2026-02-24 20:08:16,872 - ERROR - Filename : COMPLIANT_McSwain_Burne_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=8e81fd36-11bc-11f1-b4d3-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+47. [2026-02-24 20:08:16] AdobeAutotagLogs/adobe-autotag-container/1b565639742442699d88dc4ef50891fb 2026-02-24 20:08:16,893 - INFO - Filename : COMPLIANT_McSwain_Burne_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+48. [2026-02-24 20:08:16] AdobeAutotagLogs/adobe-autotag-container/7cd884ca11d94c89b8cbf632440c185f 2026-02-24 20:08:16,934 - ERROR - Filename : COMPLIANT_Stephens_Nathaniel_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=13e8bd29-fc2b-4ed9-9f18-6cee51a5a109; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+49. [2026-02-24 20:08:16] AdobeAutotagLogs/adobe-autotag-container/7cd884ca11d94c89b8cbf632440c185f 2026-02-24 20:08:16,956 - INFO - Filename : COMPLIANT_Stephens_Nathaniel_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+50. [2026-02-24 20:08:16] AdobeAutotagLogs/adobe-autotag-container/7cd884ca11d94c89b8cbf632440c185f 2026-02-24 20:08:16,983 - ERROR - Filename : Stephens_Nathaniel_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=13e8bd29-fc2b-4ed9-9f18-6cee51a5a109; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+51. [2026-02-24 20:08:17] AdobeAutotagLogs/adobe-autotag-container/1b565639742442699d88dc4ef50891fb 2026-02-24 20:08:17,014 - ERROR - Filename : McSwain_Burne_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=8e81fd36-11bc-11f1-b4d3-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+52. [2026-02-24 20:08:17] AdobeAutotagLogs/adobe-autotag-container/2b6f1bff6e32452da3088978e11ed9a3 2026-02-24 20:08:17,112 - ERROR - Filename : COMPLIANT_Williamson_Mack_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=e8c7b2cf-6cca-4eea-b357-bb0da7168950; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+53. [2026-02-24 20:08:17] AdobeAutotagLogs/adobe-autotag-container/2b6f1bff6e32452da3088978e11ed9a3 2026-02-24 20:08:17,135 - INFO - Filename : COMPLIANT_Williamson_Mack_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+54. [2026-02-24 20:08:17] AdobeAutotagLogs/adobe-autotag-container/acac14e1b64f4d47818a338b82da0e9f 2026-02-24 20:08:17,151 - ERROR - Filename : COMPLIANT_Perry_Thelma_Louise_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=8eacdfc4-11bc-11f1-a6db-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+55. [2026-02-24 20:08:17] AdobeAutotagLogs/adobe-autotag-container/2b6f1bff6e32452da3088978e11ed9a3 2026-02-24 20:08:17,169 - ERROR - Filename : Williamson_Mack_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=e8c7b2cf-6cca-4eea-b357-bb0da7168950; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+56. [2026-02-24 20:08:17] AdobeAutotagLogs/adobe-autotag-container/acac14e1b64f4d47818a338b82da0e9f 2026-02-24 20:08:17,176 - INFO - Filename : COMPLIANT_Perry_Thelma_Louise_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+57. [2026-02-24 20:08:17] AdobeAutotagLogs/adobe-autotag-container/acac14e1b64f4d47818a338b82da0e9f 2026-02-24 20:08:17,222 - ERROR - Filename : Perry_Thelma_Louise_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=8eacdfc4-11bc-11f1-a6db-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+58. [2026-02-24 20:08:17] AdobeAutotagLogs/adobe-autotag-container/a290c2b6d4ae4104b957df9bfa100f0b 2026-02-24 20:08:17,261 - ERROR - Filename : COMPLIANT_Monroe_Mary_Jane_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=8eb9be38-11bc-11f1-b60a-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+59. [2026-02-24 20:08:17] AdobeAutotagLogs/adobe-autotag-container/a290c2b6d4ae4104b957df9bfa100f0b 2026-02-24 20:08:17,286 - INFO - Filename : COMPLIANT_Monroe_Mary_Jane_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+60. [2026-02-24 20:08:17] AdobeAutotagLogs/adobe-autotag-container/a290c2b6d4ae4104b957df9bfa100f0b 2026-02-24 20:08:17,335 - ERROR - Filename : Monroe_Mary_Jane_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=8eb9be38-11bc-11f1-b60a-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+61. [2026-02-24 20:08:17] AdobeAutotagLogs/adobe-autotag-container/43463f5796b94b32965bb2734a74c503 2026-02-24 20:08:17,505 - ERROR - Filename : COMPLIANT_Moya_Infant_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=8edc8a62-11bc-11f1-995d-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+62. [2026-02-24 20:08:17] AdobeAutotagLogs/adobe-autotag-container/43463f5796b94b32965bb2734a74c503 2026-02-24 20:08:17,530 - INFO - Filename : COMPLIANT_Moya_Infant_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+63. [2026-02-24 20:08:17] AdobeAutotagLogs/adobe-autotag-container/43463f5796b94b32965bb2734a74c503 2026-02-24 20:08:17,577 - ERROR - Filename : Moya_Infant_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=8edc8a62-11bc-11f1-995d-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+64. [2026-02-24 20:08:17] AdobeAutotagLogs/adobe-autotag-container/aedb891769934c5ca2f65dfcaf1955c4 2026-02-24 20:08:17,633 - ERROR - Filename : COMPLIANT_Smith_Willie_Jr_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=78d5fc6b-b0e7-499e-9dff-17e90c9782f2; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+65. [2026-02-24 20:08:17] AdobeAutotagLogs/adobe-autotag-container/aedb891769934c5ca2f65dfcaf1955c4 2026-02-24 20:08:17,656 - INFO - Filename : COMPLIANT_Smith_Willie_Jr_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+66. [2026-02-24 20:08:17] AdobeAutotagLogs/adobe-autotag-container/aedb891769934c5ca2f65dfcaf1955c4 2026-02-24 20:08:17,688 - ERROR - Filename : Smith_Willie_Jr_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=78d5fc6b-b0e7-499e-9dff-17e90c9782f2; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+67. [2026-02-24 20:08:17] AdobeAutotagLogs/adobe-autotag-container/3e65d6b0e2474974952ac0b15c22c70f 2026-02-24 20:08:17,723 - ERROR - Filename : COMPLIANT_Rutledge_Elious_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=8eff22a2-11bc-11f1-8ce8-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+68. [2026-02-24 20:08:17] AdobeAutotagLogs/adobe-autotag-container/3e65d6b0e2474974952ac0b15c22c70f 2026-02-24 20:08:17,745 - INFO - Filename : COMPLIANT_Rutledge_Elious_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+69. [2026-02-24 20:08:17] AdobeAutotagLogs/adobe-autotag-container/3e65d6b0e2474974952ac0b15c22c70f 2026-02-24 20:08:17,794 - ERROR - Filename : Rutledge_Elious_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=8eff22a2-11bc-11f1-8ce8-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+70. [2026-02-24 20:08:17] AdobeAutotagLogs/adobe-autotag-container/07556d5ede3a43ebbbaf117ee0ffc085 2026-02-24 20:08:17,815 - ERROR - Filename : COMPLIANT_Richard_Infant_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=c15a0574-8569-4007-a629-71d07b940b16; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+71. [2026-02-24 20:08:17] AdobeAutotagLogs/adobe-autotag-container/07556d5ede3a43ebbbaf117ee0ffc085 2026-02-24 20:08:17,836 - INFO - Filename : COMPLIANT_Richard_Infant_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+72. [2026-02-24 20:08:17] AdobeAutotagLogs/adobe-autotag-container/07556d5ede3a43ebbbaf117ee0ffc085 2026-02-24 20:08:17,860 - ERROR - Filename : Richard_Infant_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=c15a0574-8569-4007-a629-71d07b940b16; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+73. [2026-02-24 20:08:18] AdobeAutotagLogs/adobe-autotag-container/efdc29c780b64bed9f4233eab93d6016 2026-02-24 20:08:18,019 - ERROR - Filename : COMPLIANT_Williams_Lizzie_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=8f52ca56-9586-4a92-9517-2222b0ba5870; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+74. [2026-02-24 20:08:18] AdobeAutotagLogs/adobe-autotag-container/a670b2e2e2ba4a0ebf29420ee156c6fe 2026-02-24 20:08:18,021 - ERROR - Filename : COMPLIANT_Minor_Vivian_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=8f2f7042-11bc-11f1-8a81-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+75. [2026-02-24 20:08:18] AdobeAutotagLogs/adobe-autotag-container/a670b2e2e2ba4a0ebf29420ee156c6fe 2026-02-24 20:08:18,044 - INFO - Filename : COMPLIANT_Minor_Vivian_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+76. [2026-02-24 20:08:18] AdobeAutotagLogs/adobe-autotag-container/efdc29c780b64bed9f4233eab93d6016 2026-02-24 20:08:18,044 - INFO - Filename : COMPLIANT_Williams_Lizzie_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+77. [2026-02-24 20:08:18] AdobeAutotagLogs/adobe-autotag-container/efdc29c780b64bed9f4233eab93d6016 2026-02-24 20:08:18,075 - ERROR - Filename : Williams_Lizzie_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=8f52ca56-9586-4a92-9517-2222b0ba5870; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+78. [2026-02-24 20:08:18] AdobeAutotagLogs/adobe-autotag-container/fef934f95ba14a57bf273f35f9bc9bd6 2026-02-24 20:08:18,076 - ERROR - Filename : COMPLIANT_Simmons_Annie_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=8f38b440-11bc-11f1-b9df-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+79. [2026-02-24 20:08:18] AdobeAutotagLogs/adobe-autotag-container/a670b2e2e2ba4a0ebf29420ee156c6fe 2026-02-24 20:08:18,093 - ERROR - Filename : Minor_Vivian_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=8f2f7042-11bc-11f1-8a81-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+80. [2026-02-24 20:08:18] AdobeAutotagLogs/adobe-autotag-container/fef934f95ba14a57bf273f35f9bc9bd6 2026-02-24 20:08:18,101 - INFO - Filename : COMPLIANT_Simmons_Annie_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+81. [2026-02-24 20:08:18] AdobeAutotagLogs/adobe-autotag-container/fef934f95ba14a57bf273f35f9bc9bd6 2026-02-24 20:08:18,154 - ERROR - Filename : Simmons_Annie_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=8f38b440-11bc-11f1-b9df-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+82. [2026-02-24 20:08:18] AdobeAutotagLogs/adobe-autotag-container/b8eafaa44ac443b087caf4d5e6aa109a 2026-02-24 20:08:18,171 - ERROR - Filename : COMPLIANT_Smith_Walter_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=b6b323b0-038a-496f-a58c-67fc83e3bc45; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+83. [2026-02-24 20:08:18] AdobeAutotagLogs/adobe-autotag-container/b8eafaa44ac443b087caf4d5e6aa109a 2026-02-24 20:08:18,192 - INFO - Filename : COMPLIANT_Smith_Walter_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+84. [2026-02-24 20:08:18] AdobeAutotagLogs/adobe-autotag-container/b8eafaa44ac443b087caf4d5e6aa109a 2026-02-24 20:08:18,224 - ERROR - Filename : Smith_Walter_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=b6b323b0-038a-496f-a58c-67fc83e3bc45; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+85. [2026-02-24 20:08:18] AdobeAutotagLogs/adobe-autotag-container/b9ec03550d9d46e08cb6c703d6a1aa47 2026-02-24 20:08:18,425 - ERROR - Filename : COMPLIANT_Williams_Bessie_E_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=e1dd4821-9fb6-47f7-94bf-bc9dfd7b902b; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+86. [2026-02-24 20:08:18] AdobeAutotagLogs/adobe-autotag-container/4708531e6a5749fa89c7c22638ae60e0 2026-02-24 20:08:18,428 - ERROR - Filename : COMPLIANT_Protho_Mary_Stillborn_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=8f6b524c-11bc-11f1-b386-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+87. [2026-02-24 20:08:18] AdobeAutotagLogs/adobe-autotag-container/5ac7cdbd19b244ef8532c2298c72ac54 2026-02-24 20:08:18,442 - ERROR - Filename : COMPLIANT_McNealy_Promis_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=8f6b4d7e-11bc-11f1-8ed7-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+88. [2026-02-24 20:08:18] AdobeAutotagLogs/adobe-autotag-container/b9ec03550d9d46e08cb6c703d6a1aa47 2026-02-24 20:08:18,451 - INFO - Filename : COMPLIANT_Williams_Bessie_E_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+89. [2026-02-24 20:08:18] AdobeAutotagLogs/adobe-autotag-container/4708531e6a5749fa89c7c22638ae60e0 2026-02-24 20:08:18,456 - INFO - Filename : COMPLIANT_Protho_Mary_Stillborn_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+90. [2026-02-24 20:08:18] AdobeAutotagLogs/adobe-autotag-container/5ac7cdbd19b244ef8532c2298c72ac54 2026-02-24 20:08:18,467 - INFO - Filename : COMPLIANT_McNealy_Promis_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+91. [2026-02-24 20:08:18] AdobeAutotagLogs/adobe-autotag-container/b9ec03550d9d46e08cb6c703d6a1aa47 2026-02-24 20:08:18,483 - ERROR - Filename : Williams_Bessie_E_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=e1dd4821-9fb6-47f7-94bf-bc9dfd7b902b; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+92. [2026-02-24 20:08:18] AdobeAutotagLogs/adobe-autotag-container/4708531e6a5749fa89c7c22638ae60e0 2026-02-24 20:08:18,507 - ERROR - Filename : Protho_Mary_Stillborn_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=8f6b524c-11bc-11f1-b386-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+93. [2026-02-24 20:08:18] AdobeAutotagLogs/adobe-autotag-container/5ac7cdbd19b244ef8532c2298c72ac54 2026-02-24 20:08:18,585 - ERROR - Filename : McNealy_Promis_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=8f6b4d7e-11bc-11f1-8ed7-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+94. [2026-02-24 20:08:18] AdobeAutotagLogs/adobe-autotag-container/cee8636dfe294e18958c702121ec7427 2026-02-24 20:08:18,603 - ERROR - Filename : COMPLIANT_Moody_Sam_Willie_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=8f859a1c-11bc-11f1-a9d7-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+95. [2026-02-24 20:08:18] AdobeAutotagLogs/adobe-autotag-container/cee8636dfe294e18958c702121ec7427 2026-02-24 20:08:18,625 - INFO - Filename : COMPLIANT_Moody_Sam_Willie_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+96. [2026-02-24 20:08:18] AdobeAutotagLogs/adobe-autotag-container/cee8636dfe294e18958c702121ec7427 2026-02-24 20:08:18,701 - ERROR - Filename : Moody_Sam_Willie_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=8f859a1c-11bc-11f1-a9d7-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+97. [2026-02-24 20:08:18] AdobeAutotagLogs/adobe-autotag-container/625c021d21864620b29f9ce56e86636a 2026-02-24 20:08:18,705 - ERROR - Filename : COMPLIANT_Whitehurst_Mattie_Sister_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=d1d0cc9e-ae78-4fb2-991b-998dbc14f3d4; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+98. [2026-02-24 20:08:18] AdobeAutotagLogs/adobe-autotag-container/625c021d21864620b29f9ce56e86636a 2026-02-24 20:08:18,728 - INFO - Filename : COMPLIANT_Whitehurst_Mattie_Sister_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+99. [2026-02-24 20:08:18] AdobeAutotagLogs/adobe-autotag-container/625c021d21864620b29f9ce56e86636a 2026-02-24 20:08:18,753 - ERROR - Filename : Whitehurst_Mattie_Sister_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=d1d0cc9e-ae78-4fb2-991b-998dbc14f3d4; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+100. [2026-02-24 20:08:18] AdobeAutotagLogs/adobe-autotag-container/81cdb69c2b7d4a6089def581d93a9491 2026-02-24 20:08:18,917 - ERROR - Filename : COMPLIANT_Lewis_Noah_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=8fb9b266-11bc-11f1-bc8e-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+101. [2026-02-24 20:08:18] AdobeAutotagLogs/adobe-autotag-container/81cdb69c2b7d4a6089def581d93a9491 2026-02-24 20:08:18,935 - INFO - Filename : COMPLIANT_Lewis_Noah_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+102. [2026-02-24 20:08:18] AdobeAutotagLogs/adobe-autotag-container/81cdb69c2b7d4a6089def581d93a9491 2026-02-24 20:08:18,967 - ERROR - Filename : Lewis_Noah_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=8fb9b266-11bc-11f1-bc8e-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+103. [2026-02-24 20:08:19] AdobeAutotagLogs/adobe-autotag-container/f0f6f78cc0fc43529b1ea1d18bcf76f3 2026-02-24 20:08:19,341 - ERROR - Filename : COMPLIANT_Payne_Thomas_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=8ff72be6-11bc-11f1-bc2c-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+104. [2026-02-24 20:08:19] AdobeAutotagLogs/adobe-autotag-container/f0f6f78cc0fc43529b1ea1d18bcf76f3 2026-02-24 20:08:19,367 - INFO - Filename : COMPLIANT_Payne_Thomas_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+105. [2026-02-24 20:08:19] AdobeAutotagLogs/adobe-autotag-container/f0f6f78cc0fc43529b1ea1d18bcf76f3 2026-02-24 20:08:19,411 - ERROR - Filename : Payne_Thomas_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=8ff72be6-11bc-11f1-bc2c-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+106. [2026-02-24 20:08:19] AdobeAutotagLogs/adobe-autotag-container/c49a83a2770c4b02a0144d27a28c15db 2026-02-24 20:08:19,494 - ERROR - Filename : COMPLIANT_Walker_Ruth_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=d1e9134e-8af6-4a89-9f55-a387bc04e0e2; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+107. [2026-02-24 20:08:19] AdobeAutotagLogs/adobe-autotag-container/c49a83a2770c4b02a0144d27a28c15db 2026-02-24 20:08:19,514 - INFO - Filename : COMPLIANT_Walker_Ruth_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+108. [2026-02-24 20:08:19] AdobeAutotagLogs/adobe-autotag-container/c49a83a2770c4b02a0144d27a28c15db 2026-02-24 20:08:19,543 - ERROR - Filename : Walker_Ruth_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=d1e9134e-8af6-4a89-9f55-a387bc04e0e2; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+109. [2026-02-24 20:08:19] AdobeAutotagLogs/adobe-autotag-container/4f77ea4646ca47bab0cc3b80d4520cab 2026-02-24 20:08:19,686 - ERROR - Filename : COMPLIANT_Smith_George_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=750f699a-373c-4bcf-adfe-79110960b652; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+110. [2026-02-24 20:08:19] AdobeAutotagLogs/adobe-autotag-container/4f77ea4646ca47bab0cc3b80d4520cab 2026-02-24 20:08:19,710 - INFO - Filename : COMPLIANT_Smith_George_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+111. [2026-02-24 20:08:19] AdobeAutotagLogs/adobe-autotag-container/4f77ea4646ca47bab0cc3b80d4520cab 2026-02-24 20:08:19,734 - ERROR - Filename : Smith_George_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=750f699a-373c-4bcf-adfe-79110960b652; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+112. [2026-02-24 20:08:19] AdobeAutotagLogs/adobe-autotag-container/20ad7d403b204c85b9e7fa9c54c9887c 2026-02-24 20:08:19,830 - ERROR - Filename : COMPLIANT_Sweet_Wade_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=90440f56-11bc-11f1-bb1e-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+113. [2026-02-24 20:08:19] AdobeAutotagLogs/adobe-autotag-container/20ad7d403b204c85b9e7fa9c54c9887c 2026-02-24 20:08:19,855 - INFO - Filename : COMPLIANT_Sweet_Wade_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+114. [2026-02-24 20:08:19] AdobeAutotagLogs/adobe-autotag-container/38cc554bbbaa41e180f1a9f688c9eb05 2026-02-24 20:08:19,873 - ERROR - Filename : COMPLIANT_Mobley_Sallie_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=9044ded6-11bc-11f1-81f4-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+115. [2026-02-24 20:08:19] AdobeAutotagLogs/adobe-autotag-container/38cc554bbbaa41e180f1a9f688c9eb05 2026-02-24 20:08:19,896 - INFO - Filename : COMPLIANT_Mobley_Sallie_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+116. [2026-02-24 20:08:19] AdobeAutotagLogs/adobe-autotag-container/20ad7d403b204c85b9e7fa9c54c9887c 2026-02-24 20:08:19,907 - ERROR - Filename : Sweet_Wade_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=90440f56-11bc-11f1-bb1e-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+117. [2026-02-24 20:08:19] AdobeAutotagLogs/adobe-autotag-container/38cc554bbbaa41e180f1a9f688c9eb05 2026-02-24 20:08:19,958 - ERROR - Filename : Mobley_Sallie_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=9044ded6-11bc-11f1-81f4-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+118. [2026-02-24 20:08:20] AdobeAutotagLogs/adobe-autotag-container/8e4f71303a0941a8846526e042025109 2026-02-24 20:08:20,160 - ERROR - Filename : COMPLIANT_Kittles_Neomi_Leona_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=906c2446-11bc-11f1-a4d8-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+119. [2026-02-24 20:08:20] AdobeAutotagLogs/adobe-autotag-container/8e4f71303a0941a8846526e042025109 2026-02-24 20:08:20,183 - INFO - Filename : COMPLIANT_Kittles_Neomi_Leona_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+120. [2026-02-24 20:08:20] AdobeAutotagLogs/adobe-autotag-container/8e4f71303a0941a8846526e042025109 2026-02-24 20:08:20,261 - ERROR - Filename : Kittles_Neomi_Leona_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=906c2446-11bc-11f1-a4d8-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+121. [2026-02-24 20:08:20] AdobeAutotagLogs/adobe-autotag-container/fd3a22de91b64ca9911bf0ce04f10210 2026-02-24 20:08:20,273 - ERROR - Filename : COMPLIANT_Wheeler_Abe_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=6802c455-7cb5-4a02-8c50-f0c122b512fb; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+122. [2026-02-24 20:08:20] AdobeAutotagLogs/adobe-autotag-container/fd3a22de91b64ca9911bf0ce04f10210 2026-02-24 20:08:20,298 - INFO - Filename : COMPLIANT_Wheeler_Abe_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+123. [2026-02-24 20:08:20] AdobeAutotagLogs/adobe-autotag-container/fd3a22de91b64ca9911bf0ce04f10210 2026-02-24 20:08:20,327 - ERROR - Filename : Wheeler_Abe_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=6802c455-7cb5-4a02-8c50-f0c122b512fb; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+124. [2026-02-24 20:08:20] AdobeAutotagLogs/adobe-autotag-container/86209f3504c04e83b0cdc820e368e6de 2026-02-24 20:08:20,400 - ERROR - Filename : COMPLIANT_Levat_Lela_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=909939cc-11bc-11f1-b3e5-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+125. [2026-02-24 20:08:20] AdobeAutotagLogs/adobe-autotag-container/86209f3504c04e83b0cdc820e368e6de 2026-02-24 20:08:20,422 - INFO - Filename : COMPLIANT_Levat_Lela_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+126. [2026-02-24 20:08:20] AdobeAutotagLogs/adobe-autotag-container/86209f3504c04e83b0cdc820e368e6de 2026-02-24 20:08:20,466 - ERROR - Filename : Levat_Lela_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=909939cc-11bc-11f1-b3e5-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+127. [2026-02-24 20:08:20] AdobeAutotagLogs/adobe-autotag-container/0462bb593bb949459f43230cc46a82d4 2026-02-24 20:08:20,478 - ERROR - Filename : COMPLIANT_Worthy_Saddie_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=964f107e-d6c7-4c22-af84-6e36e9993da1; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+128. [2026-02-24 20:08:20] AdobeAutotagLogs/adobe-autotag-container/d6165107c8e0404f86c6f89af4c897c3 2026-02-24 20:08:20,483 - ERROR - Filename : COMPLIANT_Knights_Sam_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=90a86528-11bc-11f1-a32f-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+129. [2026-02-24 20:08:20] AdobeAutotagLogs/adobe-autotag-container/0462bb593bb949459f43230cc46a82d4 2026-02-24 20:08:20,501 - INFO - Filename : COMPLIANT_Worthy_Saddie_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+130. [2026-02-24 20:08:20] AdobeAutotagLogs/adobe-autotag-container/d6165107c8e0404f86c6f89af4c897c3 2026-02-24 20:08:20,505 - INFO - Filename : COMPLIANT_Knights_Sam_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+131. [2026-02-24 20:08:20] AdobeAutotagLogs/adobe-autotag-container/6ae1480f50ad46689f47037353612819 2026-02-24 20:08:20,527 - ERROR - Filename : COMPLIANT_Simpkin_Gunnie_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=90a46ab8-11bc-11f1-8774-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+132. [2026-02-24 20:08:20] AdobeAutotagLogs/adobe-autotag-container/0462bb593bb949459f43230cc46a82d4 2026-02-24 20:08:20,529 - ERROR - Filename : Worthy_Saddie_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=964f107e-d6c7-4c22-af84-6e36e9993da1; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+133. [2026-02-24 20:08:20] AdobeAutotagLogs/adobe-autotag-container/6ae1480f50ad46689f47037353612819 2026-02-24 20:08:20,551 - INFO - Filename : COMPLIANT_Simpkin_Gunnie_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+134. [2026-02-24 20:08:20] AdobeAutotagLogs/adobe-autotag-container/060cafc7b295415a9760de384e059970 2026-02-24 20:08:20,558 - ERROR - Filename : COMPLIANT_Williams_Willie_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=09a32538-9cba-4498-9dc9-c7d7b830c514; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+135. [2026-02-24 20:08:20] AdobeAutotagLogs/adobe-autotag-container/42a1951eeaac4a0a80465f818f552a2a 2026-02-24 20:08:20,570 - ERROR - Filename : COMPLIANT_McCray_Alvin_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=90b3f14a-11bc-11f1-a3e5-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+136. [2026-02-24 20:08:20] AdobeAutotagLogs/adobe-autotag-container/060cafc7b295415a9760de384e059970 2026-02-24 20:08:20,583 - INFO - Filename : COMPLIANT_Williams_Willie_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+137. [2026-02-24 20:08:20] AdobeAutotagLogs/adobe-autotag-container/d6165107c8e0404f86c6f89af4c897c3 2026-02-24 20:08:20,587 - ERROR - Filename : Knights_Sam_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=90a86528-11bc-11f1-a32f-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+138. [2026-02-24 20:08:20] AdobeAutotagLogs/adobe-autotag-container/42a1951eeaac4a0a80465f818f552a2a 2026-02-24 20:08:20,595 - INFO - Filename : COMPLIANT_McCray_Alvin_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+139. [2026-02-24 20:08:20] AdobeAutotagLogs/adobe-autotag-container/6ae1480f50ad46689f47037353612819 2026-02-24 20:08:20,595 - ERROR - Filename : Simpkin_Gunnie_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=90a46ab8-11bc-11f1-8774-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+140. [2026-02-24 20:08:20] AdobeAutotagLogs/adobe-autotag-container/060cafc7b295415a9760de384e059970 2026-02-24 20:08:20,610 - ERROR - Filename : Williams_Willie_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=09a32538-9cba-4498-9dc9-c7d7b830c514; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+141. [2026-02-24 20:08:20] AdobeAutotagLogs/adobe-autotag-container/42a1951eeaac4a0a80465f818f552a2a 2026-02-24 20:08:20,630 - ERROR - Filename : McCray_Alvin_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=90b3f14a-11bc-11f1-a3e5-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+142. [2026-02-24 20:08:21] AdobeAutotagLogs/adobe-autotag-container/7bfe5a0fbcb64806a7fec4670d0207c9 2026-02-24 20:08:21,321 - ERROR - Filename : COMPLIANT_Waldron_Pinkey_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=559b66ce-49b9-40f9-9bd6-37009565d5a3; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+143. [2026-02-24 20:08:21] AdobeAutotagLogs/adobe-autotag-container/7bfe5a0fbcb64806a7fec4670d0207c9 2026-02-24 20:08:21,351 - INFO - Filename : COMPLIANT_Waldron_Pinkey_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+144. [2026-02-24 20:08:21] AdobeAutotagLogs/adobe-autotag-container/7bfe5a0fbcb64806a7fec4670d0207c9 2026-02-24 20:08:21,382 - ERROR - Filename : Waldron_Pinkey_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=559b66ce-49b9-40f9-9bd6-37009565d5a3; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+145. [2026-02-24 20:08:21] AdobeAutotagLogs/adobe-autotag-container/6be4db0cc55247babacc1bfcbae37db5 2026-02-24 20:08:21,735 - ERROR - Filename : COMPLIANT_Thomas_Mable_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=891f1419-cfea-4af0-aaba-870d32c03f7a; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+146. [2026-02-24 20:08:21] AdobeAutotagLogs/adobe-autotag-container/615f78f4de16456c9fd6e46320ab9188 2026-02-24 20:08:21,748 - ERROR - Filename : COMPLIANT_Prest_Alce_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=91632520-11bc-11f1-a527-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+147. [2026-02-24 20:08:21] AdobeAutotagLogs/adobe-autotag-container/6be4db0cc55247babacc1bfcbae37db5 2026-02-24 20:08:21,758 - INFO - Filename : COMPLIANT_Thomas_Mable_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+148. [2026-02-24 20:08:21] AdobeAutotagLogs/adobe-autotag-container/615f78f4de16456c9fd6e46320ab9188 2026-02-24 20:08:21,774 - INFO - Filename : COMPLIANT_Prest_Alce_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+149. [2026-02-24 20:08:21] AdobeAutotagLogs/adobe-autotag-container/6be4db0cc55247babacc1bfcbae37db5 2026-02-24 20:08:21,785 - ERROR - Filename : Thomas_Mable_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=891f1419-cfea-4af0-aaba-870d32c03f7a; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+150. [2026-02-24 20:08:21] AdobeAutotagLogs/adobe-autotag-container/615f78f4de16456c9fd6e46320ab9188 2026-02-24 20:08:21,824 - ERROR - Filename : Prest_Alce_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=91632520-11bc-11f1-a527-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+151. [2026-02-24 20:08:21] AdobeAutotagLogs/adobe-autotag-container/0ca78a93167d4cfb921f2491b9efa182 2026-02-24 20:08:21,855 - ERROR - Filename : COMPLIANT_Lain_L_C_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=917a01f0-11bc-11f1-9713-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+152. [2026-02-24 20:08:21] AdobeAutotagLogs/adobe-autotag-container/0ca78a93167d4cfb921f2491b9efa182 2026-02-24 20:08:21,878 - INFO - Filename : COMPLIANT_Lain_L_C_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+153. [2026-02-24 20:08:21] AdobeAutotagLogs/adobe-autotag-container/0ca78a93167d4cfb921f2491b9efa182 2026-02-24 20:08:21,922 - ERROR - Filename : Lain_L_C_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=917a01f0-11bc-11f1-9713-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+154. [2026-02-24 20:08:22] AdobeAutotagLogs/adobe-autotag-container/62f6c43588fb4284a19b00ed77571a03 2026-02-24 20:08:22,275 - ERROR - Filename : COMPLIANT_Washington_Martha_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=807abd91-68bd-4738-8bc8-fa49a01b1851; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+155. [2026-02-24 20:08:22] AdobeAutotagLogs/adobe-autotag-container/62f6c43588fb4284a19b00ed77571a03 2026-02-24 20:08:22,299 - INFO - Filename : COMPLIANT_Washington_Martha_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+156. [2026-02-24 20:08:22] AdobeAutotagLogs/adobe-autotag-container/62f6c43588fb4284a19b00ed77571a03 2026-02-24 20:08:22,330 - ERROR - Filename : Washington_Martha_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=807abd91-68bd-4738-8bc8-fa49a01b1851; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+157. [2026-02-24 20:08:22] AdobeAutotagLogs/adobe-autotag-container/ef4965e50f9d439ebfe271b5681b2436 2026-02-24 20:08:22,427 - ERROR - Filename : COMPLIANT_Murrey_Ellie_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=91cd6426-11bc-11f1-913e-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+158. [2026-02-24 20:08:22] AdobeAutotagLogs/adobe-autotag-container/ef4965e50f9d439ebfe271b5681b2436 2026-02-24 20:08:22,448 - INFO - Filename : COMPLIANT_Murrey_Ellie_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+159. [2026-02-24 20:08:22] AdobeAutotagLogs/adobe-autotag-container/4a2b752d733b4f57a1f7a377605a84a8 2026-02-24 20:08:22,466 - ERROR - Filename : COMPLIANT_Love_Carrie_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=91cca09a-11bc-11f1-964f-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+160. [2026-02-24 20:08:22] AdobeAutotagLogs/adobe-autotag-container/4a2b752d733b4f57a1f7a377605a84a8 2026-02-24 20:08:22,487 - INFO - Filename : COMPLIANT_Love_Carrie_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+161. [2026-02-24 20:08:22] AdobeAutotagLogs/adobe-autotag-container/ef4965e50f9d439ebfe271b5681b2436 2026-02-24 20:08:22,508 - ERROR - Filename : Murrey_Ellie_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=91cd6426-11bc-11f1-913e-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+162. [2026-02-24 20:08:22] AdobeAutotagLogs/adobe-autotag-container/4a2b752d733b4f57a1f7a377605a84a8 2026-02-24 20:08:22,536 - ERROR - Filename : Love_Carrie_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=91cca09a-11bc-11f1-964f-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+163. [2026-02-24 20:08:22] AdobeAutotagLogs/adobe-autotag-container/49b270b0206149daa19a269f93fd3519 2026-02-24 20:08:22,607 - ERROR - Filename : COMPLIANT_Sanders_Fibie_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=91e74f3a-11bc-11f1-b6be-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+164. [2026-02-24 20:08:22] AdobeAutotagLogs/adobe-autotag-container/49b270b0206149daa19a269f93fd3519 2026-02-24 20:08:22,633 - INFO - Filename : COMPLIANT_Sanders_Fibie_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+165. [2026-02-24 20:08:22] AdobeAutotagLogs/adobe-autotag-container/49b270b0206149daa19a269f93fd3519 2026-02-24 20:08:22,681 - ERROR - Filename : Sanders_Fibie_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=91e74f3a-11bc-11f1-b6be-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+166. [2026-02-24 20:08:23] AdobeAutotagLogs/adobe-autotag-container/77fba1ec9bc74baab08d07d3d566d5cb 2026-02-24 20:08:23,137 - ERROR - Filename : COMPLIANT_Love_Infant_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=923857f4-11bc-11f1-86d5-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+167. [2026-02-24 20:08:23] AdobeAutotagLogs/adobe-autotag-container/77fba1ec9bc74baab08d07d3d566d5cb 2026-02-24 20:08:23,210 - INFO - Filename : COMPLIANT_Love_Infant_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+168. [2026-02-24 20:08:23] AdobeAutotagLogs/adobe-autotag-container/65508fc090ea479f9f011bb1fcf3366c 2026-02-24 20:08:23,246 - ERROR - Filename : COMPLIANT_Polk_Fred_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=9248cd50-11bc-11f1-b114-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+169. [2026-02-24 20:08:23] AdobeAutotagLogs/adobe-autotag-container/65508fc090ea479f9f011bb1fcf3366c 2026-02-24 20:08:23,268 - INFO - Filename : COMPLIANT_Polk_Fred_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+170. [2026-02-24 20:08:23] AdobeAutotagLogs/adobe-autotag-container/77fba1ec9bc74baab08d07d3d566d5cb 2026-02-24 20:08:23,271 - ERROR - Filename : Love_Infant_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=923857f4-11bc-11f1-86d5-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+171. [2026-02-24 20:08:23] AdobeAutotagLogs/adobe-autotag-container/65508fc090ea479f9f011bb1fcf3366c 2026-02-24 20:08:23,320 - ERROR - Filename : Polk_Fred_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=9248cd50-11bc-11f1-b114-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+172. [2026-02-24 20:08:23] AdobeAutotagLogs/adobe-autotag-container/b0548fd10d9c457aab11e23cbf6fd5d9 2026-02-24 20:08:23,600 - ERROR - Filename : COMPLIANT_Washington_Infant_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=eba5ca51-a9c9-4a79-b124-df63f9d9760f; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+173. [2026-02-24 20:08:23] AdobeAutotagLogs/adobe-autotag-container/b0548fd10d9c457aab11e23cbf6fd5d9 2026-02-24 20:08:23,625 - INFO - Filename : COMPLIANT_Washington_Infant_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+174. [2026-02-24 20:08:23] AdobeAutotagLogs/adobe-autotag-container/b0548fd10d9c457aab11e23cbf6fd5d9 2026-02-24 20:08:23,656 - ERROR - Filename : Washington_Infant_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=eba5ca51-a9c9-4a79-b124-df63f9d9760f; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+175. [2026-02-24 20:08:23] AdobeAutotagLogs/adobe-autotag-container/bb481560c51b4b30b44006d726b9255a 2026-02-24 20:08:23,738 - ERROR - Filename : COMPLIANT_Stephens_Charlie_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=d04a355d-d2e1-42ab-b632-f4276db890b4; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+176. [2026-02-24 20:08:23] AdobeAutotagLogs/adobe-autotag-container/70114484eb3840e19ff6466e9c5d776e 2026-02-24 20:08:23,749 - ERROR - Filename : COMPLIANT_William_Major_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=72fed6ea-4cd8-4bbe-b2a0-6c7fb8a881eb; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+177. [2026-02-24 20:08:23] AdobeAutotagLogs/adobe-autotag-container/bb481560c51b4b30b44006d726b9255a 2026-02-24 20:08:23,761 - INFO - Filename : COMPLIANT_Stephens_Charlie_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+178. [2026-02-24 20:08:23] AdobeAutotagLogs/adobe-autotag-container/70114484eb3840e19ff6466e9c5d776e 2026-02-24 20:08:23,770 - INFO - Filename : COMPLIANT_William_Major_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+179. [2026-02-24 20:08:23] AdobeAutotagLogs/adobe-autotag-container/bb481560c51b4b30b44006d726b9255a 2026-02-24 20:08:23,797 - ERROR - Filename : Stephens_Charlie_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=d04a355d-d2e1-42ab-b632-f4276db890b4; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+180. [2026-02-24 20:08:23] AdobeAutotagLogs/adobe-autotag-container/70114484eb3840e19ff6466e9c5d776e 2026-02-24 20:08:23,806 - ERROR - Filename : William_Major_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=72fed6ea-4cd8-4bbe-b2a0-6c7fb8a881eb; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+181. [2026-02-24 20:08:24] AdobeAutotagLogs/adobe-autotag-container/6311d860ea9c4addac645b660f19001f 2026-02-24 20:08:24,035 - ERROR - Filename : COMPLIANT_Walker_Sarah_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=b4a868a4-aae8-4440-b870-7413c94737e2; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+182. [2026-02-24 20:08:24] AdobeAutotagLogs/adobe-autotag-container/6311d860ea9c4addac645b660f19001f 2026-02-24 20:08:24,058 - INFO - Filename : COMPLIANT_Walker_Sarah_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+183. [2026-02-24 20:08:24] AdobeAutotagLogs/adobe-autotag-container/6311d860ea9c4addac645b660f19001f 2026-02-24 20:08:24,089 - ERROR - Filename : Walker_Sarah_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=b4a868a4-aae8-4440-b870-7413c94737e2; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+184. [2026-02-24 20:08:24] AdobeAutotagLogs/adobe-autotag-container/63ce2e2d066843b38576fbd95112fdcd 2026-02-24 20:08:24,131 - ERROR - Filename : COMPLIANT_Tisdale_Jariot_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=4a59f051-1f91-4ea9-a1cb-c2a529e8ac29; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+185. [2026-02-24 20:08:24] AdobeAutotagLogs/adobe-autotag-container/63ce2e2d066843b38576fbd95112fdcd 2026-02-24 20:08:24,156 - INFO - Filename : COMPLIANT_Tisdale_Jariot_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+186. [2026-02-24 20:08:24] AdobeAutotagLogs/adobe-autotag-container/63ce2e2d066843b38576fbd95112fdcd 2026-02-24 20:08:24,188 - ERROR - Filename : Tisdale_Jariot_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=4a59f051-1f91-4ea9-a1cb-c2a529e8ac29; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+187. [2026-02-24 20:08:24] AdobeAutotagLogs/adobe-autotag-container/0637587041d04254a977ec55d49dfd1b 2026-02-24 20:08:24,188 - ERROR - Filename : COMPLIANT_Lesane_Nancy_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=92d82df6-11bc-11f1-97ab-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+188. [2026-02-24 20:08:24] AdobeAutotagLogs/adobe-autotag-container/0637587041d04254a977ec55d49dfd1b 2026-02-24 20:08:24,209 - INFO - Filename : COMPLIANT_Lesane_Nancy_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+189. [2026-02-24 20:08:24] AdobeAutotagLogs/adobe-autotag-container/d31574fe61d649b9916321ec3ea9dde0 2026-02-24 20:08:24,217 - ERROR - Filename : COMPLIANT_Rivers_Ullus_Jr_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=ffcc7ab8-4886-4602-b048-4442bbddcb81; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+190. [2026-02-24 20:08:24] AdobeAutotagLogs/adobe-autotag-container/d31574fe61d649b9916321ec3ea9dde0 2026-02-24 20:08:24,242 - INFO - Filename : COMPLIANT_Rivers_Ullus_Jr_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+191. [2026-02-24 20:08:24] AdobeAutotagLogs/adobe-autotag-container/0637587041d04254a977ec55d49dfd1b 2026-02-24 20:08:24,270 - ERROR - Filename : Lesane_Nancy_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=92d82df6-11bc-11f1-97ab-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+192. [2026-02-24 20:08:24] AdobeAutotagLogs/adobe-autotag-container/d31574fe61d649b9916321ec3ea9dde0 2026-02-24 20:08:24,272 - ERROR - Filename : Rivers_Ullus_Jr_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=ffcc7ab8-4886-4602-b048-4442bbddcb81; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+193. [2026-02-24 20:08:24] AdobeAutotagLogs/adobe-autotag-container/17ea6143e1564e6f8a6ac97a4d211587 2026-02-24 20:08:24,343 - ERROR - Filename : COMPLIANT_Tutson_Infant_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=b819fff9-9e59-49eb-bf8a-d13be8811a21; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+194. [2026-02-24 20:08:24] AdobeAutotagLogs/adobe-autotag-container/11f7c67f68954657860c375a4fd54959 2026-02-24 20:08:24,360 - ERROR - Filename : COMPLIANT_Person_Olla_Annie_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=92f0e8fa-11bc-11f1-86ee-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+195. [2026-02-24 20:08:24] AdobeAutotagLogs/adobe-autotag-container/3f58d888a91b495fa295a653758f647e 2026-02-24 20:08:24,368 - ERROR - Filename : COMPLIANT_McKeeg_Joe_Jr_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=92fa42c4-11bc-11f1-9053-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+196. [2026-02-24 20:08:24] AdobeAutotagLogs/adobe-autotag-container/17ea6143e1564e6f8a6ac97a4d211587 2026-02-24 20:08:24,372 - INFO - Filename : COMPLIANT_Tutson_Infant_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+197. [2026-02-24 20:08:24] AdobeAutotagLogs/adobe-autotag-container/11f7c67f68954657860c375a4fd54959 2026-02-24 20:08:24,381 - INFO - Filename : COMPLIANT_Person_Olla_Annie_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+198. [2026-02-24 20:08:24] AdobeAutotagLogs/adobe-autotag-container/3f58d888a91b495fa295a653758f647e 2026-02-24 20:08:24,391 - INFO - Filename : COMPLIANT_McKeeg_Joe_Jr_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+199. [2026-02-24 20:08:24] AdobeAutotagLogs/adobe-autotag-container/17ea6143e1564e6f8a6ac97a4d211587 2026-02-24 20:08:24,411 - ERROR - Filename : Tutson_Infant_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=b819fff9-9e59-49eb-bf8a-d13be8811a21; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+200. [2026-02-24 20:08:24] AdobeAutotagLogs/adobe-autotag-container/3f58d888a91b495fa295a653758f647e 2026-02-24 20:08:24,453 - ERROR - Filename : McKeeg_Joe_Jr_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=92fa42c4-11bc-11f1-9053-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+201. [2026-02-24 20:08:24] AdobeAutotagLogs/adobe-autotag-container/11f7c67f68954657860c375a4fd54959 2026-02-24 20:08:24,470 - ERROR - Filename : Person_Olla_Annie_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=92f0e8fa-11bc-11f1-86ee-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+202. [2026-02-24 20:08:24] AdobeAutotagLogs/adobe-autotag-container/f89f6d3f5d674dc2a0d6b0b8bfd01f41 2026-02-24 20:08:24,670 - ERROR - Filename : COMPLIANT_Young_William_Henry_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=ef24021c-619b-4fdb-b31a-7716d17e07dd; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+203. [2026-02-24 20:08:24] AdobeAutotagLogs/adobe-autotag-container/f89f6d3f5d674dc2a0d6b0b8bfd01f41 2026-02-24 20:08:24,693 - INFO - Filename : COMPLIANT_Young_William_Henry_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+204. [2026-02-24 20:08:24] AdobeAutotagLogs/adobe-autotag-container/f89f6d3f5d674dc2a0d6b0b8bfd01f41 2026-02-24 20:08:24,724 - ERROR - Filename : Young_William_Henry_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=ef24021c-619b-4fdb-b31a-7716d17e07dd; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+205. [2026-02-24 20:08:24] AdobeAutotagLogs/adobe-autotag-container/e6d7c7da80da4337ad4152f286eeb297 2026-02-24 20:08:24,933 - ERROR - Filename : COMPLIANT_Lewis_Clara_Mae_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=934cb39c-11bc-11f1-b8e1-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+206. [2026-02-24 20:08:24] AdobeAutotagLogs/adobe-autotag-container/e6d7c7da80da4337ad4152f286eeb297 2026-02-24 20:08:24,956 - INFO - Filename : COMPLIANT_Lewis_Clara_Mae_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+207. [2026-02-24 20:08:25] AdobeAutotagLogs/adobe-autotag-container/e6d7c7da80da4337ad4152f286eeb297 2026-02-24 20:08:25,000 - ERROR - Filename : Lewis_Clara_Mae_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=934cb39c-11bc-11f1-b8e1-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+208. [2026-02-24 20:08:25] AdobeAutotagLogs/adobe-autotag-container/d42b7d557e8a4a989930ee36ec77ce60 2026-02-24 20:08:25,764 - ERROR - Filename : COMPLIANT_McBride_Lee_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=93cb06b6-11bc-11f1-92b6-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+209. [2026-02-24 20:08:25] AdobeAutotagLogs/adobe-autotag-container/d42b7d557e8a4a989930ee36ec77ce60 2026-02-24 20:08:25,790 - INFO - Filename : COMPLIANT_McBride_Lee_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+210. [2026-02-24 20:08:25] AdobeAutotagLogs/adobe-autotag-container/d42b7d557e8a4a989930ee36ec77ce60 2026-02-24 20:08:25,848 - ERROR - Filename : McBride_Lee_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=93cb06b6-11bc-11f1-92b6-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+211. [2026-02-24 20:08:25] AdobeAutotagLogs/adobe-autotag-container/e1bedd177fa34206a7488a7bb91fe13c 2026-02-24 20:08:25,952 - ERROR - Filename : COMPLIANT_Morris_Fannie_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=93ea2096-11bc-11f1-b25d-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+212. [2026-02-24 20:08:25] AdobeAutotagLogs/adobe-autotag-container/e1bedd177fa34206a7488a7bb91fe13c 2026-02-24 20:08:25,974 - INFO - Filename : COMPLIANT_Morris_Fannie_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+213. [2026-02-24 20:08:26] AdobeAutotagLogs/adobe-autotag-container/e1bedd177fa34206a7488a7bb91fe13c 2026-02-24 20:08:26,019 - ERROR - Filename : Morris_Fannie_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=93ea2096-11bc-11f1-b25d-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+214. [2026-02-24 20:08:26] AdobeAutotagLogs/adobe-autotag-container/e584297ed68643e690b8c43fe52df4de 2026-02-24 20:08:26,080 - ERROR - Filename : COMPLIANT_Thompson_George_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=6a301ba5-efe4-49e7-8454-d866aeae78a2; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+215. [2026-02-24 20:08:26] AdobeAutotagLogs/adobe-autotag-container/e584297ed68643e690b8c43fe52df4de 2026-02-24 20:08:26,104 - INFO - Filename : COMPLIANT_Thompson_George_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+216. [2026-02-24 20:08:26] AdobeAutotagLogs/adobe-autotag-container/e584297ed68643e690b8c43fe52df4de 2026-02-24 20:08:26,135 - ERROR - Filename : Thompson_George_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=6a301ba5-efe4-49e7-8454-d866aeae78a2; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+217. [2026-02-24 20:08:26] AdobeAutotagLogs/adobe-autotag-container/332d295535d4455bbda2330e72a4aa6c 2026-02-24 20:08:26,630 - ERROR - Filename : COMPLIANT_Redding_Rosa_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=3d936bf7-b58b-4d8c-bd94-2538416f4d44; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+218. [2026-02-24 20:08:26] AdobeAutotagLogs/adobe-autotag-container/332d295535d4455bbda2330e72a4aa6c 2026-02-24 20:08:26,659 - INFO - Filename : COMPLIANT_Redding_Rosa_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+219. [2026-02-24 20:08:26] AdobeAutotagLogs/adobe-autotag-container/332d295535d4455bbda2330e72a4aa6c 2026-02-24 20:08:26,685 - ERROR - Filename : Redding_Rosa_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=3d936bf7-b58b-4d8c-bd94-2538416f4d44; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+220. [2026-02-24 20:08:26] AdobeAutotagLogs/adobe-autotag-container/ecf15b64951d494795f9f197f727cbe2 2026-02-24 20:08:26,700 - ERROR - Filename : COMPLIANT_Sams_Eddie_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=2e643618-02a0-41fe-845e-b31bc76ecb8f; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+221. [2026-02-24 20:08:26] AdobeAutotagLogs/adobe-autotag-container/ecf15b64951d494795f9f197f727cbe2 2026-02-24 20:08:26,724 - INFO - Filename : COMPLIANT_Sams_Eddie_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+222. [2026-02-24 20:08:26] AdobeAutotagLogs/adobe-autotag-container/ecf15b64951d494795f9f197f727cbe2 2026-02-24 20:08:26,752 - ERROR - Filename : Sams_Eddie_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=2e643618-02a0-41fe-845e-b31bc76ecb8f; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+223. [2026-02-24 20:08:26] AdobeAutotagLogs/adobe-autotag-container/da385726649a4ba592abd48d9494ed71 2026-02-24 20:08:26,877 - ERROR - Filename : COMPLIANT_Roberson_Mariah_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=95e1357e-9700-4a38-9d01-f86e34c3f094; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+224. [2026-02-24 20:08:26] AdobeAutotagLogs/adobe-autotag-container/da385726649a4ba592abd48d9494ed71 2026-02-24 20:08:26,898 - INFO - Filename : COMPLIANT_Roberson_Mariah_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+225. [2026-02-24 20:08:26] AdobeAutotagLogs/adobe-autotag-container/f2472dffbc33441f952c22367b002fdb 2026-02-24 20:08:26,910 - ERROR - Filename : COMPLIANT_Littleton_Indiana_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=9475dda2-11bc-11f1-a95f-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+226. [2026-02-24 20:08:26] AdobeAutotagLogs/adobe-autotag-container/da385726649a4ba592abd48d9494ed71 2026-02-24 20:08:26,927 - ERROR - Filename : Roberson_Mariah_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=95e1357e-9700-4a38-9d01-f86e34c3f094; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+227. [2026-02-24 20:08:26] AdobeAutotagLogs/adobe-autotag-container/f2472dffbc33441f952c22367b002fdb 2026-02-24 20:08:26,937 - INFO - Filename : COMPLIANT_Littleton_Indiana_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+228. [2026-02-24 20:08:26] AdobeAutotagLogs/adobe-autotag-container/0672eef84e7f4a0689e081e08bdd0928 2026-02-24 20:08:26,969 - ERROR - Filename : COMPLIANT_Rhines_Joseph_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=2bf54570-b63b-4428-9e83-6a832a9b4b50; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+229. [2026-02-24 20:08:26] AdobeAutotagLogs/adobe-autotag-container/f2472dffbc33441f952c22367b002fdb 2026-02-24 20:08:26,984 - ERROR - Filename : Littleton_Indiana_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=9475dda2-11bc-11f1-a95f-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+230. [2026-02-24 20:08:26] AdobeAutotagLogs/adobe-autotag-container/0672eef84e7f4a0689e081e08bdd0928 2026-02-24 20:08:26,989 - INFO - Filename : COMPLIANT_Rhines_Joseph_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+231. [2026-02-24 20:08:27] AdobeAutotagLogs/adobe-autotag-container/0672eef84e7f4a0689e081e08bdd0928 2026-02-24 20:08:27,018 - ERROR - Filename : Rhines_Joseph_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=2bf54570-b63b-4428-9e83-6a832a9b4b50; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+232. [2026-02-24 20:08:27] AdobeAutotagLogs/adobe-autotag-container/b0d86398660145b4987440e6bbbc951f 2026-02-24 20:08:27,114 - ERROR - Filename : COMPLIANT_Rackley_Willie_Stillborn_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=7a845d26-9fa2-4ea1-b410-7f9916d0ac7d; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+233. [2026-02-24 20:08:27] AdobeAutotagLogs/adobe-autotag-container/b0d86398660145b4987440e6bbbc951f 2026-02-24 20:08:27,138 - INFO - Filename : COMPLIANT_Rackley_Willie_Stillborn_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+234. [2026-02-24 20:08:27] AdobeAutotagLogs/adobe-autotag-container/b0d86398660145b4987440e6bbbc951f 2026-02-24 20:08:27,169 - ERROR - Filename : Rackley_Willie_Stillborn_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=7a845d26-9fa2-4ea1-b410-7f9916d0ac7d; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+235. [2026-02-24 20:08:27] AdobeAutotagLogs/adobe-autotag-container/a66e05d89b1947a386f9cbf3ec2a05fa 2026-02-24 20:08:27,354 - ERROR - Filename : COMPLIANT_Roberson_Sallie_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=887e3fe5-b0e8-4959-b536-be1bef5a581a; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+236. [2026-02-24 20:08:27] AdobeAutotagLogs/adobe-autotag-container/a66e05d89b1947a386f9cbf3ec2a05fa 2026-02-24 20:08:27,378 - INFO - Filename : COMPLIANT_Roberson_Sallie_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+237. [2026-02-24 20:08:27] AdobeAutotagLogs/adobe-autotag-container/a66e05d89b1947a386f9cbf3ec2a05fa 2026-02-24 20:08:27,406 - ERROR - Filename : Roberson_Sallie_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=887e3fe5-b0e8-4959-b536-be1bef5a581a; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+238. [2026-02-24 20:08:27] AdobeAutotagLogs/adobe-autotag-container/e97659166f79455ea4e3e930ab248558 2026-02-24 20:08:27,423 - ERROR - Filename : COMPLIANT_Hollands_Leroy_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=94c7bdac-11bc-11f1-8697-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+239. [2026-02-24 20:08:27] AdobeAutotagLogs/adobe-autotag-container/e97659166f79455ea4e3e930ab248558 2026-02-24 20:08:27,445 - INFO - Filename : COMPLIANT_Hollands_Leroy_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+240. [2026-02-24 20:08:27] AdobeAutotagLogs/adobe-autotag-container/e97659166f79455ea4e3e930ab248558 2026-02-24 20:08:27,495 - ERROR - Filename : Hollands_Leroy_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=94c7bdac-11bc-11f1-8697-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+241. [2026-02-24 20:08:27] AdobeAutotagLogs/adobe-autotag-container/f82599e85ee14c0a846a4df6e7d29f43 2026-02-24 20:08:27,919 - ERROR - Filename : COMPLIANT_Powell_Pearl_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=9513f578-11bc-11f1-8afc-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+242. [2026-02-24 20:08:27] AdobeAutotagLogs/adobe-autotag-container/f82599e85ee14c0a846a4df6e7d29f43 2026-02-24 20:08:27,947 - INFO - Filename : COMPLIANT_Powell_Pearl_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+243. [2026-02-24 20:08:28] AdobeAutotagLogs/adobe-autotag-container/f82599e85ee14c0a846a4df6e7d29f43 2026-02-24 20:08:28,005 - ERROR - Filename : Powell_Pearl_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=9513f578-11bc-11f1-8afc-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+244. [2026-02-24 20:08:28] AdobeAutotagLogs/adobe-autotag-container/3d7f03215c8249ca8978327b2279b9c4 2026-02-24 20:08:28,167 - ERROR - Filename : COMPLIANT_McCray_Jem_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=953a73b0-11bc-11f1-90d5-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+245. [2026-02-24 20:08:28] AdobeAutotagLogs/adobe-autotag-container/3d7f03215c8249ca8978327b2279b9c4 2026-02-24 20:08:28,195 - INFO - Filename : COMPLIANT_McCray_Jem_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+246. [2026-02-24 20:08:28] AdobeAutotagLogs/adobe-autotag-container/3d7f03215c8249ca8978327b2279b9c4 2026-02-24 20:08:28,252 - ERROR - Filename : McCray_Jem_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=953a73b0-11bc-11f1-90d5-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+247. [2026-02-24 20:08:28] AdobeAutotagLogs/adobe-autotag-container/e40633ff81fc46aea5a9906471b295a7 2026-02-24 20:08:28,318 - ERROR - Filename : COMPLIANT_McDaniel_Rebecca_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=9551aa30-11bc-11f1-b095-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+248. [2026-02-24 20:08:28] AdobeAutotagLogs/adobe-autotag-container/e40633ff81fc46aea5a9906471b295a7 2026-02-24 20:08:28,384 - INFO - Filename : COMPLIANT_McDaniel_Rebecca_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+249. [2026-02-24 20:08:28] AdobeAutotagLogs/adobe-autotag-container/e40633ff81fc46aea5a9906471b295a7 2026-02-24 20:08:28,438 - ERROR - Filename : McDaniel_Rebecca_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=9551aa30-11bc-11f1-b095-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+250. [2026-02-24 20:08:28] AdobeAutotagLogs/adobe-autotag-container/0737d39f7734478ba2731e7101cc135a 2026-02-24 20:08:28,502 - ERROR - Filename : COMPLIANT_Walker_Henry_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=94f81f53-7228-4d5f-a349-afff24100d66; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+251. [2026-02-24 20:08:28] AdobeAutotagLogs/adobe-autotag-container/0737d39f7734478ba2731e7101cc135a 2026-02-24 20:08:28,529 - INFO - Filename : COMPLIANT_Walker_Henry_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+252. [2026-02-24 20:08:28] AdobeAutotagLogs/adobe-autotag-container/0737d39f7734478ba2731e7101cc135a 2026-02-24 20:08:28,556 - ERROR - Filename : Walker_Henry_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=94f81f53-7228-4d5f-a349-afff24100d66; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+253. [2026-02-24 20:08:28] AdobeAutotagLogs/adobe-autotag-container/e36861f9782c4c6e94d0729b878c8e4e 2026-02-24 20:08:28,566 - ERROR - Filename : COMPLIANT_Roberts_Annie_May_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=37005d3b-f1bb-4638-b86f-fb04a2a15373; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+254. [2026-02-24 20:08:28] AdobeAutotagLogs/adobe-autotag-container/e36861f9782c4c6e94d0729b878c8e4e 2026-02-24 20:08:28,591 - INFO - Filename : COMPLIANT_Roberts_Annie_May_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+255. [2026-02-24 20:08:28] AdobeAutotagLogs/adobe-autotag-container/a77a06002a9e40e3a12f6f2e6b088d28 2026-02-24 20:08:28,609 - ERROR - Filename : COMPLIANT_Johnson_Infant_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=957ec358-11bc-11f1-be12-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+256. [2026-02-24 20:08:28] AdobeAutotagLogs/adobe-autotag-container/a77a06002a9e40e3a12f6f2e6b088d28 2026-02-24 20:08:28,630 - INFO - Filename : COMPLIANT_Johnson_Infant_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+257. [2026-02-24 20:08:28] AdobeAutotagLogs/adobe-autotag-container/e36861f9782c4c6e94d0729b878c8e4e 2026-02-24 20:08:28,651 - ERROR - Filename : Roberts_Annie_May_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=37005d3b-f1bb-4638-b86f-fb04a2a15373; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+258. [2026-02-24 20:08:28] AdobeAutotagLogs/adobe-autotag-container/a77a06002a9e40e3a12f6f2e6b088d28 2026-02-24 20:08:28,672 - ERROR - Filename : Johnson_Infant_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=957ec358-11bc-11f1-be12-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+259. [2026-02-24 20:08:29] AdobeAutotagLogs/adobe-autotag-container/b6cd43fd5ba049a2aa5929ae8ba242bf 2026-02-24 20:08:29,088 - ERROR - Filename : COMPLIANT_Miller_John_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=d7d74e2c-c28f-400c-86a7-1d017d0849de; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+260. [2026-02-24 20:08:29] AdobeAutotagLogs/adobe-autotag-container/b6cd43fd5ba049a2aa5929ae8ba242bf 2026-02-24 20:08:29,113 - INFO - Filename : COMPLIANT_Miller_John_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+261. [2026-02-24 20:08:29] AdobeAutotagLogs/adobe-autotag-container/b6cd43fd5ba049a2aa5929ae8ba242bf 2026-02-24 20:08:29,142 - ERROR - Filename : Miller_John_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=d7d74e2c-c28f-400c-86a7-1d017d0849de; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+262. [2026-02-24 20:08:29] AdobeAutotagLogs/adobe-autotag-container/8f52b328bb104b02859f5938e72b9674 2026-02-24 20:08:29,272 - ERROR - Filename : COMPLIANT_McDuffy_Laura_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=95dbeb14-11bc-11f1-a50d-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+263. [2026-02-24 20:08:29] AdobeAutotagLogs/adobe-autotag-container/8f52b328bb104b02859f5938e72b9674 2026-02-24 20:08:29,298 - INFO - Filename : COMPLIANT_McDuffy_Laura_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+264. [2026-02-24 20:08:29] AdobeAutotagLogs/adobe-autotag-container/8f52b328bb104b02859f5938e72b9674 2026-02-24 20:08:29,349 - ERROR - Filename : McDuffy_Laura_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=95dbeb14-11bc-11f1-a50d-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+265. [2026-02-24 20:08:29] AdobeAutotagLogs/adobe-autotag-container/39f0b1041ca64556b663a7843f172abc 2026-02-24 20:08:29,556 - ERROR - Filename : COMPLIANT_McColum_Lawrence_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=960bffca-11bc-11f1-a6de-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+266. [2026-02-24 20:08:29] AdobeAutotagLogs/adobe-autotag-container/39f0b1041ca64556b663a7843f172abc 2026-02-24 20:08:29,577 - INFO - Filename : COMPLIANT_McColum_Lawrence_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+267. [2026-02-24 20:08:29] AdobeAutotagLogs/adobe-autotag-container/39f0b1041ca64556b663a7843f172abc 2026-02-24 20:08:29,629 - ERROR - Filename : McColum_Lawrence_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=960bffca-11bc-11f1-a6de-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+268. [2026-02-24 20:08:29] AdobeAutotagLogs/adobe-autotag-container/5ed0f3dc3dda4c9aaff319c2345d9d59 2026-02-24 20:08:29,754 - ERROR - Filename : COMPLIANT_Walls_Jimmie_Jr_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=32047159-d197-4784-8d86-9a8aaa3f03f5; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+269. [2026-02-24 20:08:29] AdobeAutotagLogs/adobe-autotag-container/5ed0f3dc3dda4c9aaff319c2345d9d59 2026-02-24 20:08:29,776 - INFO - Filename : COMPLIANT_Walls_Jimmie_Jr_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+270. [2026-02-24 20:08:29] AdobeAutotagLogs/adobe-autotag-container/5ed0f3dc3dda4c9aaff319c2345d9d59 2026-02-24 20:08:29,809 - ERROR - Filename : Walls_Jimmie_Jr_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=32047159-d197-4784-8d86-9a8aaa3f03f5; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+271. [2026-02-24 20:08:29] AdobeAutotagLogs/adobe-autotag-container/3717c9ab8b4d4f90a6a189cecf0aafbd 2026-02-24 20:08:29,960 - ERROR - Filename : COMPLIANT_Lee_Moril_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=964bd0a0-11bc-11f1-9e94-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+272. [2026-02-24 20:08:29] AdobeAutotagLogs/adobe-autotag-container/3717c9ab8b4d4f90a6a189cecf0aafbd 2026-02-24 20:08:29,983 - INFO - Filename : COMPLIANT_Lee_Moril_chunk_1.pdf | Skipping failure analysis for rate limit error
+--------------------------------------------------------------------------------
+273. [2026-02-24 20:08:30] AdobeAutotagLogs/adobe-autotag-container/3717c9ab8b4d4f90a6a189cecf0aafbd 2026-02-24 20:08:30,017 - ERROR - Filename : Lee_Moril_chunk_1.pdf | Adobe API Error: description =Too Many Requests.; requestTrackingId=964bd0a0-11bc-11f1-9e94-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+--------------------------------------------------------------------------------
+274. [2026-02-24 20:08:36] AdobeAutotagLogs/adobe-autotag-container/62356810be374ad9a52f1a688c00fd33 2026-02-24 20:08:36,546 - ERROR - Filename : COMPLIANT_Green_Aron_chunk_1.pdf | Adobe Autotag API failed: description =There was an error processing your request.; requestTrackingId=lsiHvBmGreKfwC7tFtT1cxvZmW6ZMxrj; statusCode=500; errorCode=INTERNAL_SERVER_ERROR
+--------------------------------------------------------------------------------
+275. [2026-02-24 20:08:36] AdobeAutotagLogs/adobe-autotag-container/62356810be374ad9a52f1a688c00fd33 2026-02-24 20:08:36,688 - ERROR - Filename : Green_Aron_chunk_1.pdf | Adobe API Error: description =There was an error processing your request.; requestTrackingId=lsiHvBmGreKfwC7tFtT1cxvZmW6ZMxrj; statusCode=500; errorCode=INTERNAL_SERVER_ERROR

@@ -92,9 +92,20 @@ class PDFAccessibility(Stack):
 
         # Docker images with zstd compression for faster Fargate cold starts
         # zstd decompresses ~2-3x faster than gzip, reducing container startup time
+        # 
+        # CRITICAL: build_args with timestamp forces CDK to rebuild the image on every deploy.
+        # Without this, CDK uses content-based hashing which can miss changes if the hash
+        # doesn't change (e.g., when only code logic changes but file sizes stay similar).
+        # extra_hash ensures the asset hash changes on every deployment.
+        build_timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        
         adobe_autotag_image_asset = ecr_assets.DockerImageAsset(self, "AdobeAutotagImage",
                                                          directory="adobe-autotag-container",
                                                          platform=ecr_assets.Platform.LINUX_AMD64,
+                                                         build_args={
+                                                             "CACHE_BUST": build_timestamp
+                                                         },
+                                                         extra_hash=build_timestamp,  # Forces new asset hash on every deploy
                                                          # Enable zstd compression for faster decompression on Fargate
                                                          cache_to=ecr_assets.DockerCacheOption(
                                                              type="inline"

@@ -1,8 +1,12 @@
 # Use an official Python runtime as a parent image
 FROM public.ecr.aws/docker/library/python:3.12-slim
 
-# Force rebuild: 2026-02-24-v2 - Fixed RPM limiter with 3s jitter for thundering herd
-LABEL version="2.2" description="Adobe Autotag with global RPM rate limiting and anti-thundering-herd"
+# Force rebuild: 2026-02-24-v3 - CRITICAL: Global RPM counter + 3s jitter
+# Build timestamp: Mon Feb 24 2026 20:15:00 UTC
+LABEL version="2.3" description="Adobe Autotag with global RPM rate limiting and anti-thundering-herd"
+
+# CACHE BUSTER - Change this value to force Docker rebuild
+ARG CACHE_BUST=20260224-2015
 
 # Set the working directory in the container to /app
 WORKDIR /app
