@@ -55,18 +55,19 @@ class PDFAccessibility(Stack):
         adobe_api_max_in_flight_param = ssm.StringParameter(
             self, "AdobeApiMaxInFlightParam",
             parameter_name=adobe_api_max_in_flight_param_name,
-            string_value="150",  # Default: 150 concurrent requests (safely under 200 RPM)
+            string_value="50",  # Default: 50 concurrent requests - each PDF makes 2 API calls
             description="Adobe PDF Services API max concurrent in-flight requests"
         )
         
-        # SSM Parameter for max requests per minute (RPM limit)
-        # Set to 190 to stay safely under Adobe's 200 RPM hard limit with a 10 request buffer
+        # SSM Parameter for max requests per minute (RPM limit) PER API TYPE
+        # Since we track autotag and extract separately, this is the limit for each.
+        # Total RPM = autotag RPM + extract RPM, so 95 + 95 = 190 max total
         adobe_api_rpm_param_name = '/pdf-processing/adobe-api-rpm'
         adobe_api_rpm_param = ssm.StringParameter(
             self, "AdobeApiRpmParam",
             parameter_name=adobe_api_rpm_param_name,
-            string_value="190",  # 190 RPM limit (10 under Adobe's 200 hard limit for safety buffer)
-            description="Adobe PDF Services API max requests per minute (RPM limit)"
+            string_value="95",  # 95 RPM per API type (autotag + extract = 190 total, under 200 limit)
+            description="Adobe PDF Services API max requests per minute per API type (autotag/extract)"
         )
         
         # DynamoDB table for distributed in-flight tracking across ECS tasks
