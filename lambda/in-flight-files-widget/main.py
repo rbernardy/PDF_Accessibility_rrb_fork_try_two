@@ -78,8 +78,9 @@ def lambda_handler(event, context):
         max_in_flight = get_max_in_flight()
         
         # Get list of in-flight files FIRST (to count actual entries)
+        # Filter out entries that have been marked as released
         scan_response = table.scan(
-            FilterExpression='begins_with(counter_id, :prefix)',
+            FilterExpression='begins_with(counter_id, :prefix) AND attribute_not_exists(released)',
             ExpressionAttributeValues={
                 ':prefix': IN_FLIGHT_FILE_PREFIX
             }

@@ -350,12 +350,11 @@ def _track_file_in_flight(table, filename: str, api_type: str):
 
 
 def _untrack_file_in_flight(table, filename: str, api_type: str):
-    """Remove an individual file from in-flight tracking."""
+    """Mark an individual file as released (no longer in-flight)."""
     try:
-        # Scan for matching file entries and delete one
-        # Note: Don't use Limit with FilterExpression - it limits items scanned, not returned
+        # Scan for matching file entries and mark as released
         response = table.scan(
-            FilterExpression='begins_with(counter_id, :prefix) AND filename = :filename AND api_type = :api_type',
+            FilterExpression='begins_with(counter_id, :prefix) AND filename = :filename AND api_type = :api_type AND attribute_not_exists(released)',
             ExpressionAttributeValues={
                 ':prefix': IN_FLIGHT_FILE_PREFIX,
                 ':filename': os.path.basename(filename),
@@ -364,10 +363,17 @@ def _untrack_file_in_flight(table, filename: str, api_type: str):
         )
         
         if response.get('Items'):
-            # Delete the first matching item
+            # Mark the first matching item as released (instead of deleting)
             item = response['Items'][0]
-            table.delete_item(Key={'counter_id': item['counter_id']})
-            logger.info(f"Untracked file from in-flight: {filename} ({api_type})")
+            table.update_item(
+                Key={'counter_id': item['counter_id']},
+                UpdateExpression='SET released = :released, released_at = :now',
+                ExpressionAttributeValues={
+                    ':released': True,
+                    ':now': datetime.now(timezone.utc).isoformat()
+                }
+            )
+            logger.info(f"Marked file as released: {filename} ({api_type})")
         else:
             logger.warning(f"No matching file entry found to untrack: {filename} ({api_type})")
     except ClientError as e:
@@ -469,7 +475,7 @@ def get_current_usage() -> dict:
 
 def get_in_flight_files() -> list:
     """
-    Get the list of files currently in-flight.
+    Get the list of files currently in-flight (excludes released entries).
     
     Returns:
         List of dicts with filename, api_type, and started_at for each in-flight file
@@ -480,7 +486,7 @@ def get_in_flight_files() -> list:
     
     try:
         response = table.scan(
-            FilterExpression='begins_with(counter_id, :prefix)',
+            FilterExpression='begins_with(counter_id, :prefix) AND attribute_not_exists(released)',
             ExpressionAttributeValues={
                 ':prefix': IN_FLIGHT_FILE_PREFIX
             }
