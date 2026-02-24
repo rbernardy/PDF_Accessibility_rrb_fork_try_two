@@ -266,7 +266,7 @@ class PDFAccessibility(Stack):
                                                      )
 
         adobe_autotag_container_def = adobe_autotag_task_def.add_container("adobe-autotag-container",
-                                                                  image=ecs.ContainerImage.from_registry(adobe_autotag_image_asset.image_uri),
+                                                                  image=ecs.ContainerImage.from_docker_image_asset(adobe_autotag_image_asset),
                                                                   memory_limit_mib=4096,  # Increased from 1024 for large PDFs
                                                                   logging=ecs.LogDrivers.aws_logs(
         stream_prefix="AdobeAutotagLogs",
@@ -282,7 +282,7 @@ class PDFAccessibility(Stack):
                                                       )
 
         alt_text_container_def = alt_text_task_def.add_container("alt-text-llm-container",
-                                                                  image=ecs.ContainerImage.from_registry(alt_text_generator_image_asset.image_uri),
+                                                                  image=ecs.ContainerImage.from_docker_image_asset(alt_text_generator_image_asset),
                                                                   memory_limit_mib=4096,  # Increased from 1024 for large PDFs
                                                                    logging=ecs.LogDrivers.aws_logs(
         stream_prefix="AltTextGeneratorLogs",
