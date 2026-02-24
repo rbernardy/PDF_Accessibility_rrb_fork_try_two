@@ -262,7 +262,7 @@ class PDFAccessibility(Stack):
                                                       cpu=1024,  # Increased from 256 for large PDFs
                                                       execution_role=ecs_task_execution_role, 
                                                       task_role=ecs_task_role,
-                                                      family="PDFAccessibilityAdobeAutotagTaskDefinitionV2"  # Force new version
+                                                      family="PDFAccessibilityAdobeAutotagTaskDefinitionV3"  # V3: Force new revision with rate limiter fix
                                                      )
 
         adobe_autotag_container_def = adobe_autotag_task_def.add_container("adobe-autotag-container",
