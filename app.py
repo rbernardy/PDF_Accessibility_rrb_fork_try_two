@@ -1005,14 +1005,14 @@ class PDFAccessibility(Stack):
                     | sort @timestamp desc
                     | limit 100''',
                 width=24,
-                height=6
+                height=4
             ),
             # Row 2: In-Flight API Status (custom widget - full width)
             cloudwatch.CustomWidget(
                 title="Adobe API In-Flight Requests (Real-time)",
                 function_arn=rate_limit_widget_lambda.function_arn,
                 width=12,
-                height=4,
+                height=8,
                 update_on_refresh=True,
                 update_on_resize=False,
                 update_on_time_range_change=False

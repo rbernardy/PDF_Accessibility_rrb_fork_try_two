@@ -299,6 +299,16 @@ def get_temp_folder_path(pdf_key: str) -> Optional[str]:
     return f"temp/{relative_path}/"
 
 
+def get_s3_object_size(bucket: str, key: str) -> Optional[int]:
+    """Get the size of an S3 object in bytes."""
+    try:
+        response = s3.head_object(Bucket=bucket, Key=key)
+        return response.get('ContentLength', 0)
+    except ClientError as e:
+        logger.warning(f"Could not get size for s3://{bucket}/{key}: {e}")
+        return None
+
+
 def delete_s3_object(bucket: str, key: str) -> bool:
     """Delete a single S3 object."""
     try:
@@ -340,6 +350,77 @@ def delete_temp_folder(bucket: str, temp_prefix: str) -> int:
         logger.error(f"Error deleting temp folder {temp_prefix}: {e}")
     
     return deleted_count
+
+
+def create_placeholder_file(
+    bucket: str,
+    pdf_key: str,
+    file_size: Optional[int],
+    page_count: Optional[int],
+    failure_timestamp: str
+) -> bool:
+    """
+    Create a placeholder text file in /reports/place-holders/ after a PDF is deleted.
+    
+    Args:
+        bucket: S3 bucket name
+        pdf_key: Original PDF key (e.g., "pdf/folder-name/document.pdf")
+        file_size: File size in bytes (or None if unknown)
+        page_count: Number of pages (or None if unknown)
+        failure_timestamp: ISO timestamp of the failure
+        
+    Returns:
+        True if placeholder created successfully, False otherwise
+    """
+    try:
+        # Extract folder name and base filename from pdf_key
+        # pdf_key format: "pdf/folder-name/document.pdf"
+        parts = pdf_key.split('/')
+        if len(parts) >= 3 and parts[0] == 'pdf':
+            arrival_folder = parts[1]
+            base_filename = os.path.splitext(parts[-1])[0]  # Remove .pdf extension
+        else:
+            # Fallback for unexpected format
+            arrival_folder = 'unknown'
+            base_filename = os.path.splitext(os.path.basename(pdf_key))[0]
+        
+        # Create placeholder filename: {arrival_folder}_{base_filename}-{timestamp}.txt
+        # Clean timestamp for filename (replace colons and periods)
+        clean_timestamp = failure_timestamp.replace(':', '-').replace('.', '-')
+        placeholder_filename = f"{arrival_folder}_{base_filename}-{clean_timestamp}.txt"
+        placeholder_key = f"reports/place-holders/{placeholder_filename}"
+        
+        # Format file size for display
+        if file_size is not None:
+            if file_size >= 1024 * 1024:
+                size_str = f"{file_size / (1024 * 1024):.2f} MB"
+            elif file_size >= 1024:
+                size_str = f"{file_size / 1024:.2f} KB"
+            else:
+                size_str = f"{file_size} bytes"
+        else:
+            size_str = "unknown"
+        
+        # Format page count
+        page_count_str = str(page_count) if page_count is not None else "unknown"
+        
+        # Create placeholder content
+        content = f"{pdf_key}\n{size_str}\n{page_count_str}\n{failure_timestamp}\n"
+        
+        # Upload placeholder file to S3
+        s3.put_object(
+            Bucket=bucket,
+            Key=placeholder_key,
+            Body=content.encode('utf-8'),
+            ContentType='text/plain'
+        )
+        
+        logger.info(f"Created placeholder file: s3://{bucket}/{placeholder_key}")
+        return True
+        
+    except ClientError as e:
+        logger.error(f"Error creating placeholder file: {e}")
+        return False
 
 
 def get_uploader_info(bucket: str, key: str) -> dict:
@@ -535,8 +616,26 @@ def handler(event, context):
     # Get temp folder path
     temp_folder = get_temp_folder_path(pdf_key)
     
+    # Get file size before deleting (for placeholder file)
+    file_size = get_s3_object_size(bucket, pdf_key)
+    
+    # Get page count from execution input if available
+    page_count = execution_input.get('page_count') or execution_input.get('num_pages')
+    
+    # Generate failure timestamp
+    failure_timestamp = datetime.utcnow().isoformat() + 'Z'
+    
     # Delete the original PDF
     delete_s3_object(bucket, pdf_key)
+    
+    # Create placeholder file in /reports/place-holders/
+    create_placeholder_file(
+        bucket=bucket,
+        pdf_key=pdf_key,
+        file_size=file_size,
+        page_count=page_count,
+        failure_timestamp=failure_timestamp
+    )
     
     # Delete the temp folder
     temp_files_deleted = 0
@@ -574,6 +673,7 @@ def handler(event, context):
         'body': json.dumps({
             'pdf_deleted': pdf_key,
             'temp_files_deleted': temp_files_deleted,
-            'uploaded_by': uploader_info['username']
+            'uploaded_by': uploader_info['username'],
+            'placeholder_created': True
         })
     }
