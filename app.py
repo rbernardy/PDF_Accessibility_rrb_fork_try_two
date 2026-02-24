@@ -1023,7 +1023,7 @@ class PDFAccessibility(Stack):
                 title="Files Currently In-Flight",
                 function_arn=in_flight_files_widget_lambda.function_arn,
                 width=12,
-                height=4,
+                height=8,
                 update_on_refresh=True,
                 update_on_resize=False,
                 update_on_time_range_change=False
