@@ -1,8 +1,8 @@
 # Use an official Python runtime as a parent image
 FROM public.ecr.aws/docker/library/python:3.12-slim
 
-# Force rebuild: 2026-02-23 - Added in-flight tracking for rate limiting
-LABEL version="2.0" description="Adobe Autotag with in-flight rate limiting"
+# Force rebuild: 2026-02-24-v2 - Fixed RPM limiter with 3s jitter for thundering herd
+LABEL version="2.2" description="Adobe Autotag with global RPM rate limiting and anti-thundering-herd"
 
 # Set the working directory in the container to /app
 WORKDIR /app

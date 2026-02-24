@@ -232,8 +232,10 @@ def acquire_slot(api_type: str = 'adobe_api', max_wait_seconds: int = 300, filen
     start_time = time.time()
     attempt = 0
     
-    # Add initial random jitter (0-500ms) to spread out simultaneous container starts
-    initial_jitter = random.uniform(0, 0.5)
+    # Add initial random jitter (0-3 seconds) to spread out simultaneous container starts
+    # This is critical to prevent thundering herd when many ECS tasks start at once
+    initial_jitter = random.uniform(0, 3.0)
+    logger.info(f"[{api_type}] Initial jitter: {initial_jitter:.2f}s")
     time.sleep(initial_jitter)
     
     while (time.time() - start_time) < max_wait_seconds:
