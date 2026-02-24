@@ -29,11 +29,47 @@ def get_max_in_flight() -> int:
         return 150  # Default
 
 
+def reconcile_counter_if_needed(table, actual_file_count: int, counter_value: int) -> int:
+    """
+    Reconcile the in-flight counter with the actual file count.
+    
+    If there's a mismatch (counter > actual files), it means some containers
+    crashed without releasing their slots. This function corrects the counter
+    to match the actual file count.
+    
+    Args:
+        table: DynamoDB table resource
+        actual_file_count: Number of file_ entries in the table
+        counter_value: Current value of the in_flight counter
+        
+    Returns:
+        The corrected counter value
+    """
+    if counter_value > actual_file_count:
+        # Counter is higher than actual files - containers crashed without releasing
+        try:
+            table.update_item(
+                Key={'counter_id': IN_FLIGHT_COUNTER_ID},
+                UpdateExpression='SET in_flight = :count, last_updated = :now, last_reconciled = :now',
+                ExpressionAttributeValues={
+                    ':count': actual_file_count,
+                    ':now': datetime.now(timezone.utc).isoformat()
+                }
+            )
+            return actual_file_count
+        except ClientError as e:
+            # If reconciliation fails, just return the original counter
+            print(f"Failed to reconcile counter: {e}")
+            return counter_value
+    return counter_value
+
+
 def lambda_handler(event, context):
     """
     CloudWatch custom widget handler.
     
     Returns HTML content showing the list of files currently in-flight.
+    Includes automatic reconciliation of the counter with actual file entries.
     """
     table_name = os.environ.get('RATE_LIMIT_TABLE', 'adobe-api-in-flight-tracker')
     
@@ -41,12 +77,7 @@ def lambda_handler(event, context):
         table = dynamodb.Table(table_name)
         max_in_flight = get_max_in_flight()
         
-        # Get current in-flight count
-        counter_response = table.get_item(Key={'counter_id': IN_FLIGHT_COUNTER_ID})
-        counter_item = counter_response.get('Item', {})
-        in_flight_count = int(counter_item.get('in_flight', 0))
-        
-        # Get list of in-flight files
+        # Get list of in-flight files FIRST (to count actual entries)
         scan_response = table.scan(
             FilterExpression='begins_with(counter_id, :prefix)',
             ExpressionAttributeValues={
@@ -79,6 +110,15 @@ def lambda_handler(event, context):
         
         # Sort by started_at (oldest first)
         files.sort(key=lambda x: x['started_at'])
+        
+        # Get current in-flight counter value
+        counter_response = table.get_item(Key={'counter_id': IN_FLIGHT_COUNTER_ID})
+        counter_item = counter_response.get('Item', {})
+        raw_counter_value = int(counter_item.get('in_flight', 0))
+        
+        # Reconcile counter with actual file count if mismatched
+        # This fixes drift caused by crashed containers that didn't release slots
+        in_flight_count = reconcile_counter_if_needed(table, len(files), raw_counter_value)
         
         # Build HTML response
         if not files:

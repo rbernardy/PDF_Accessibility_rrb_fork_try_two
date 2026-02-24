@@ -138,13 +138,15 @@ class PDFAccessibility(Stack):
         # ECS Cluster
         pdf_remediation_cluster = ecs.Cluster(self, "PdfRemediationCluster", vpc=pdf_processing_vpc)
 
-        ecs_task_execution_role = iam.Role(self, "EcsTaskRole",
+        # Execution role: Used by ECS agent to pull images, write logs, etc.
+        ecs_task_execution_role = iam.Role(self, "EcsTaskExecutionRole",
                                  assumed_by=iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
                                  managed_policies=[
                 iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AmazonECSTaskExecutionRolePolicy")
             ])
 
-        ecs_task_role = iam.Role(self, "EcsTaskExecutionRole",
+        # Task role: Used by the container application for AWS API calls (S3, DynamoDB, SSM, etc.)
+        ecs_task_role = iam.Role(self, "EcsTaskRole",
             assumed_by=iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
             managed_policies=[
                 iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AmazonECSTaskExecutionRolePolicy"),
