@@ -353,20 +353,23 @@ def _untrack_file_in_flight(table, filename: str, api_type: str):
     """Remove an individual file from in-flight tracking."""
     try:
         # Scan for matching file entries and delete one
+        # Note: Don't use Limit with FilterExpression - it limits items scanned, not returned
         response = table.scan(
             FilterExpression='begins_with(counter_id, :prefix) AND filename = :filename AND api_type = :api_type',
             ExpressionAttributeValues={
                 ':prefix': IN_FLIGHT_FILE_PREFIX,
                 ':filename': os.path.basename(filename),
                 ':api_type': api_type
-            },
-            Limit=1
+            }
         )
         
         if response.get('Items'):
+            # Delete the first matching item
             item = response['Items'][0]
             table.delete_item(Key={'counter_id': item['counter_id']})
-            logger.debug(f"Untracked file from in-flight: {filename} ({api_type})")
+            logger.info(f"Untracked file from in-flight: {filename} ({api_type})")
+        else:
+            logger.warning(f"No matching file entry found to untrack: {filename} ({api_type})")
     except ClientError as e:
         logger.warning(f"Failed to untrack file from in-flight: {e}")
 
