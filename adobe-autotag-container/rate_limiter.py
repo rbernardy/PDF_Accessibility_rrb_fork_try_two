@@ -11,9 +11,12 @@ This ensures we never exceed:
 1. The configured maximum concurrent API calls (in-flight limit)
 2. The configured requests per minute (RPM limit)
 
+IMPORTANT: RPM is tracked as a SINGLE GLOBAL counter for all API types (autotag + extract)
+because Adobe's 200 RPM limit is global, not per-API-type.
+
 Configuration:
 - ADOBE_API_MAX_IN_FLIGHT: SSM parameter for max concurrent requests (default: 150)
-- ADOBE_API_RPM_PARAM: SSM parameter for max requests per minute (default: 190)
+- ADOBE_API_RPM_PARAM: SSM parameter for max requests per minute (default: 150, global)
 - RATE_LIMIT_TABLE: DynamoDB table name for rate limiting
 """
 
@@ -22,6 +25,7 @@ import time
 import logging
 import boto3
 import uuid
+import random
 from datetime import datetime, timezone
 from botocore.exceptions import ClientError
 from contextlib import contextmanager
@@ -94,28 +98,41 @@ def get_max_rpm() -> int:
     """
     Get the maximum allowed requests per minute from SSM.
     
-    Default is 95 per API type. Since we track autotag and extract separately,
-    this gives us 95 + 95 = 190 total, safely under Adobe's 200 RPM hard limit.
+    IMPORTANT: This is now a GLOBAL limit for ALL Adobe API calls combined
+    (autotag + extract). Adobe's 200 RPM limit is global, not per-API-type.
+    
+    Default is 150 to stay safely under Adobe's 200 RPM hard limit while
+    accounting for:
+    - Network latency in DynamoDB updates (race conditions)
+    - Multiple ECS containers checking simultaneously
+    - Clock skew between containers
+    
+    The SSM parameter can be adjusted if needed.
     """
     param_name = os.environ.get('ADOBE_API_RPM_PARAM', '/pdf-processing/adobe-api-rpm')
-    value_str = get_ssm_parameter(param_name, '95')
+    value_str = get_ssm_parameter(param_name, '150')
     try:
         return int(value_str)
     except ValueError:
-        logger.warning(f"Invalid max_rpm value '{value_str}', using default 95")
-        return 95
+        logger.warning(f"Invalid max_rpm value '{value_str}', using default 150")
+        return 150
 
 
 def _get_current_minute_window(api_type: str = 'adobe_api') -> str:
     """
-    Get the current minute window identifier for a specific API type.
-    Format: rpm_window_{api_type}_YYYYMMDD_HHMM
+    Get the current minute window identifier.
+    Format: rpm_window_combined_YYYYMMDD_HHMM
     
-    By including api_type, we track autotag and extract RPM separately,
-    allowing up to max_rpm for each API type per minute.
+    IMPORTANT: We use a SINGLE combined counter for ALL Adobe API calls
+    because Adobe's 200 RPM limit is GLOBAL across all API types (autotag + extract).
+    Previously we tracked them separately which could allow 95+95=190 in the same
+    minute window, but if they all hit at once, Adobe would reject them.
+    
+    The api_type parameter is kept for logging but NOT used in the window ID.
     """
     now = datetime.now(timezone.utc)
-    return f"{RPM_COUNTER_PREFIX}{api_type}_{now.strftime('%Y%m%d_%H%M')}"
+    # Use 'combined' instead of api_type to ensure single global counter
+    return f"{RPM_COUNTER_PREFIX}combined_{now.strftime('%Y%m%d_%H%M')}"
 
 
 def _increment_rpm_counter(table, api_type: str = 'adobe_api') -> int:
@@ -194,11 +211,11 @@ def acquire_slot(api_type: str = 'adobe_api', max_wait_seconds: int = 300, filen
     This function will block until both conditions are met or max_wait_seconds is exceeded.
     It uses DynamoDB conditional updates to ensure we never exceed limits.
     
-    RPM is tracked separately per api_type (autotag vs extract), allowing up to
-    max_rpm calls per minute for each API type.
+    IMPORTANT: RPM is now tracked as a SINGLE GLOBAL counter for all API types
+    because Adobe's 200 RPM limit is global across autotag and extract.
     
     Args:
-        api_type: The type of API call ('autotag' or 'extract')
+        api_type: The type of API call ('autotag' or 'extract') - used for logging only
         max_wait_seconds: Maximum seconds to wait for a slot (default: 5 minutes)
         filename: Optional filename to track which file is using this slot
         
@@ -214,6 +231,10 @@ def acquire_slot(api_type: str = 'adobe_api', max_wait_seconds: int = 300, filen
     max_rpm = get_max_rpm()
     start_time = time.time()
     attempt = 0
+    
+    # Add initial random jitter (0-500ms) to spread out simultaneous container starts
+    initial_jitter = random.uniform(0, 0.5)
+    time.sleep(initial_jitter)
     
     while (time.time() - start_time) < max_wait_seconds:
         attempt += 1
@@ -242,6 +263,8 @@ def acquire_slot(api_type: str = 'adobe_api', max_wait_seconds: int = 300, filen
                 # At in-flight capacity - wait and retry
                 current = get_current_in_flight()
                 wait_time = min(2 + (attempt * 0.5), 10)  # Exponential backoff, max 10s
+                # Add jitter to prevent thundering herd
+                wait_time += random.uniform(0, 1)
                 logger.info(f"[{api_type}] At in-flight capacity ({current}/{max_in_flight}), "
                            f"waiting {wait_time:.1f}s (attempt {attempt})...")
                 time.sleep(wait_time)
@@ -251,9 +274,10 @@ def acquire_slot(api_type: str = 'adobe_api', max_wait_seconds: int = 300, filen
                 raise
         
         # Second check: RPM limit - now that we have an in-flight slot, check RPM
+        # CRITICAL: Use combined window ID for global RPM tracking
         # If RPM fails, we need to release the in-flight slot we just acquired
         try:
-            window_id = _get_current_minute_window(api_type)
+            window_id = _get_current_minute_window(api_type)  # api_type ignored, uses 'combined'
             rpm_response = table.update_item(
                 Key={'counter_id': window_id},
                 UpdateExpression='SET #rc = if_not_exists(#rc, :zero) + :inc, '
@@ -278,7 +302,7 @@ def acquire_slot(api_type: str = 'adobe_api', max_wait_seconds: int = 300, filen
             
             # Success! Both in-flight and RPM slots acquired
             logger.info(f"[{api_type}] Acquired slot: {in_flight_count}/{max_in_flight} in-flight, "
-                       f"{rpm_count}/{max_rpm} RPM")
+                       f"{rpm_count}/{max_rpm} RPM (global)")
             
             # Track individual file if filename provided
             if filename:
@@ -294,8 +318,9 @@ def acquire_slot(api_type: str = 'adobe_api', max_wait_seconds: int = 300, filen
                 current_rpm = _get_current_rpm_count(table, api_type)
                 now = datetime.now(timezone.utc)
                 seconds_until_next_minute = 60 - now.second
-                wait_time = min(seconds_until_next_minute + 1, 10)
-                logger.info(f"[{api_type}] RPM limit reached ({current_rpm}/{max_rpm}), "
+                # Wait until next minute window, plus small jitter
+                wait_time = min(seconds_until_next_minute + 1, 15) + random.uniform(0, 2)
+                logger.info(f"[{api_type}] RPM limit reached ({current_rpm}/{max_rpm} global), "
                            f"waiting {wait_time:.1f}s for next minute window (attempt {attempt})...")
                 time.sleep(wait_time)
                 continue
@@ -447,29 +472,30 @@ def get_current_usage() -> dict:
     Get the current rate limit usage for monitoring.
     
     Returns:
-        Dictionary with in_flight count, max, available slots, and RPM info for both API types
+        Dictionary with in_flight count, max, available slots, and RPM info
     """
     table = _get_table()
     max_in_flight = get_max_in_flight()
     max_rpm = get_max_rpm()
     current_in_flight = get_current_in_flight()
     
-    # Get RPM for both API types
-    autotag_rpm = _get_current_rpm_count(table, 'autotag') if table else 0
-    extract_rpm = _get_current_rpm_count(table, 'extract') if table else 0
-    total_rpm = autotag_rpm + extract_rpm
+    # Get combined RPM (single global counter for all API types)
+    combined_rpm = _get_current_rpm_count(table, 'combined') if table else 0
     
     return {
         'in_flight': current_in_flight,
         'max_in_flight': max_in_flight,
         'available': max(0, max_in_flight - current_in_flight),
         'utilization_pct': round((current_in_flight / max_in_flight) * 100, 1) if max_in_flight > 0 else 0,
-        'rpm_autotag': autotag_rpm,
-        'rpm_extract': extract_rpm,
-        'rpm_total': total_rpm,
+        'rpm_current': combined_rpm,
+        'rpm_max': max_rpm,
+        'rpm_utilization_pct': round((combined_rpm / max_rpm) * 100, 1) if max_rpm > 0 else 0,
+        # Legacy fields for backward compatibility
+        'rpm_autotag': combined_rpm,  # Deprecated: now using combined counter
+        'rpm_extract': combined_rpm,  # Deprecated: now using combined counter
+        'rpm_total': combined_rpm,
         'rpm_max_per_type': max_rpm,
-        'rpm_max_total': max_rpm * 2,  # Combined limit for both API types
-        'rpm_utilization_pct': round((total_rpm / (max_rpm * 2)) * 100, 1) if max_rpm > 0 else 0
+        'rpm_max_total': max_rpm
     }
 
 

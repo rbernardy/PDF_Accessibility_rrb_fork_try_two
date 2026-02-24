@@ -39,33 +39,31 @@ def get_max_rpm() -> int:
         response = ssm.get_parameter(Name=rpm_param)
         return int(response['Parameter']['Value'])
     except (ClientError, ValueError):
-        return 190  # Default
+        return 150  # Default - global limit for all API types combined
 
 
 def get_current_rpm_count(table, api_type: str = None) -> int:
     """
     Get the current request count for this minute window.
-    If api_type is provided, gets count for that specific API type.
-    If api_type is None, returns combined count for both autotag and extract.
+    
+    IMPORTANT: We now use a SINGLE combined counter for all API types
+    because Adobe's 200 RPM limit is global across autotag and extract.
+    
+    The api_type parameter is kept for backward compatibility but is ignored.
     """
     now = datetime.now(timezone.utc)
     
-    if api_type:
-        window_id = f"{RPM_COUNTER_PREFIX}{api_type}_{now.strftime('%Y%m%d_%H%M')}"
-        try:
-            response = table.get_item(
-                Key={'counter_id': window_id},
-                ProjectionExpression='#rc',
-                ExpressionAttributeNames={'#rc': 'request_count'}
-            )
-            return int(response.get('Item', {}).get('request_count', 0))
-        except ClientError:
-            return 0
-    else:
-        # Get combined count for both API types
-        autotag_count = get_current_rpm_count(table, 'autotag')
-        extract_count = get_current_rpm_count(table, 'extract')
-        return autotag_count + extract_count
+    # Always use 'combined' window ID - Adobe's limit is global
+    window_id = f"{RPM_COUNTER_PREFIX}combined_{now.strftime('%Y%m%d_%H%M')}"
+    try:
+        response = table.get_item(
+            Key={'counter_id': window_id},
+            ProjectionExpression='#rc',
+            ExpressionAttributeNames={'#rc': 'request_count'}
+        )
+        return int(response.get('Item', {}).get('request_count', 0))
+    except ClientError:
+        return 0
 
 
 def lambda_handler(event, context):
@@ -79,7 +77,7 @@ def lambda_handler(event, context):
     try:
         table = dynamodb.Table(table_name)
         max_in_flight = get_max_in_flight()
-        max_rpm = get_max_rpm()  # This is per API type
+        max_rpm = get_max_rpm()  # Global limit for all API types combined
         
         # Get current in-flight count
         response = table.get_item(Key={'counter_id': IN_FLIGHT_COUNTER_ID})
@@ -87,29 +85,24 @@ def lambda_handler(event, context):
         in_flight = max(0, int(item.get('in_flight', 0)))  # Clamp to 0 minimum
         last_updated = item.get('last_updated', 'Never')
         
-        # Get current RPM counts for each API type
-        autotag_rpm = max(0, get_current_rpm_count(table, 'autotag'))
-        extract_rpm = max(0, get_current_rpm_count(table, 'extract'))
-        total_rpm = autotag_rpm + extract_rpm
-        max_total_rpm = max_rpm * 2  # Combined limit for both API types
+        # Get current RPM count (combined for all API types)
+        current_rpm = max(0, get_current_rpm_count(table))
         
         available = max(0, max_in_flight - in_flight)
         
         # Calculate percentages
         pct_used = (in_flight / max_in_flight * 100) if max_in_flight > 0 else 0
-        autotag_rpm_pct = (autotag_rpm / max_rpm * 100) if max_rpm > 0 else 0
-        extract_rpm_pct = (extract_rpm / max_rpm * 100) if max_rpm > 0 else 0
-        total_rpm_pct = (total_rpm / max_total_rpm * 100) if max_total_rpm > 0 else 0
+        rpm_pct = (current_rpm / max_rpm * 100) if max_rpm > 0 else 0
         
         # Determine status color (based on whichever limit is closer)
-        max_pct = max(pct_used, autotag_rpm_pct, extract_rpm_pct)
+        max_pct = max(pct_used, rpm_pct)
         if max_pct >= 90:
             status_color = '#d13212'  # Red
             status_text = 'NEAR LIMIT'
         elif max_pct >= 70:
             status_color = '#ff9900'  # Orange
             status_text = 'MODERATE'
-        elif in_flight > 0 or total_rpm > 0:
+        elif in_flight > 0 or current_rpm > 0:
             status_color = '#1d8102'  # Green
             status_text = 'PROCESSING'
         else:
@@ -128,8 +121,7 @@ def lambda_handler(event, context):
                 return '#545b64'
         
         inflight_color = get_color(pct_used, in_flight > 0)
-        autotag_color = get_color(autotag_rpm_pct, autotag_rpm > 0)
-        extract_color = get_color(extract_rpm_pct, extract_rpm > 0)
+        rpm_color = get_color(rpm_pct, current_rpm > 0)
         
         # Format last updated time
         if last_updated != 'Never':
@@ -145,6 +137,9 @@ def lambda_handler(event, context):
         now = datetime.now(timezone.utc)
         current_window = now.strftime('%H:%M')
         seconds_remaining = 60 - now.second
+        
+        # Calculate RPM available
+        rpm_available = max(0, max_rpm - current_rpm)
         
         # Build HTML response
         html = f'''
@@ -191,47 +186,37 @@ def lambda_handler(event, context):
             <!-- RPM Section -->
             <div style="margin-bottom: 15px;">
                 <div style="font-size: 12px; color: #545b64; margin-bottom: 8px; font-weight: bold;">
-                    Requests Per Minute (Window: {current_window} UTC, {seconds_remaining}s remaining)
+                    Requests Per Minute - Global (Window: {current_window} UTC, {seconds_remaining}s remaining)
                 </div>
-                
-                <!-- Autotag RPM -->
-                <div style="display: flex; align-items: center; margin-bottom: 8px;">
-                    <div style="width: 70px; font-size: 11px; color: #545b64;">Autotag:</div>
-                    <div style="flex: 1; background-color: #eaeded; border-radius: 4px; height: 14px; overflow: hidden; margin-right: 10px;">
-                        <div style="background-color: {autotag_color}; height: 100%; width: {min(autotag_rpm_pct, 100):.1f}%;"></div>
+                <div style="display: flex; justify-content: space-around; text-align: center; margin-bottom: 8px;">
+                    <div>
+                        <div style="font-size: 28px; font-weight: bold; color: {rpm_color};">{current_rpm}</div>
+                        <div style="font-size: 11px; color: #545b64;">This Minute</div>
                     </div>
-                    <div style="width: 80px; font-size: 12px; text-align: right;">
-                        <span style="color: {autotag_color}; font-weight: bold;">{autotag_rpm}</span>
-                        <span style="color: #545b64;">/{max_rpm}</span>
+                    <div style="font-size: 20px; color: #879596; align-self: center;">/</div>
+                    <div>
+                        <div style="font-size: 28px; font-weight: bold; color: #16191f;">{max_rpm}</div>
+                        <div style="font-size: 11px; color: #545b64;">Max RPM</div>
                     </div>
-                </div>
-                
-                <!-- Extract RPM -->
-                <div style="display: flex; align-items: center; margin-bottom: 8px;">
-                    <div style="width: 70px; font-size: 11px; color: #545b64;">Extract:</div>
-                    <div style="flex: 1; background-color: #eaeded; border-radius: 4px; height: 14px; overflow: hidden; margin-right: 10px;">
-                        <div style="background-color: {extract_color}; height: 100%; width: {min(extract_rpm_pct, 100):.1f}%;"></div>
-                    </div>
-                    <div style="width: 80px; font-size: 12px; text-align: right;">
-                        <span style="color: {extract_color}; font-weight: bold;">{extract_rpm}</span>
-                        <span style="color: #545b64;">/{max_rpm}</span>
+                    <div style="font-size: 20px; color: #879596; align-self: center;">=</div>
+                    <div>
+                        <div style="font-size: 28px; font-weight: bold; color: {rpm_color};">{rpm_available}</div>
+                        <div style="font-size: 11px; color: #545b64;">Available</div>
                     </div>
                 </div>
-                
-                <!-- Total RPM -->
-                <div style="display: flex; align-items: center; padding-top: 5px; border-top: 1px solid #eaeded;">
-                    <div style="width: 70px; font-size: 11px; color: #545b64; font-weight: bold;">Total:</div>
-                    <div style="flex: 1; font-size: 12px;">
-                        <span style="font-weight: bold;">{total_rpm}</span>
-                        <span style="color: #545b64;">/{max_total_rpm} ({total_rpm_pct:.1f}%)</span>
-                    </div>
+                <div style="background-color: #eaeded; border-radius: 4px; height: 16px; overflow: hidden;">
+                    <div style="background-color: {rpm_color}; height: 100%; width: {min(rpm_pct, 100):.1f}%;"></div>
+                </div>
+                <div style="text-align: center; font-size: 11px; color: #545b64; margin-top: 3px;">
+                    {rpm_pct:.1f}% of Adobe's 200 RPM limit (using {max_rpm} as safety margin)
                 </div>
             </div>
             
             <div style="padding: 10px; background-color: #f2f3f3; border-radius: 4px;">
                 <div style="font-size: 11px; color: #545b64;">
                     <strong>Dual Protection:</strong> Tasks must pass both limits before making Adobe API calls.
-                    In-flight limit ({max_in_flight}) prevents concurrent overload. RPM tracked separately per API type ({max_rpm} each, {max_total_rpm} total) to stay under Adobe's 200/min hard limit.
+                    In-flight limit ({max_in_flight}) prevents concurrent overload. 
+                    RPM limit ({max_rpm}/min) is global for all API types combined to stay safely under Adobe's 200/min hard limit.
                 </div>
             </div>
         </div>
