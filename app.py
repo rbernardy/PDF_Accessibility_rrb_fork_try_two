@@ -51,12 +51,11 @@ class PDFAccessibility(Stack):
         
         # SSM Parameter for max in-flight Adobe API requests (configurable without redeployment)
         # This controls how many API calls can be "in progress" at any time across all ECS tasks
-        # Reduced from 25 to 15 to prevent burst overload on Adobe's API
         adobe_api_max_in_flight_param_name = '/pdf-processing/adobe-api-max-in-flight'
         adobe_api_max_in_flight_param = ssm.StringParameter(
             self, "AdobeApiMaxInFlightParam",
             parameter_name=adobe_api_max_in_flight_param_name,
-            string_value="15",  # Default: 15 concurrent requests (reduced from 25 to prevent bursts)
+            string_value="25",  # Default: 25 concurrent requests
             description="Adobe PDF Services API max concurrent in-flight requests"
         )
         
@@ -83,7 +82,7 @@ class PDFAccessibility(Stack):
         adobe_api_rps_param = ssm.StringParameter(
             self, "AdobeApiRpsParam",
             parameter_name=adobe_api_rps_param_name,
-            string_value="3",  # 3 requests per second max (reduced from 5 for safety)
+            string_value="5",  # 5 requests per second max (burst control)
             description="Adobe PDF Services API max requests per second (burst control)"
         )
         

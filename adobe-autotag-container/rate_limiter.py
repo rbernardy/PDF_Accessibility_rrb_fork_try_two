@@ -89,17 +89,17 @@ def get_max_in_flight() -> int:
     """
     Get the maximum allowed in-flight Adobe API requests from SSM.
     
-    Default is 15 (reduced from 25) to prevent burst overload.
-    With 15 concurrent tasks and proper per-second limiting, we avoid
+    Default is 25 to allow good throughput while preventing burst overload.
+    With 25 concurrent tasks and proper per-second limiting, we avoid
     overwhelming Adobe's API even when many containers start simultaneously.
     """
     param_name = os.environ.get('ADOBE_API_MAX_IN_FLIGHT_PARAM', '/pdf-processing/adobe-api-max-in-flight')
-    value_str = get_ssm_parameter(param_name, '15')
+    value_str = get_ssm_parameter(param_name, '25')
     try:
         return int(value_str)
     except ValueError:
-        logger.warning(f"Invalid max_in_flight value '{value_str}', using default 15")
-        return 15
+        logger.warning(f"Invalid max_in_flight value '{value_str}', using default 25")
+        return 25
 
 
 def get_max_rpm() -> int:
@@ -135,16 +135,16 @@ def get_max_rps() -> int:
     Even if we're under the RPM limit, hitting Adobe with too many requests
     in a single second can trigger 429 errors.
     
-    Default is 3 requests per second (reduced from 5), which allows ~180 RPM 
-    theoretical max but spreads them out to avoid bursts.
+    Default is 5 requests per second, which allows ~300 RPM theoretical max
+    but spreads them out to avoid bursts.
     """
     param_name = os.environ.get('ADOBE_API_RPS_PARAM', '/pdf-processing/adobe-api-rps')
-    value_str = get_ssm_parameter(param_name, '3')
+    value_str = get_ssm_parameter(param_name, '5')
     try:
         return int(value_str)
     except ValueError:
-        logger.warning(f"Invalid max_rps value '{value_str}', using default 3")
-        return 3
+        logger.warning(f"Invalid max_rps value '{value_str}', using default 5")
+        return 5
 
 
 def _get_current_minute_window(api_type: str = 'adobe_api') -> str:

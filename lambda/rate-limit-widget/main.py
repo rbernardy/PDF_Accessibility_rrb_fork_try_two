@@ -29,7 +29,7 @@ def get_max_in_flight() -> int:
         response = ssm.get_parameter(Name=param_name)
         return int(response['Parameter']['Value'])
     except (ClientError, ValueError):
-        return 15  # Default (reduced from 25)
+        return 25  # Default
 
 
 def get_max_rpm() -> int:
