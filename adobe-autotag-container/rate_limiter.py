@@ -1,23 +1,28 @@
 """
-Adobe API Rate Limiter with In-Flight Tracking and RPM Limiting
+Adobe API Rate Limiter with In-Flight Tracking, RPM Limiting, and Per-Second Burst Control
 
 This module provides rate limiting for Adobe PDF Services API calls using DynamoDB
 to track in-flight requests AND enforce requests-per-minute limits. It tracks:
 - When requests START (increment in_flight)
 - When requests COMPLETE (decrement in_flight)
 - How many requests started in the current minute window (RPM tracking)
+- How many requests started in the current second window (burst control)
 
 This ensures we never exceed:
 1. The configured maximum concurrent API calls (in-flight limit)
 2. The configured requests per minute (RPM limit)
+3. The configured requests per second (burst limit) - prevents thundering herd
 
 IMPORTANT: RPM is tracked as a SINGLE GLOBAL counter for all API types (autotag + extract)
 because Adobe's 200 RPM limit is global, not per-API-type.
 
 Configuration:
-- ADOBE_API_MAX_IN_FLIGHT: SSM parameter for max concurrent requests (default: 150)
-- ADOBE_API_RPM_PARAM: SSM parameter for max requests per minute (default: 150, global)
+- ADOBE_API_MAX_IN_FLIGHT: SSM parameter for max concurrent requests (default: 25)
+- ADOBE_API_RPM_PARAM: SSM parameter for max requests per minute (default: 100, global)
+- ADOBE_API_RPS_PARAM: SSM parameter for max requests per second (default: 5, burst control)
 - RATE_LIMIT_TABLE: DynamoDB table name for rate limiting
+
+Version: 2.4-BURST-CONTROL
 """
 
 import os
@@ -46,6 +51,9 @@ IN_FLIGHT_COUNTER_ID = "adobe_api_in_flight"
 
 # Counter ID prefix for RPM tracking (one per minute window)
 RPM_COUNTER_PREFIX = "rpm_window_"
+
+# Counter ID prefix for RPS tracking (one per second window) - burst control
+RPS_COUNTER_PREFIX = "rps_window_"
 
 # Prefix for individual file tracking entries
 IN_FLIGHT_FILE_PREFIX = "file_"
@@ -81,17 +89,17 @@ def get_max_in_flight() -> int:
     """
     Get the maximum allowed in-flight Adobe API requests from SSM.
     
-    Default is 50 to stay safely under Adobe's 200 RPM limit.
-    Since each PDF makes 2 API calls (autotag + extract), and calls take
-    ~10-30 seconds, 50 concurrent tasks could generate ~100-200 API calls/minute.
+    Default is 25 (reduced from 50) to prevent burst overload.
+    With 25 concurrent tasks and proper per-second limiting, we avoid
+    overwhelming Adobe's API even when many containers start simultaneously.
     """
     param_name = os.environ.get('ADOBE_API_MAX_IN_FLIGHT_PARAM', '/pdf-processing/adobe-api-max-in-flight')
-    value_str = get_ssm_parameter(param_name, '50')
+    value_str = get_ssm_parameter(param_name, '25')
     try:
         return int(value_str)
     except ValueError:
-        logger.warning(f"Invalid max_in_flight value '{value_str}', using default 50")
-        return 50
+        logger.warning(f"Invalid max_in_flight value '{value_str}', using default 25")
+        return 25
 
 
 def get_max_rpm() -> int:
@@ -101,21 +109,42 @@ def get_max_rpm() -> int:
     IMPORTANT: This is now a GLOBAL limit for ALL Adobe API calls combined
     (autotag + extract). Adobe's 200 RPM limit is global, not per-API-type.
     
-    Default is 150 to stay safely under Adobe's 200 RPM hard limit while
-    accounting for:
+    Default is 100 (reduced from 150) to stay safely under Adobe's 200 RPM 
+    hard limit while accounting for:
     - Network latency in DynamoDB updates (race conditions)
     - Multiple ECS containers checking simultaneously
     - Clock skew between containers
+    - Adobe's internal throttling which may be stricter than documented
     
     The SSM parameter can be adjusted if needed.
     """
     param_name = os.environ.get('ADOBE_API_RPM_PARAM', '/pdf-processing/adobe-api-rpm')
-    value_str = get_ssm_parameter(param_name, '150')
+    value_str = get_ssm_parameter(param_name, '100')
     try:
         return int(value_str)
     except ValueError:
-        logger.warning(f"Invalid max_rpm value '{value_str}', using default 150")
-        return 150
+        logger.warning(f"Invalid max_rpm value '{value_str}', using default 100")
+        return 100
+
+
+def get_max_rps() -> int:
+    """
+    Get the maximum allowed requests per second from SSM (burst control).
+    
+    This prevents thundering herd when many containers start simultaneously.
+    Even if we're under the RPM limit, hitting Adobe with too many requests
+    in a single second can trigger 429 errors.
+    
+    Default is 5 requests per second, which allows ~300 RPM theoretical max
+    but spreads them out to avoid bursts.
+    """
+    param_name = os.environ.get('ADOBE_API_RPS_PARAM', '/pdf-processing/adobe-api-rps')
+    value_str = get_ssm_parameter(param_name, '5')
+    try:
+        return int(value_str)
+    except ValueError:
+        logger.warning(f"Invalid max_rps value '{value_str}', using default 5")
+        return 5
 
 
 def _get_current_minute_window(api_type: str = 'adobe_api') -> str:
@@ -133,6 +162,76 @@ def _get_current_minute_window(api_type: str = 'adobe_api') -> str:
     now = datetime.now(timezone.utc)
     # Use 'combined' instead of api_type to ensure single global counter
     return f"{RPM_COUNTER_PREFIX}combined_{now.strftime('%Y%m%d_%H%M')}"
+
+
+def _get_current_second_window() -> str:
+    """
+    Get the current second window identifier for burst control.
+    Format: rps_window_combined_YYYYMMDD_HHMMSS
+    
+    This provides per-second rate limiting to prevent thundering herd
+    when many containers try to hit Adobe's API simultaneously.
+    """
+    now = datetime.now(timezone.utc)
+    return f"{RPS_COUNTER_PREFIX}combined_{now.strftime('%Y%m%d_%H%M%S')}"
+
+
+def _check_and_increment_rps(table, max_rps: int) -> tuple:
+    """
+    Check if we're under the per-second limit and increment if so.
+    
+    Returns:
+        Tuple of (success: bool, current_count: int)
+    """
+    window_id = _get_current_second_window()
+    
+    try:
+        response = table.update_item(
+            Key={'counter_id': window_id},
+            UpdateExpression='SET #rc = if_not_exists(#rc, :zero) + :inc, '
+                            '#lu = :now, '
+                            '#ttl = :ttl',
+            ConditionExpression='attribute_not_exists(#rc) OR #rc < :max',
+            ExpressionAttributeNames={
+                '#rc': 'request_count',
+                '#lu': 'last_updated',
+                '#ttl': 'ttl'
+            },
+            ExpressionAttributeValues={
+                ':zero': 0,
+                ':inc': 1,
+                ':max': max_rps,
+                ':now': datetime.now(timezone.utc).isoformat(),
+                ':ttl': int(time.time()) + 10  # Auto-expire after 10 seconds
+            },
+            ReturnValues='UPDATED_NEW'
+        )
+        count = int(response['Attributes']['request_count'])
+        return (True, count)
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
+            # At per-second limit
+            return (False, max_rps)
+        logger.error(f"Error checking RPS limit: {e}")
+        raise
+
+
+def _get_current_rps_count(table) -> int:
+    """
+    Get the current request count for this second window.
+    """
+    window_id = _get_current_second_window()
+    
+    try:
+        response = table.get_item(
+            Key={'counter_id': window_id},
+            ProjectionExpression='#rc',
+            ExpressionAttributeNames={'#rc': 'request_count'}
+        )
+        return int(response.get('Item', {}).get('request_count', 0))
+    except ClientError as e:
+        logger.error(f"Error getting RPS count: {e}")
+        return 0
 
 
 def _increment_rpm_counter(table, api_type: str = 'adobe_api') -> int:
@@ -206,9 +305,10 @@ def acquire_slot(api_type: str = 'adobe_api', max_wait_seconds: int = 300, filen
     """
     Acquire a slot for an Adobe API call by:
     1. First checking the in-flight limit (to avoid wasting RPM slots)
-    2. Then checking and incrementing the RPM counter for the current minute window
+    2. Then checking the per-second burst limit (to prevent thundering herd)
+    3. Finally checking and incrementing the RPM counter for the current minute window
     
-    This function will block until both conditions are met or max_wait_seconds is exceeded.
+    This function will block until all conditions are met or max_wait_seconds is exceeded.
     It uses DynamoDB conditional updates to ensure we never exceed limits.
     
     IMPORTANT: RPM is now tracked as a SINGLE GLOBAL counter for all API types
@@ -229,12 +329,13 @@ def acquire_slot(api_type: str = 'adobe_api', max_wait_seconds: int = 300, filen
     
     max_in_flight = get_max_in_flight()
     max_rpm = get_max_rpm()
+    max_rps = get_max_rps()
     start_time = time.time()
     attempt = 0
     
-    # Add initial random jitter (0-3 seconds) to spread out simultaneous container starts
-    # This is critical to prevent thundering herd when many ECS tasks start at once
-    initial_jitter = random.uniform(0, 3.0)
+    # Add initial random jitter (0-8 seconds) to spread out simultaneous container starts
+    # Increased from 0-3s to better prevent thundering herd when many ECS tasks start at once
+    initial_jitter = random.uniform(0, 8.0)
     logger.info(f"[{api_type}] Initial jitter: {initial_jitter:.2f}s")
     time.sleep(initial_jitter)
     
@@ -266,7 +367,7 @@ def acquire_slot(api_type: str = 'adobe_api', max_wait_seconds: int = 300, filen
                 current = get_current_in_flight()
                 wait_time = min(2 + (attempt * 0.5), 10)  # Exponential backoff, max 10s
                 # Add jitter to prevent thundering herd
-                wait_time += random.uniform(0, 1)
+                wait_time += random.uniform(0, 2)
                 logger.info(f"[{api_type}] At in-flight capacity ({current}/{max_in_flight}), "
                            f"waiting {wait_time:.1f}s (attempt {attempt})...")
                 time.sleep(wait_time)
@@ -275,7 +376,24 @@ def acquire_slot(api_type: str = 'adobe_api', max_wait_seconds: int = 300, filen
                 logger.error(f"DynamoDB error checking in-flight limit: {e}")
                 raise
         
-        # Second check: RPM limit - now that we have an in-flight slot, check RPM
+        # Second check: Per-second burst limit (prevents thundering herd)
+        # If RPS fails, we need to release the in-flight slot we just acquired
+        try:
+            rps_success, rps_count = _check_and_increment_rps(table, max_rps)
+            if not rps_success:
+                # At per-second limit - release in-flight slot and wait for next second
+                _release_in_flight_only(table)
+                wait_time = 1.0 + random.uniform(0.1, 0.5)  # Wait ~1 second plus jitter
+                logger.info(f"[{api_type}] Per-second limit reached ({rps_count}/{max_rps} RPS), "
+                           f"waiting {wait_time:.2f}s (attempt {attempt})...")
+                time.sleep(wait_time)
+                continue
+        except ClientError as e:
+            _release_in_flight_only(table)
+            logger.error(f"DynamoDB error checking RPS limit: {e}")
+            raise
+        
+        # Third check: RPM limit - now that we have in-flight and RPS slots, check RPM
         # CRITICAL: Use combined window ID for global RPM tracking
         # If RPM fails, we need to release the in-flight slot we just acquired
         try:
@@ -302,9 +420,9 @@ def acquire_slot(api_type: str = 'adobe_api', max_wait_seconds: int = 300, filen
             )
             rpm_count = int(rpm_response['Attributes']['request_count'])
             
-            # Success! Both in-flight and RPM slots acquired
+            # Success! All three checks passed: in-flight, RPS, and RPM slots acquired
             logger.info(f"[{api_type}] Acquired slot: {in_flight_count}/{max_in_flight} in-flight, "
-                       f"{rpm_count}/{max_rpm} RPM (global)")
+                       f"{rps_count}/{max_rps} RPS, {rpm_count}/{max_rpm} RPM (global)")
             
             # Track individual file if filename provided
             if filename:
@@ -321,7 +439,7 @@ def acquire_slot(api_type: str = 'adobe_api', max_wait_seconds: int = 300, filen
                 now = datetime.now(timezone.utc)
                 seconds_until_next_minute = 60 - now.second
                 # Wait until next minute window, plus small jitter
-                wait_time = min(seconds_until_next_minute + 1, 15) + random.uniform(0, 2)
+                wait_time = min(seconds_until_next_minute + 1, 15) + random.uniform(0, 3)
                 logger.info(f"[{api_type}] RPM limit reached ({current_rpm}/{max_rpm} global), "
                            f"waiting {wait_time:.1f}s for next minute window (attempt {attempt})...")
                 time.sleep(wait_time)
@@ -474,15 +592,19 @@ def get_current_usage() -> dict:
     Get the current rate limit usage for monitoring.
     
     Returns:
-        Dictionary with in_flight count, max, available slots, and RPM info
+        Dictionary with in_flight count, max, available slots, RPM info, and RPS info
     """
     table = _get_table()
     max_in_flight = get_max_in_flight()
     max_rpm = get_max_rpm()
+    max_rps = get_max_rps()
     current_in_flight = get_current_in_flight()
     
     # Get combined RPM (single global counter for all API types)
     combined_rpm = _get_current_rpm_count(table, 'combined') if table else 0
+    
+    # Get current RPS (per-second burst counter)
+    current_rps = _get_current_rps_count(table) if table else 0
     
     return {
         'in_flight': current_in_flight,
@@ -492,6 +614,9 @@ def get_current_usage() -> dict:
         'rpm_current': combined_rpm,
         'rpm_max': max_rpm,
         'rpm_utilization_pct': round((combined_rpm / max_rpm) * 100, 1) if max_rpm > 0 else 0,
+        'rps_current': current_rps,
+        'rps_max': max_rps,
+        'rps_utilization_pct': round((current_rps / max_rps) * 100, 1) if max_rps > 0 else 0,
         # Legacy fields for backward compatibility
         'rpm_autotag': combined_rpm,  # Deprecated: now using combined counter
         'rpm_extract': combined_rpm,  # Deprecated: now using combined counter
@@ -604,3 +729,10 @@ def get_rpm_limit() -> int:
     Get the configured RPM limit.
     """
     return get_max_rpm()
+
+
+def get_rps_limit() -> int:
+    """
+    Get the configured RPS (requests per second) limit for burst control.
+    """
+    return get_max_rps()

@@ -26,7 +26,7 @@ def get_max_in_flight() -> int:
         response = ssm.get_parameter(Name=param_name)
         return int(response['Parameter']['Value'])
     except (ClientError, ValueError):
-        return 150  # Default
+        return 25  # Default (reduced from 150)
 
 
 def reconcile_counter_if_needed(table, actual_file_count: int, counter_value: int) -> int:

@@ -29,7 +29,7 @@ def get_max_in_flight() -> int:
         response = ssm.get_parameter(Name=param_name)
         return int(response['Parameter']['Value'])
     except (ClientError, ValueError):
-        return 150  # Default
+        return 25  # Default (reduced from 150)
 
 
 def get_max_rpm() -> int:
@@ -39,7 +39,7 @@ def get_max_rpm() -> int:
         response = ssm.get_parameter(Name=rpm_param)
         return int(response['Parameter']['Value'])
     except (ClientError, ValueError):
-        return 150  # Default - global limit for all API types combined
+        return 100  # Default - global limit for all API types combined (reduced from 150)
 
 
 def get_current_rpm_count(table, api_type: str = None) -> int:

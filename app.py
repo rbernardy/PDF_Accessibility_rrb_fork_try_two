@@ -51,26 +51,40 @@ class PDFAccessibility(Stack):
         
         # SSM Parameter for max in-flight Adobe API requests (configurable without redeployment)
         # This controls how many API calls can be "in progress" at any time across all ECS tasks
+        # Reduced from 50 to 25 to prevent burst overload on Adobe's API
         adobe_api_max_in_flight_param_name = '/pdf-processing/adobe-api-max-in-flight'
         adobe_api_max_in_flight_param = ssm.StringParameter(
             self, "AdobeApiMaxInFlightParam",
             parameter_name=adobe_api_max_in_flight_param_name,
-            string_value="50",  # Default: 50 concurrent requests - each PDF makes 2 API calls
+            string_value="25",  # Default: 25 concurrent requests (reduced from 50 to prevent bursts)
             description="Adobe PDF Services API max concurrent in-flight requests"
         )
         
         # SSM Parameter for max requests per minute (RPM limit) - GLOBAL for all API types
         # Adobe's 200 RPM limit is GLOBAL across all API types (autotag + extract combined).
-        # We use 150 as default to provide safety margin for:
+        # We use 100 as default (reduced from 150) to provide safety margin for:
         # - Network latency in DynamoDB updates (race conditions)
         # - Multiple ECS containers checking simultaneously
         # - Clock skew between containers
+        # - Adobe's internal throttling which may be stricter than documented
         adobe_api_rpm_param_name = '/pdf-processing/adobe-api-rpm'
         adobe_api_rpm_param = ssm.StringParameter(
             self, "AdobeApiRpmParam",
             parameter_name=adobe_api_rpm_param_name,
-            string_value="150",  # 150 RPM global limit (combined autotag + extract, under 200 Adobe limit)
+            string_value="100",  # 100 RPM global limit (reduced from 150 for safety)
             description="Adobe PDF Services API max requests per minute (global limit for all API types)"
+        )
+        
+        # SSM Parameter for max requests per second (RPS limit) - burst control
+        # This prevents thundering herd when many containers start simultaneously.
+        # Even if we're under the RPM limit, hitting Adobe with too many requests
+        # in a single second can trigger 429 errors.
+        adobe_api_rps_param_name = '/pdf-processing/adobe-api-rps'
+        adobe_api_rps_param = ssm.StringParameter(
+            self, "AdobeApiRpsParam",
+            parameter_name=adobe_api_rps_param_name,
+            string_value="5",  # 5 requests per second max (burst control)
+            description="Adobe PDF Services API max requests per second (burst control)"
         )
         
         # DynamoDB table for distributed in-flight tracking across ECS tasks
@@ -78,6 +92,7 @@ class PDFAccessibility(Stack):
         # - Incremented when API call starts
         # - Decremented when API call completes (success or failure)
         # Also stores individual file entries for the in-flight files widget
+        # Now also stores per-second counters for burst control
         adobe_rate_limit_table = dynamodb.Table(
             self, "AdobeInFlightTable",
             table_name="adobe-api-in-flight-tracker",
