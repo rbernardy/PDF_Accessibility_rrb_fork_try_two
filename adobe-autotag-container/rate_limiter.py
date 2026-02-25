@@ -301,7 +301,7 @@ def _get_table():
     return dynamodb.Table(table_name)
 
 
-def acquire_slot(api_type: str = 'adobe_api', max_wait_seconds: int = 300, filename: str = None) -> bool:
+def acquire_slot(api_type: str = 'adobe_api', max_wait_seconds: int = 600, filename: str = None) -> bool:
     """
     Acquire a slot for an Adobe API call by:
     1. First checking the in-flight limit (to avoid wasting RPM slots)
@@ -316,7 +316,7 @@ def acquire_slot(api_type: str = 'adobe_api', max_wait_seconds: int = 300, filen
     
     Args:
         api_type: The type of API call ('autotag' or 'extract') - used for logging only
-        max_wait_seconds: Maximum seconds to wait for a slot (default: 5 minutes)
+        max_wait_seconds: Maximum seconds to wait for a slot (default: 10 minutes, increased from 5 to handle end-of-batch convoy)
         filename: Optional filename to track which file is using this slot
         
     Returns:
@@ -365,9 +365,14 @@ def acquire_slot(api_type: str = 'adobe_api', max_wait_seconds: int = 300, filen
             if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
                 # At in-flight capacity - wait and retry
                 current = get_current_in_flight()
-                wait_time = min(2 + (attempt * 0.5), 10)  # Exponential backoff, max 10s
-                # Add jitter to prevent thundering herd
-                wait_time += random.uniform(0, 2)
+                # Adaptive backoff: shorter waits at high attempt counts (end-of-batch)
+                # to catch slots as they become available
+                if attempt > 30:
+                    # End-of-batch: use shorter, more frequent checks
+                    wait_time = 2 + random.uniform(0, 1)
+                else:
+                    wait_time = min(2 + (attempt * 0.5), 10)  # Exponential backoff, max 10s
+                    wait_time += random.uniform(0, 2)  # Add jitter
                 logger.info(f"[{api_type}] At in-flight capacity ({current}/{max_in_flight}), "
                            f"waiting {wait_time:.1f}s (attempt {attempt})...")
                 time.sleep(wait_time)

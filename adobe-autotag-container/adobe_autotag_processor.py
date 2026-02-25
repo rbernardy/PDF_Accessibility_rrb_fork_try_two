@@ -739,8 +739,8 @@ def main():
     # VERSION MARKER - This proves the new code is running
     # If you see this in CloudWatch logs, the deployment was successful
     logging.info("=" * 60)
-    logging.info("CONTAINER VERSION: 2.4-BURST-CONTROL")
-    logging.info("Rate limiter: Combined global RPM + per-second burst control + 8s jitter")
+    logging.info("CONTAINER VERSION: 2.5-EXTENDED-TIMEOUT")
+    logging.info("Rate limiter: 10min timeout + adaptive backoff for end-of-batch")
     logging.info("=" * 60)
     
     file_key = None
