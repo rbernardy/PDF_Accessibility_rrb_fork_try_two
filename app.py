@@ -906,6 +906,49 @@ class PDFAccessibility(Stack):
         pdf_cleanup_log_group_name = pdf_cleanup_log_group.log_group_name
 
         # =============================================================================
+        # PDF Retry Processor Lambda - Reprocesses rate-limited PDFs from retry/ folder
+        # =============================================================================
+        
+        pdf_retry_processor_lambda = lambda_.Function(
+            self, "PdfRetryProcessorLambda",
+            function_name="pdf-retry-processor",
+            runtime=lambda_.Runtime.PYTHON_3_12,
+            handler="main.handler",
+            code=lambda_.Code.from_docker_build(
+                "lambda/pdf-retry-processor",
+                build_args={
+                    "BUILD_DATE": datetime.datetime.now().isoformat()
+                }
+            ),
+            memory_size=256,
+            timeout=Duration.minutes(2),
+            architecture=lambda_arch,
+            environment={
+                "BUCKET_NAME": pdf_processing_bucket.bucket_name,
+                "RATE_LIMIT_TABLE": adobe_rate_limit_table.table_name,
+                "STATE_MACHINE_ARN": pdf_remediation_state_machine.state_machine_arn
+            }
+        )
+        
+        # Grant S3 read/write for moving files between retry/ and pdf/
+        pdf_processing_bucket.grant_read_write(pdf_retry_processor_lambda)
+        
+        # Grant DynamoDB read to check in-flight count
+        adobe_rate_limit_table.grant_read_data(pdf_retry_processor_lambda)
+        
+        # Grant Step Functions read to check running executions
+        pdf_remediation_state_machine.grant_read(pdf_retry_processor_lambda)
+        
+        # Schedule retry processor to run every 5 minutes
+        pdf_retry_schedule = events.Rule(
+            self, "PdfRetryProcessorSchedule",
+            rule_name="pdf-retry-processor-schedule",
+            description="Processes rate-limited PDFs from retry folder every 5 minutes",
+            schedule=events.Schedule.rate(Duration.minutes(5))
+        )
+        pdf_retry_schedule.add_target(targets.LambdaFunction(pdf_retry_processor_lambda))
+
+        # =============================================================================
         # PDF Failure Analysis Lambda - Analyzes PDFs that fail Adobe API processing
         # =============================================================================
         

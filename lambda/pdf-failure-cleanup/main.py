@@ -2,8 +2,16 @@
 PDF Failure Cleanup Lambda
 
 Triggered by EventBridge when a Step Function execution fails, times out, or is aborted.
-Automatically deletes the original PDF and its temp folder, then stores a failure record
-for the daily digest email.
+
+IMPORTANT: Rate limit (429) failures are handled differently:
+- 429 errors are TRANSIENT - the file can be reprocessed when capacity is available
+- Instead of deleting, we MOVE the PDF to a 'retry/' folder for automatic reprocessing
+- A separate scheduled Lambda monitors the retry folder and reprocesses when queue has capacity
+
+For permanent failures (corrupted PDFs, unsupported formats, etc.):
+- The original PDF is deleted
+- A placeholder file is created in reports/place-holders/
+- A failure record is stored for the daily digest email
 """
 
 import json
@@ -35,23 +43,95 @@ BUCKET_NAME = os.environ.get('BUCKET_NAME', '')
 ADOBE_AUTOTAG_LOG_GROUP = '/ecs/pdf-remediation/adobe-autotag'
 ALT_TEXT_LOG_GROUP = '/ecs/pdf-remediation/alt-text-generator'
 
+# Patterns that indicate rate limit / transient errors (should retry, not delete)
+RATE_LIMIT_PATTERNS = [
+    '429',
+    'Too Many Requests',
+    'rate limit',
+    'Rate limit',
+    'throttl',
+    'Throttl',
+    'quota exceeded',
+    'Quota exceeded',
+    'Max 429 retries exceeded',  # Our own retry exhaustion message
+    'RATE_LIMIT',
+]
+
+
+def is_rate_limit_failure(failure_reason: str, raw_cause: str) -> bool:
+    """
+    Check if the failure was due to rate limiting (429 errors).
+    
+    These failures are transient and the file should be retried, not deleted.
+    
+    Args:
+        failure_reason: The cleaned failure reason string
+        raw_cause: The raw failure cause from Step Functions
+        
+    Returns:
+        True if this is a rate limit failure, False otherwise
+    """
+    # Check both the clean reason and raw cause for rate limit patterns
+    combined_text = f"{failure_reason} {raw_cause}".lower()
+    
+    for pattern in RATE_LIMIT_PATTERNS:
+        if pattern.lower() in combined_text:
+            logger.info(f"Detected rate limit failure (pattern: {pattern})")
+            return True
+    
+    return False
+
+
+def move_pdf_to_retry_folder(bucket: str, pdf_key: str) -> Optional[str]:
+    """
+    Move a PDF from pdf/ to retry/ folder for later reprocessing.
+    
+    Preserves the folder structure:
+        pdf/folder-name/document.pdf -> retry/folder-name/document.pdf
+    
+    Args:
+        bucket: S3 bucket name
+        pdf_key: Original PDF key (e.g., "pdf/folder-name/document.pdf")
+        
+    Returns:
+        The new retry key if successful, None otherwise
+    """
+    if not pdf_key.startswith('pdf/'):
+        logger.warning(f"Unexpected PDF path format for retry: {pdf_key}")
+        return None
+    
+    # Create retry key by replacing 'pdf/' with 'retry/'
+    retry_key = 'retry/' + pdf_key[4:]  # Remove 'pdf/' prefix, add 'retry/'
+    
+    try:
+        # Copy to retry folder
+        s3.copy_object(
+            Bucket=bucket,
+            CopySource={'Bucket': bucket, 'Key': pdf_key},
+            Key=retry_key
+        )
+        logger.info(f"Copied s3://{bucket}/{pdf_key} to s3://{bucket}/{retry_key}")
+        
+        # Delete from original location
+        s3.delete_object(Bucket=bucket, Key=pdf_key)
+        logger.info(f"Deleted original s3://{bucket}/{pdf_key}")
+        
+        return retry_key
+        
+    except ClientError as e:
+        logger.error(f"Error moving PDF to retry folder: {e}")
+        return None
+
 
 def extract_ecs_failure_details(failure_cause: str) -> Tuple[str, str, Optional[str]]:
     """
     Extract meaningful failure details from ECS task failure JSON.
-    
-    Args:
-        failure_cause: The raw failure cause string from Step Functions
-        
-    Returns:
-        Tuple of (container_name, stopped_reason, task_arn)
     """
     container_name = "unknown"
     stopped_reason = "Unknown error"
     task_arn = None
     
     try:
-        # The cause is JSON embedded in the string after "States.TaskFailed: "
         if "States.TaskFailed:" in failure_cause:
             json_start = failure_cause.index("States.TaskFailed:") + len("States.TaskFailed:")
             json_str = failure_cause[json_start:].strip()
@@ -59,25 +139,17 @@ def extract_ecs_failure_details(failure_cause: str) -> Tuple[str, str, Optional[
             json_str = failure_cause
         
         task_data = json.loads(json_str)
-        
-        # Get task ARN
         task_arn = task_data.get('TaskArn')
-        
-        # Get stopped reason
         stopped_reason = task_data.get('StoppedReason', 'Unknown error')
         
-        # Get container name from Containers array
         containers = task_data.get('Containers', [])
         if containers:
             container = containers[0]
             container_name = container.get('Name', 'unknown')
-            
-            # Get exit code if available
             exit_code = container.get('ExitCode')
             if exit_code is not None and exit_code != 0:
                 stopped_reason = f"{stopped_reason} (exit code: {exit_code})"
         
-        # Also check task definition to identify which stage failed
         task_def_arn = task_data.get('TaskDefinitionArn', '')
         if 'AltText' in task_def_arn:
             container_name = 'alt-text-generator'
@@ -93,48 +165,27 @@ def extract_ecs_failure_details(failure_cause: str) -> Tuple[str, str, Optional[
 def lookup_ecs_error_from_logs(container_name: str, task_arn: str, chunk_key: str) -> Optional[str]:
     """
     Look up the actual error message from ECS container logs.
-    
-    Args:
-        container_name: Name of the container (adobe-autotag or alt-text-generator)
-        task_arn: The ECS task ARN
-        chunk_key: The chunk key being processed (for filtering)
-        
-    Returns:
-        The actual error message if found, None otherwise
     """
-    # Determine which log group to search
     if 'alt-text' in container_name.lower():
         log_group = ALT_TEXT_LOG_GROUP
     else:
         log_group = ADOBE_AUTOTAG_LOG_GROUP
     
-    # Extract task ID from ARN for log stream prefix
-    # Task ARN format: arn:aws:ecs:region:account:task/cluster/task-id
     task_id = None
     if task_arn:
         parts = task_arn.split('/')
         if len(parts) >= 3:
             task_id = parts[-1]
     
-    # Extract filename from chunk_key for filtering
     filename = None
     if chunk_key:
         filename = chunk_key.split('/')[-1].replace('.pdf', '')
     
     try:
-        # Search for error messages in the log group
-        # Look back 30 minutes from now
         end_time = int(datetime.utcnow().timestamp() * 1000)
-        start_time = end_time - (30 * 60 * 1000)  # 30 minutes ago
+        start_time = end_time - (30 * 60 * 1000)
         
-        # Build filter pattern to find errors
-        filter_patterns = [
-            'ERROR',
-            'Exception',
-            'Traceback',
-            'failed',
-            'Error:'
-        ]
+        filter_patterns = ['ERROR', 'Exception', 'Traceback', 'failed', 'Error:', '429']
         
         for pattern in filter_patterns:
             try:
@@ -146,14 +197,10 @@ def lookup_ecs_error_from_logs(container_name: str, task_arn: str, chunk_key: st
                     limit=50
                 )
                 
-                events = response.get('events', [])
-                
-                # Filter events that match our task or filename
-                for event in events:
+                for event in response.get('events', []):
                     message = event.get('message', '')
                     log_stream = event.get('logStreamName', '')
                     
-                    # Check if this log is from our task
                     is_our_task = False
                     if task_id and task_id in log_stream:
                         is_our_task = True
@@ -161,12 +208,8 @@ def lookup_ecs_error_from_logs(container_name: str, task_arn: str, chunk_key: st
                         is_our_task = True
                     
                     if is_our_task:
-                        # Extract the meaningful part of the error
-                        # Skip generic log prefixes
-                        if 'ERROR' in message or 'Exception' in message or 'Traceback' in message:
-                            # Clean up the message
+                        if 'ERROR' in message or 'Exception' in message or 'Traceback' in message or '429' in message:
                             clean_message = message.strip()
-                            # Truncate if too long
                             if len(clean_message) > 500:
                                 clean_message = clean_message[:500] + '...'
                             return clean_message
@@ -184,33 +227,20 @@ def lookup_ecs_error_from_logs(container_name: str, task_arn: str, chunk_key: st
 def build_clean_failure_reason(failure_cause: str, chunk_key: str = None) -> str:
     """
     Build a clean, human-readable failure reason from the raw failure data.
-    
-    Args:
-        failure_cause: The raw failure cause from Step Functions
-        chunk_key: The chunk key being processed (for log lookup)
-        
-    Returns:
-        A clean failure reason string (without nested JSON or escaped quotes)
     """
-    # Check for common failure types
     if "States.Timeout" in failure_cause:
         return "Task timed out"
     
     if "States.TaskFailed" in failure_cause:
         container_name, stopped_reason, task_arn = extract_ecs_failure_details(failure_cause)
-        
-        # Try to look up the actual error from logs
         actual_error = lookup_ecs_error_from_logs(container_name, task_arn, chunk_key)
         
         if actual_error:
-            # Found the actual error in logs - clean it up
-            # Remove any JSON-like content that could break log parsing
             clean_error = actual_error.replace('"', "'").replace('\\', '')
             if len(clean_error) > 200:
                 clean_error = clean_error[:200] + "..."
             return f"ECS Task Failed ({container_name}): {clean_error}"
         else:
-            # Fall back to the stopped reason - clean it up
             clean_reason = stopped_reason.replace('"', "'").replace('\\', '')
             return f"ECS Task Failed ({container_name}): {clean_reason}"
     
@@ -220,11 +250,8 @@ def build_clean_failure_reason(failure_cause: str, chunk_key: str = None) -> str
     if "Lambda.AWSLambdaException" in failure_cause:
         return "Lambda execution error"
     
-    # Try to extract a meaningful error message from JSON-like content
     if '{"errorMessage"' in failure_cause or '"errorMessage"' in failure_cause:
         try:
-            # Try to find and extract the errorMessage
-            import re
             match = re.search(r'"errorMessage"\s*:\s*"([^"]+)"', failure_cause)
             if match:
                 error_msg = match.group(1).replace('\\', '')
@@ -234,27 +261,14 @@ def build_clean_failure_reason(failure_cause: str, chunk_key: str = None) -> str
         except Exception:
             pass
     
-    # Clean up the failure cause - remove JSON artifacts and escape characters
     clean_cause = failure_cause.replace('"', "'").replace('\\', '').replace('{', '').replace('}', '')
-    
-    # If it's a short message, return as-is
     if len(clean_cause) < 200:
         return clean_cause.strip()
-    
-    # Otherwise, truncate
     return clean_cause[:200].strip() + "..."
 
 
 def extract_pdf_key_from_execution(execution_input: dict) -> Optional[str]:
-    """
-    Extract the original PDF S3 key from the Step Function execution input.
-    
-    The execution input typically contains:
-    - s3_key: the original PDF path (e.g., "pdf/reports/document.pdf")
-    - s3_bucket: the bucket name
-    - chunks: array of chunk information
-    """
-    # Try common input field names
+    """Extract the original PDF S3 key from the Step Function execution input."""
     if 's3_key' in execution_input:
         return execution_input['s3_key']
     if 'pdf_key' in execution_input:
@@ -262,12 +276,9 @@ def extract_pdf_key_from_execution(execution_input: dict) -> Optional[str]:
     if 'key' in execution_input:
         return execution_input['key']
     
-    # Try to extract from chunks if present
     if 'chunks' in execution_input and len(execution_input['chunks']) > 0:
         chunk = execution_input['chunks'][0]
         if 'chunk_key' in chunk:
-            # Derive original PDF path from chunk path
-            # chunk_key format: temp/[folder]/[filename]/chunks/chunk_001.pdf
             chunk_key = chunk['chunk_key']
             parts = chunk_key.split('/')
             if len(parts) >= 3 and parts[0] == 'temp':
@@ -280,21 +291,14 @@ def extract_pdf_key_from_execution(execution_input: dict) -> Optional[str]:
 
 
 def get_temp_folder_path(pdf_key: str) -> Optional[str]:
-    """
-    Convert a PDF path to its corresponding temp folder path.
-    
-    Example:
-        pdf/reports-2025/quarterly-report.pdf -> temp/reports-2025/quarterly-report/
-    """
+    """Convert a PDF path to its corresponding temp folder path."""
     if not pdf_key.startswith('pdf/'):
         logger.warning(f"Unexpected PDF path format: {pdf_key}")
         return None
     
-    # Remove 'pdf/' prefix and '.pdf' extension
-    relative_path = pdf_key[4:]  # Remove 'pdf/'
-    
+    relative_path = pdf_key[4:]
     if relative_path.lower().endswith('.pdf'):
-        relative_path = relative_path[:-4]  # Remove '.pdf'
+        relative_path = relative_path[:-4]
     
     return f"temp/{relative_path}/"
 
@@ -321,10 +325,7 @@ def delete_s3_object(bucket: str, key: str) -> bool:
 
 
 def delete_temp_folder(bucket: str, temp_prefix: str) -> int:
-    """
-    Delete all objects under the temp folder prefix.
-    Returns the number of objects deleted.
-    """
+    """Delete all objects under the temp folder prefix."""
     deleted_count = 0
     
     try:
@@ -359,38 +360,20 @@ def create_placeholder_file(
     page_count: Optional[int],
     failure_timestamp: str
 ) -> bool:
-    """
-    Create a placeholder text file in /reports/place-holders/ after a PDF is deleted.
-    
-    Args:
-        bucket: S3 bucket name
-        pdf_key: Original PDF key (e.g., "pdf/folder-name/document.pdf")
-        file_size: File size in bytes (or None if unknown)
-        page_count: Number of pages (or None if unknown)
-        failure_timestamp: ISO timestamp of the failure
-        
-    Returns:
-        True if placeholder created successfully, False otherwise
-    """
+    """Create a placeholder text file in /reports/place-holders/ after a PDF is deleted."""
     try:
-        # Extract folder name and base filename from pdf_key
-        # pdf_key format: "pdf/folder-name/document.pdf"
         parts = pdf_key.split('/')
         if len(parts) >= 3 and parts[0] == 'pdf':
             arrival_folder = parts[1]
-            base_filename = os.path.splitext(parts[-1])[0]  # Remove .pdf extension
+            base_filename = os.path.splitext(parts[-1])[0]
         else:
-            # Fallback for unexpected format
             arrival_folder = 'unknown'
             base_filename = os.path.splitext(os.path.basename(pdf_key))[0]
         
-        # Create placeholder filename: {arrival_folder}_{base_filename}-{timestamp}.txt
-        # Clean timestamp for filename (replace colons and periods)
         clean_timestamp = failure_timestamp.replace(':', '-').replace('.', '-')
         placeholder_filename = f"{arrival_folder}_{base_filename}-{clean_timestamp}.txt"
         placeholder_key = f"reports/place-holders/{placeholder_filename}"
         
-        # Format file size for display
         if file_size is not None:
             if file_size >= 1024 * 1024:
                 size_str = f"{file_size / (1024 * 1024):.2f} MB"
@@ -401,13 +384,9 @@ def create_placeholder_file(
         else:
             size_str = "unknown"
         
-        # Format page count
         page_count_str = str(page_count) if page_count is not None else "unknown"
-        
-        # Create placeholder content
         content = f"{pdf_key}\n{size_str}\n{page_count_str}\n{failure_timestamp}\n"
         
-        # Upload placeholder file to S3
         s3.put_object(
             Bucket=bucket,
             Key=placeholder_key,
@@ -424,11 +403,8 @@ def create_placeholder_file(
 
 
 def get_uploader_info(bucket: str, key: str) -> dict:
-    """
-    Query CloudTrail to find who uploaded the PDF (PutObject event).
-    """
+    """Query CloudTrail to find who uploaded the PDF."""
     try:
-        # Look back up to 90 days for the upload event
         response = cloudtrail.lookup_events(
             LookupAttributes=[
                 {'AttributeKey': 'EventName', 'AttributeValue': 'PutObject'},
@@ -474,29 +450,35 @@ def store_failure_record(
     temp_files_deleted: int,
     uploader_info: dict,
     failure_reason: str,
-    execution_arn: str
+    execution_arn: str,
+    moved_to_retry: bool = False,
+    retry_key: str = None
 ):
     """Store failure record in DynamoDB for daily digest."""
     try:
         table = dynamodb.Table(FAILURE_TABLE)
         now = datetime.utcnow()
         
-        table.put_item(
-            Item={
-                'failure_id': str(uuid.uuid4()),
-                'failure_date': now.strftime('%Y-%m-%d'),
-                'timestamp': now.isoformat() + 'Z',
-                'iam_username': uploader_info['username'],
-                'user_arn': uploader_info['arn'],
-                'pdf_key': pdf_key,
-                'temp_folder': temp_folder,
-                'temp_files_deleted': temp_files_deleted,
-                'failure_reason': failure_reason,
-                'execution_arn': execution_arn,
-                'notified': False
-            }
-        )
-        logger.info(f"Stored failure record for {pdf_key}")
+        item = {
+            'failure_id': str(uuid.uuid4()),
+            'failure_date': now.strftime('%Y-%m-%d'),
+            'timestamp': now.isoformat() + 'Z',
+            'iam_username': uploader_info['username'],
+            'user_arn': uploader_info['arn'],
+            'pdf_key': pdf_key,
+            'temp_folder': temp_folder,
+            'temp_files_deleted': temp_files_deleted,
+            'failure_reason': failure_reason,
+            'execution_arn': execution_arn,
+            'notified': False,
+            'moved_to_retry': moved_to_retry,
+        }
+        
+        if retry_key:
+            item['retry_key'] = retry_key
+        
+        table.put_item(Item=item)
+        logger.info(f"Stored failure record for {pdf_key} (moved_to_retry={moved_to_retry})")
         
     except ClientError as e:
         logger.error(f"Error storing failure record: {e}")
@@ -508,25 +490,29 @@ def log_cleanup_event(
     temp_files_deleted: int,
     uploader_info: dict,
     failure_reason: str,
-    execution_arn: str
+    execution_arn: str,
+    action: str = 'DELETED',
+    retry_key: str = None
 ):
     """Log the cleanup event to CloudWatch."""
     log_entry = {
         'timestamp': datetime.utcnow().isoformat() + 'Z',
         'event_type': 'PIPELINE_FAILURE_CLEANUP',
+        'action': action,  # 'DELETED' or 'MOVED_TO_RETRY'
         'execution_arn': execution_arn,
         'failure_reason': failure_reason,
-        'deleted_pdf': pdf_key,
+        'pdf_key': pdf_key,
         'deleted_temp_folder': temp_folder,
         'temp_files_deleted': temp_files_deleted,
         'uploaded_by': uploader_info['username'],
         'uploaded_by_arn': uploader_info['arn']
     }
     
-    # Log to Lambda's default CloudWatch stream (parsed as JSON automatically)
+    if retry_key:
+        log_entry['retry_key'] = retry_key
+    
     logger.info(json.dumps(log_entry))
     
-    # Also log to dedicated cleanup log group
     try:
         log_stream_name = datetime.utcnow().strftime('%Y/%m/%d')
         
@@ -547,8 +533,6 @@ def log_cleanup_event(
             }]
         )
         
-        logger.info(f"Logged cleanup event: {json.dumps(log_entry)}")
-        
     except ClientError as e:
         logger.error(f"Error logging to CloudWatch: {e}")
 
@@ -557,19 +541,17 @@ def handler(event, context):
     """
     Lambda handler for Step Function failure events from EventBridge.
     
-    Event structure:
-    {
-        "detail-type": "Step Functions Execution Status Change",
-        "source": "aws.states",
-        "detail": {
-            "executionArn": "arn:aws:states:...",
-            "stateMachineArn": "arn:aws:states:...",
-            "status": "FAILED",
-            "input": "{...}",  # JSON string of execution input
-            "error": "...",
-            "cause": "..."
-        }
-    }
+    For rate limit (429) failures:
+        - Move PDF to retry/ folder (preserving folder structure)
+        - Clean up temp folder
+        - Store record for tracking (marked as moved_to_retry)
+        - A separate scheduler will reprocess these when queue has capacity
+    
+    For permanent failures:
+        - Delete the original PDF
+        - Create placeholder file
+        - Clean up temp folder
+        - Store failure record for daily digest
     """
     logger.info(f"Received event: {json.dumps(event)}")
     
@@ -591,8 +573,9 @@ def handler(event, context):
     
     # Get failure reason - build a clean version
     raw_failure_reason = detail.get('error', '')
-    if detail.get('cause'):
-        raw_failure_reason += f": {detail.get('cause')}"
+    raw_cause = detail.get('cause', '')
+    if raw_cause:
+        raw_failure_reason += f": {raw_cause}"
     if not raw_failure_reason:
         raw_failure_reason = f"Execution {status}"
     
@@ -612,11 +595,15 @@ def handler(event, context):
         return {'statusCode': 400, 'body': 'Could not determine S3 bucket'}
     
     logger.info(f"Processing failure cleanup for {pdf_key} in bucket {bucket}")
+    logger.info(f"Failure reason: {failure_reason}")
+    
+    # Check if this is a rate limit failure
+    is_rate_limit = is_rate_limit_failure(failure_reason, raw_cause)
     
     # Get temp folder path
     temp_folder = get_temp_folder_path(pdf_key)
     
-    # Get file size before deleting (for placeholder file)
+    # Get file size (for placeholder file if needed)
     file_size = get_s3_object_size(bucket, pdf_key)
     
     # Get page count from execution input if available
@@ -625,26 +612,45 @@ def handler(event, context):
     # Generate failure timestamp
     failure_timestamp = datetime.utcnow().isoformat() + 'Z'
     
-    # Delete the original PDF
-    delete_s3_object(bucket, pdf_key)
-    
-    # Create placeholder file in /reports/place-holders/
-    create_placeholder_file(
-        bucket=bucket,
-        pdf_key=pdf_key,
-        file_size=file_size,
-        page_count=page_count,
-        failure_timestamp=failure_timestamp
-    )
-    
-    # Delete the temp folder
-    temp_files_deleted = 0
-    if temp_folder:
-        temp_files_deleted = delete_temp_folder(bucket, temp_folder)
-    
     # Get uploader info from CloudTrail
     uploader_info = get_uploader_info(bucket, pdf_key)
     logger.info(f"PDF was uploaded by: {uploader_info['username']}")
+    
+    retry_key = None
+    
+    if is_rate_limit:
+        # RATE LIMIT FAILURE: Move to retry folder instead of deleting
+        logger.info(f"Rate limit failure detected - moving {pdf_key} to retry folder")
+        
+        retry_key = move_pdf_to_retry_folder(bucket, pdf_key)
+        
+        if retry_key:
+            logger.info(f"Successfully moved to {retry_key} for later reprocessing")
+            action = 'MOVED_TO_RETRY'
+        else:
+            # Failed to move - fall back to keeping the file (don't delete)
+            logger.warning(f"Failed to move to retry folder - leaving file in place")
+            action = 'MOVE_FAILED_LEFT_IN_PLACE'
+    else:
+        # PERMANENT FAILURE: Delete the PDF and create placeholder
+        logger.info(f"Permanent failure detected - deleting {pdf_key}")
+        
+        delete_s3_object(bucket, pdf_key)
+        
+        # Create placeholder file in /reports/place-holders/
+        create_placeholder_file(
+            bucket=bucket,
+            pdf_key=pdf_key,
+            file_size=file_size,
+            page_count=page_count,
+            failure_timestamp=failure_timestamp
+        )
+        action = 'DELETED'
+    
+    # Always clean up the temp folder (chunks, extracted data, etc.)
+    temp_files_deleted = 0
+    if temp_folder:
+        temp_files_deleted = delete_temp_folder(bucket, temp_folder)
     
     # Store failure record for daily digest
     store_failure_record(
@@ -653,7 +659,9 @@ def handler(event, context):
         temp_files_deleted=temp_files_deleted,
         uploader_info=uploader_info,
         failure_reason=failure_reason,
-        execution_arn=execution_arn
+        execution_arn=execution_arn,
+        moved_to_retry=is_rate_limit,
+        retry_key=retry_key
     )
     
     # Log the cleanup event
@@ -663,17 +671,24 @@ def handler(event, context):
         temp_files_deleted=temp_files_deleted,
         uploader_info=uploader_info,
         failure_reason=failure_reason,
-        execution_arn=execution_arn
+        execution_arn=execution_arn,
+        action=action,
+        retry_key=retry_key
     )
     
-    logger.info(f"Cleanup complete for {pdf_key}: deleted PDF and {temp_files_deleted} temp files")
+    if is_rate_limit:
+        logger.info(f"Rate limit cleanup complete for {pdf_key}: moved to {retry_key}, deleted {temp_files_deleted} temp files")
+    else:
+        logger.info(f"Cleanup complete for {pdf_key}: deleted PDF and {temp_files_deleted} temp files")
     
     return {
         'statusCode': 200,
         'body': json.dumps({
-            'pdf_deleted': pdf_key,
+            'pdf_key': pdf_key,
+            'action': action,
+            'retry_key': retry_key,
             'temp_files_deleted': temp_files_deleted,
             'uploaded_by': uploader_info['username'],
-            'placeholder_created': True
+            'is_rate_limit_failure': is_rate_limit
         })
     }
