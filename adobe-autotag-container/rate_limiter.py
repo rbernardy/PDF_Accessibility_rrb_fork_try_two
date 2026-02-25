@@ -17,12 +17,18 @@ IMPORTANT: RPM is tracked as a SINGLE GLOBAL counter for all API types (autotag 
 because Adobe's 200 RPM limit is global, not per-API-type.
 
 Configuration:
-- ADOBE_API_MAX_IN_FLIGHT: SSM parameter for max concurrent requests (default: 25)
-- ADOBE_API_RPM_PARAM: SSM parameter for max requests per minute (default: 100, global)
-- ADOBE_API_RPS_PARAM: SSM parameter for max requests per second (default: 5, burst control)
+- ADOBE_API_MAX_IN_FLIGHT: SSM parameter for max concurrent requests (default: 15)
+- ADOBE_API_RPM_PARAM: SSM parameter for max requests per minute (default: 95, global)
+- ADOBE_API_RPS_PARAM: SSM parameter for max requests per second (default: 3, burst control)
 - RATE_LIMIT_TABLE: DynamoDB table name for rate limiting
 
-Version: 2.4-BURST-CONTROL
+Version: 2.6-RETRY-ON-429
+Changes from 2.5:
+- Reduced default max-in-flight from 25 to 15 for better burst control
+- Reduced default RPM from 100 to 95 for safety margin
+- Reduced default RPS from 5 to 3 to prevent thundering herd
+- Increased initial jitter from 0-8s to 0-20s for large batch handling
+- Added global backoff tracking for 429 responses
 """
 
 import os
@@ -58,6 +64,9 @@ RPS_COUNTER_PREFIX = "rps_window_"
 # Prefix for individual file tracking entries
 IN_FLIGHT_FILE_PREFIX = "file_"
 
+# Counter ID for global backoff tracking (when 429s are received)
+GLOBAL_BACKOFF_ID = "global_backoff_until"
+
 
 def get_ssm_parameter(param_name: str, default: str = None) -> str:
     """
@@ -89,17 +98,20 @@ def get_max_in_flight() -> int:
     """
     Get the maximum allowed in-flight Adobe API requests from SSM.
     
-    Default is 25 to allow good throughput while preventing burst overload.
-    With 25 concurrent tasks and proper per-second limiting, we avoid
-    overwhelming Adobe's API even when many containers start simultaneously.
+    Default is 15 (reduced from 25) to prevent burst overload when many
+    containers start simultaneously. With 15 concurrent tasks and proper
+    per-second limiting, we avoid overwhelming Adobe's API.
+    
+    For large batches (1000+ files), keeping this lower ensures the queue
+    processes steadily without triggering 429 errors.
     """
     param_name = os.environ.get('ADOBE_API_MAX_IN_FLIGHT_PARAM', '/pdf-processing/adobe-api-max-in-flight')
-    value_str = get_ssm_parameter(param_name, '25')
+    value_str = get_ssm_parameter(param_name, '15')
     try:
         return int(value_str)
     except ValueError:
-        logger.warning(f"Invalid max_in_flight value '{value_str}', using default 25")
-        return 25
+        logger.warning(f"Invalid max_in_flight value '{value_str}', using default 15")
+        return 15
 
 
 def get_max_rpm() -> int:
@@ -109,22 +121,23 @@ def get_max_rpm() -> int:
     IMPORTANT: This is now a GLOBAL limit for ALL Adobe API calls combined
     (autotag + extract). Adobe's 200 RPM limit is global, not per-API-type.
     
-    Default is 100 (reduced from 150) to stay safely under Adobe's 200 RPM 
+    Default is 95 (reduced from 100) to stay safely under Adobe's 200 RPM 
     hard limit while accounting for:
     - Network latency in DynamoDB updates (race conditions)
     - Multiple ECS containers checking simultaneously
     - Clock skew between containers
     - Adobe's internal throttling which may be stricter than documented
+    - Timing differences between when we count vs when Adobe counts
     
     The SSM parameter can be adjusted if needed.
     """
     param_name = os.environ.get('ADOBE_API_RPM_PARAM', '/pdf-processing/adobe-api-rpm')
-    value_str = get_ssm_parameter(param_name, '100')
+    value_str = get_ssm_parameter(param_name, '95')
     try:
         return int(value_str)
     except ValueError:
-        logger.warning(f"Invalid max_rpm value '{value_str}', using default 100")
-        return 100
+        logger.warning(f"Invalid max_rpm value '{value_str}', using default 95")
+        return 95
 
 
 def get_max_rps() -> int:
@@ -135,16 +148,17 @@ def get_max_rps() -> int:
     Even if we're under the RPM limit, hitting Adobe with too many requests
     in a single second can trigger 429 errors.
     
-    Default is 5 requests per second, which allows ~300 RPM theoretical max
-    but spreads them out to avoid bursts.
+    Default is 3 requests per second (reduced from 5), which allows ~180 RPM 
+    theoretical max but spreads them out more conservatively to avoid bursts.
+    This is especially important for large batches (1000+ files).
     """
     param_name = os.environ.get('ADOBE_API_RPS_PARAM', '/pdf-processing/adobe-api-rps')
-    value_str = get_ssm_parameter(param_name, '5')
+    value_str = get_ssm_parameter(param_name, '3')
     try:
         return int(value_str)
     except ValueError:
-        logger.warning(f"Invalid max_rps value '{value_str}', using default 5")
-        return 5
+        logger.warning(f"Invalid max_rps value '{value_str}', using default 3")
+        return 3
 
 
 def _get_current_minute_window(api_type: str = 'adobe_api') -> str:
@@ -301,12 +315,81 @@ def _get_table():
     return dynamodb.Table(table_name)
 
 
+def set_global_backoff(seconds: int = 60) -> None:
+    """
+    Set a global backoff period after receiving a 429 error.
+    
+    When any container receives a 429, it signals that Adobe's API is overloaded.
+    All containers should back off to let the system recover.
+    
+    Args:
+        seconds: How long to back off (default 60 seconds)
+    """
+    table = _get_table()
+    if not table:
+        return
+    
+    backoff_until = time.time() + seconds
+    try:
+        table.put_item(
+            Item={
+                'counter_id': GLOBAL_BACKOFF_ID,
+                'backoff_until': int(backoff_until),
+                'set_at': datetime.now(timezone.utc).isoformat(),
+                'ttl': int(backoff_until) + 60  # Auto-expire shortly after backoff ends
+            }
+        )
+        logger.warning(f"[GLOBAL BACKOFF] Set global backoff for {seconds}s due to 429 response")
+    except ClientError as e:
+        logger.error(f"Error setting global backoff: {e}")
+
+
+def get_global_backoff_remaining() -> int:
+    """
+    Check if there's an active global backoff and return remaining seconds.
+    
+    Returns:
+        Seconds remaining in backoff, or 0 if no active backoff
+    """
+    table = _get_table()
+    if not table:
+        return 0
+    
+    try:
+        response = table.get_item(Key={'counter_id': GLOBAL_BACKOFF_ID})
+        item = response.get('Item')
+        if not item:
+            return 0
+        
+        backoff_until = int(item.get('backoff_until', 0))
+        remaining = backoff_until - int(time.time())
+        return max(0, remaining)
+    except ClientError as e:
+        logger.error(f"Error checking global backoff: {e}")
+        return 0
+
+
+def wait_for_global_backoff() -> None:
+    """
+    Wait if there's an active global backoff period.
+    
+    This should be called before attempting any Adobe API call.
+    """
+    remaining = get_global_backoff_remaining()
+    if remaining > 0:
+        # Add some jitter to prevent thundering herd when backoff ends
+        wait_time = remaining + random.uniform(1, 5)
+        logger.info(f"[GLOBAL BACKOFF] Waiting {wait_time:.1f}s for global backoff to expire")
+        time.sleep(wait_time)
+
+
 def acquire_slot(api_type: str = 'adobe_api', max_wait_seconds: int = 600, filename: str = None) -> bool:
     """
     Acquire a slot for an Adobe API call by:
-    1. First checking the in-flight limit (to avoid wasting RPM slots)
-    2. Then checking the per-second burst limit (to prevent thundering herd)
-    3. Finally checking and incrementing the RPM counter for the current minute window
+    1. First checking for global backoff (from 429 responses)
+    2. Then checking the in-flight limit (to avoid wasting RPM slots)
+    3. Then checking the per-second burst limit (to prevent thundering herd)
+    4. Finally checking and incrementing the RPM counter for the current minute window
     
     This function will block until all conditions are met or max_wait_seconds is exceeded.
     It uses DynamoDB conditional updates to ensure we never exceed limits.
@@ -316,7 +399,7 @@ def acquire_slot(api_type: str = 'adobe_api', max_wait_seconds: int = 600, filen
     
     Args:
         api_type: The type of API call ('autotag' or 'extract') - used for logging only
-        max_wait_seconds: Maximum seconds to wait for a slot (default: 10 minutes, increased from 5 to handle end-of-batch convoy)
+        max_wait_seconds: Maximum seconds to wait for a slot (default: 10 minutes)
         filename: Optional filename to track which file is using this slot
         
     Returns:
@@ -333,14 +416,25 @@ def acquire_slot(api_type: str = 'adobe_api', max_wait_seconds: int = 600, filen
     start_time = time.time()
     attempt = 0
     
-    # Add initial random jitter (0-8 seconds) to spread out simultaneous container starts
-    # Increased from 0-3s to better prevent thundering herd when many ECS tasks start at once
-    initial_jitter = random.uniform(0, 8.0)
+    # Check for global backoff first (from 429 responses)
+    wait_for_global_backoff()
+    
+    # Add initial random jitter (0-20 seconds) to spread out simultaneous container starts
+    # Increased from 0-8s to handle large batches (1000+ files) better
+    initial_jitter = random.uniform(0, 20.0)
     logger.info(f"[{api_type}] Initial jitter: {initial_jitter:.2f}s")
     time.sleep(initial_jitter)
     
     while (time.time() - start_time) < max_wait_seconds:
         attempt += 1
+        
+        # Re-check global backoff on each attempt (another container may have hit 429)
+        backoff_remaining = get_global_backoff_remaining()
+        if backoff_remaining > 0:
+            wait_time = backoff_remaining + random.uniform(1, 3)
+            logger.info(f"[{api_type}] Global backoff active, waiting {wait_time:.1f}s (attempt {attempt})...")
+            time.sleep(wait_time)
+            continue
         
         # First check: In-flight limit (check this FIRST to avoid wasting RPM slots)
         try:

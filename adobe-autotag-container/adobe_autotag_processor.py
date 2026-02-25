@@ -63,6 +63,8 @@ import boto3
 import logging
 import json
 import sys
+import time
+import random
 from botocore.exceptions import ClientError
 import sqlite3
 import pymupdf
@@ -87,9 +89,14 @@ from adobe.pdfservices.operation.pdfjobs.params.autotag_pdf.autotag_pdf_params i
 from adobe.pdfservices.operation.pdfjobs.result.autotag_pdf_result import AutotagPDFResult
 
 from custom_cloudwatch_logger import get_custom_logger
-from rate_limiter import acquire_slot, release_slot, get_current_usage
+from rate_limiter import acquire_slot, release_slot, get_current_usage, set_global_backoff
 
 logger = logging.getLogger(__name__)
+
+# Maximum retries for 429 errors - the queue should handle any batch size
+MAX_429_RETRIES = 10
+# Base backoff time in seconds for 429 retries (will be multiplied by retry count)
+BASE_429_BACKOFF = 30
 
 # Initialize custom CloudWatch logger for metrics
 custom_cw_logger = get_custom_logger()
@@ -230,6 +237,10 @@ def autotag_pdf_with_options(filename, client_id, client_secret, s3_bucket=None,
     The slot is acquired before the API call and released after completion
     (whether successful or not).
     
+    IMPORTANT: This function now retries on 429 errors. When a 429 is received,
+    it sets a global backoff to slow down ALL containers, then retries after
+    the backoff period. This ensures the queue can handle any batch size.
+    
     Args:
         filename (str): The path to the PDF file.
         client_id (str): Adobe API client ID.
@@ -238,87 +249,127 @@ def autotag_pdf_with_options(filename, client_id, client_secret, s3_bucket=None,
         s3_key (str): S3 key of the original PDF (for failure analysis).
         
     Raises:
-        ServiceApiException: If Adobe API returns an error.
+        ServiceApiException: If Adobe API returns a non-retryable error.
         ServiceUsageException: If there's a usage-related error.
         SdkException: If there's an SDK-related error.
-        RuntimeError: If unable to acquire rate limit slot.
+        RuntimeError: If unable to acquire rate limit slot or max retries exceeded.
     """
-    # Acquire in-flight slot before making API call
-    logging.info(f'Filename : {filename} | Waiting for rate limit slot (autotag)...')
-    if not acquire_slot('autotag', filename=filename):
-        raise RuntimeError(f"Failed to acquire rate limit slot for autotag API call")
+    retry_count = 0
+    last_error = None
     
-    usage = get_current_usage()
-    logging.info(f'Filename : {filename} | In-flight status: {usage["in_flight"]}/{usage["max_in_flight"]} ({usage["utilization_pct"]}% utilized)')
-    
-    # Log the API call to custom CloudWatch stream
-    custom_cw_logger.log_adobe_api_call(filename, filename, api_type="autotag")
-    
-    try:
-        with open(filename, 'rb') as file:
-            input_stream = file.read()
-
-        # Initial setup, create credentials instance
-        credentials = ServicePrincipalCredentials(
-            client_id=client_id,
-            client_secret=client_secret
-        )
-        client_config = ClientConfig(
-            connect_timeout=8000,
-            read_timeout=40000
-        )
-
-        # Creates a PDF Services instance
-        pdf_services = PDFServices(credentials=credentials, client_config=client_config)
-
-        # Creates an asset(s) from source file(s) and upload
-        input_asset = pdf_services.upload(input_stream=input_stream,
-                                        mime_type=PDFServicesMediaType.PDF)
-
-        # Create parameters for the job
-        autotag_pdf_params = AutotagPDFParams(
-            generate_report=True,
-            shift_headings=True
-        )
-
-        # Creates a new job instance
-        autotag_pdf_job = AutotagPDFJob(input_asset=input_asset,
-                                        autotag_pdf_params=autotag_pdf_params)
-
-        # Submit the job and gets the job result
-        location = pdf_services.submit(autotag_pdf_job)
-        pdf_services_response = pdf_services.get_job_result(location, AutotagPDFResult)
-
-        # Get content from the resulting asset(s)
-        result_asset: CloudAsset = pdf_services_response.get_result().get_tagged_pdf()
-        result_asset_report: CloudAsset = pdf_services_response.get_result().get_report()
-        stream_asset: StreamAsset = pdf_services.get_content(result_asset)
-        stream_asset_report: StreamAsset = pdf_services.get_content(result_asset_report)
-
-        # Creates an output stream and copy stream asset's content to it
-        os.makedirs("output/AutotagPDF", exist_ok=True)
-        output_file_path = filename
-        output_file_path_report = f"output/AutotagPDF/{filename}.xlsx"
-
-        with open(output_file_path, "wb") as file:
-            file.write(stream_asset.get_input_stream())
-        with open(output_file_path_report, "wb") as file:
-            file.write(stream_asset_report.get_input_stream())
+    while retry_count <= MAX_429_RETRIES:
+        # Acquire in-flight slot before making API call
+        logging.info(f'Filename : {filename} | Waiting for rate limit slot (autotag)...')
+        if not acquire_slot('autotag', filename=filename):
+            raise RuntimeError(f"Failed to acquire rate limit slot for autotag API call")
         
-        logging.info(f'Filename : {filename} | Adobe Autotag completed successfully')
+        usage = get_current_usage()
+        logging.info(f'Filename : {filename} | In-flight status: {usage["in_flight"]}/{usage["max_in_flight"]} ({usage["utilization_pct"]}% utilized)')
+        
+        # Log the API call to custom CloudWatch stream
+        custom_cw_logger.log_adobe_api_call(filename, filename, api_type="autotag")
+        
+        try:
+            with open(filename, 'rb') as file:
+                input_stream = file.read()
 
-    except (ServiceApiException, ServiceUsageException, SdkException) as e:
-        logging.error(f'Filename : {filename} | Adobe Autotag API failed: {e}')
-        # Log Adobe API error to custom CloudWatch stream
-        custom_cw_logger.log_adobe_api_error(filename, api_type="autotag", error=e)
-        # Invoke failure analysis Lambda for non-rate-limit errors
-        if s3_bucket and s3_key:
-            invoke_failure_analysis(s3_bucket, s3_key, filename, e, 'autotag')
-        raise  # Re-raise to stop the container
-    finally:
-        # CRITICAL: Always release the slot, whether success or failure
-        release_slot('autotag', filename=filename)
-        logging.info(f'Filename : {filename} | Released rate limit slot (autotag)')
+            # Initial setup, create credentials instance
+            credentials = ServicePrincipalCredentials(
+                client_id=client_id,
+                client_secret=client_secret
+            )
+            client_config = ClientConfig(
+                connect_timeout=8000,
+                read_timeout=40000
+            )
+
+            # Creates a PDF Services instance
+            pdf_services = PDFServices(credentials=credentials, client_config=client_config)
+
+            # Creates an asset(s) from source file(s) and upload
+            input_asset = pdf_services.upload(input_stream=input_stream,
+                                            mime_type=PDFServicesMediaType.PDF)
+
+            # Create parameters for the job
+            autotag_pdf_params = AutotagPDFParams(
+                generate_report=True,
+                shift_headings=True
+            )
+
+            # Creates a new job instance
+            autotag_pdf_job = AutotagPDFJob(input_asset=input_asset,
+                                            autotag_pdf_params=autotag_pdf_params)
+
+            # Submit the job and gets the job result
+            location = pdf_services.submit(autotag_pdf_job)
+            pdf_services_response = pdf_services.get_job_result(location, AutotagPDFResult)
+
+            # Get content from the resulting asset(s)
+            result_asset: CloudAsset = pdf_services_response.get_result().get_tagged_pdf()
+            result_asset_report: CloudAsset = pdf_services_response.get_result().get_report()
+            stream_asset: StreamAsset = pdf_services.get_content(result_asset)
+            stream_asset_report: StreamAsset = pdf_services.get_content(result_asset_report)
+
+            # Creates an output stream and copy stream asset's content to it
+            os.makedirs("output/AutotagPDF", exist_ok=True)
+            output_file_path = filename
+            output_file_path_report = f"output/AutotagPDF/{filename}.xlsx"
+
+            with open(output_file_path, "wb") as file:
+                file.write(stream_asset.get_input_stream())
+            with open(output_file_path_report, "wb") as file:
+                file.write(stream_asset_report.get_input_stream())
+            
+            logging.info(f'Filename : {filename} | Adobe Autotag completed successfully')
+            return  # Success! Exit the retry loop
+
+        except (ServiceApiException, ServiceUsageException, SdkException) as e:
+            error_str = str(e)
+            
+            # Check if this is a 429 error (rate limit)
+            if '429' in error_str or 'Too Many Requests' in error_str:
+                retry_count += 1
+                last_error = e
+                
+                # Set global backoff to slow down ALL containers
+                backoff_time = BASE_429_BACKOFF * retry_count
+                set_global_backoff(backoff_time)
+                
+                logging.warning(f'Filename : {filename} | Got 429 error, retry {retry_count}/{MAX_429_RETRIES}. '
+                              f'Setting global backoff for {backoff_time}s')
+                
+                # Log the 429 but don't invoke failure analysis (it's retryable)
+                custom_cw_logger.log_adobe_api_error(filename, api_type="autotag", error=e)
+                
+                # Release slot before waiting
+                release_slot('autotag', filename=filename)
+                logging.info(f'Filename : {filename} | Released rate limit slot (autotag) for retry')
+                
+                if retry_count <= MAX_429_RETRIES:
+                    # Wait for backoff plus some jitter
+                    wait_time = backoff_time + random.uniform(5, 15)
+                    logging.info(f'Filename : {filename} | Waiting {wait_time:.1f}s before retry...')
+                    time.sleep(wait_time)
+                    continue  # Retry the loop
+                else:
+                    # Max retries exceeded
+                    logging.error(f'Filename : {filename} | Max 429 retries ({MAX_429_RETRIES}) exceeded')
+                    if s3_bucket and s3_key:
+                        invoke_failure_analysis(s3_bucket, s3_key, filename, e, 'autotag')
+                    raise RuntimeError(f"Max 429 retries exceeded for autotag API call: {e}")
+            else:
+                # Non-429 error - don't retry
+                logging.error(f'Filename : {filename} | Adobe Autotag API failed: {e}')
+                custom_cw_logger.log_adobe_api_error(filename, api_type="autotag", error=e)
+                if s3_bucket and s3_key:
+                    invoke_failure_analysis(s3_bucket, s3_key, filename, e, 'autotag')
+                raise  # Re-raise to stop the container
+        finally:
+            # CRITICAL: Always release the slot if we haven't already (for non-429 errors)
+            # For 429 errors, we release before the retry wait
+            if retry_count == 0 or '429' not in str(last_error if last_error else ''):
+                release_slot('autotag', filename=filename)
+                logging.info(f'Filename : {filename} | Released rate limit slot (autotag)')
 def extract_api(filename, client_id, client_secret, s3_bucket=None, s3_key=None):
     """
     Extracts text, tables, and figures from a PDF using Adobe PDF Services.
@@ -327,6 +378,10 @@ def extract_api(filename, client_id, client_secret, s3_bucket=None, s3_key=None)
     The slot is acquired before the API call and released after completion
     (whether successful or not).
     
+    IMPORTANT: This function now retries on 429 errors. When a 429 is received,
+    it sets a global backoff to slow down ALL containers, then retries after
+    the backoff period. This ensures the queue can handle any batch size.
+    
     Args:
         filename (str): The path to the PDF file.
         client_id (str): Adobe API client ID.
@@ -335,78 +390,118 @@ def extract_api(filename, client_id, client_secret, s3_bucket=None, s3_key=None)
         s3_key (str): S3 key of the original PDF (for failure analysis).
         
     Raises:
-        ServiceApiException: If Adobe API returns an error.
+        ServiceApiException: If Adobe API returns a non-retryable error.
         ServiceUsageException: If there's a usage-related error.
         SdkException: If there's an SDK-related error.
-        RuntimeError: If unable to acquire rate limit slot.
+        RuntimeError: If unable to acquire rate limit slot or max retries exceeded.
     """
-    # Acquire in-flight slot before making API call
-    logging.info(f'Filename : {filename} | Waiting for rate limit slot (extract)...')
-    if not acquire_slot('extract', filename=filename):
-        raise RuntimeError(f"Failed to acquire rate limit slot for extract API call")
+    retry_count = 0
+    last_error = None
     
-    usage = get_current_usage()
-    logging.info(f'Filename : {filename} | In-flight status: {usage["in_flight"]}/{usage["max_in_flight"]} ({usage["utilization_pct"]}% utilized)')
-    
-    # Log the API call to custom CloudWatch stream
-    custom_cw_logger.log_adobe_api_call(filename, filename, api_type="extract")
-    
-    try:
-        with open(filename, 'rb') as file:
-            input_stream = file.read()
-
-        # Initial setup, create credentials instance
-        credentials = ServicePrincipalCredentials(
-            client_id=client_id,
-            client_secret=client_secret
-        )
-        client_config = ClientConfig(
-            connect_timeout=4000,
-            read_timeout=40000
-            )
-        # Creates a PDF Services instance
-        pdf_services = PDFServices(credentials=credentials, client_config=client_config)
-
-        # Creates an asset(s) from source file(s) and upload
-        input_asset = pdf_services.upload(input_stream=input_stream, mime_type=PDFServicesMediaType.PDF)
-
-        # Create parameters for the job
-        extract_pdf_params = ExtractPDFParams(
-            elements_to_extract=[ExtractElementType.TEXT, ExtractElementType.TABLES],
-            elements_to_extract_renditions=[ExtractRenditionsElementType.TABLES, ExtractRenditionsElementType.FIGURES],
-        )
-
-        # Creates a new job instance
-        extract_pdf_job = ExtractPDFJob(input_asset=input_asset, extract_pdf_params=extract_pdf_params)
-
-        # Submit the job and gets the job result
-        location = pdf_services.submit(extract_pdf_job)
-        pdf_services_response = pdf_services.get_job_result(location, ExtractPDFResult)
-
-        # Get content from the resulting asset(s)
-        result_asset: CloudAsset = pdf_services_response.get_result().get_resource()
-        stream_asset: StreamAsset = pdf_services.get_content(result_asset)
-
-        # Creates an output stream and copy stream asset's content to it
-        os.makedirs("output/ExtractTextInfoFromPDF", exist_ok=True)
-        output_file_path = f"output/ExtractTextInfoFromPDF/extract${filename}.zip"
-        with open(output_file_path, "wb") as file:
-            file.write(stream_asset.get_input_stream())
+    while retry_count <= MAX_429_RETRIES:
+        # Acquire in-flight slot before making API call
+        logging.info(f'Filename : {filename} | Waiting for rate limit slot (extract)...')
+        if not acquire_slot('extract', filename=filename):
+            raise RuntimeError(f"Failed to acquire rate limit slot for extract API call")
         
-        logging.info(f'Filename : {filename} | Adobe Extract API completed successfully')
+        usage = get_current_usage()
+        logging.info(f'Filename : {filename} | In-flight status: {usage["in_flight"]}/{usage["max_in_flight"]} ({usage["utilization_pct"]}% utilized)')
+        
+        # Log the API call to custom CloudWatch stream
+        custom_cw_logger.log_adobe_api_call(filename, filename, api_type="extract")
+        
+        try:
+            with open(filename, 'rb') as file:
+                input_stream = file.read()
 
-    except (ServiceApiException, ServiceUsageException, SdkException) as e:
-        logging.error(f'Filename : {filename} | Adobe Extract API failed: {e}')
-        # Log Adobe API error to custom CloudWatch stream
-        custom_cw_logger.log_adobe_api_error(filename, api_type="extract", error=e)
-        # Invoke failure analysis Lambda for non-rate-limit errors
-        if s3_bucket and s3_key:
-            invoke_failure_analysis(s3_bucket, s3_key, filename, e, 'extract')
-        raise  # Re-raise to stop the container
-    finally:
-        # CRITICAL: Always release the slot, whether success or failure
-        release_slot('extract', filename=filename)
-        logging.info(f'Filename : {filename} | Released rate limit slot (extract)')
+            # Initial setup, create credentials instance
+            credentials = ServicePrincipalCredentials(
+                client_id=client_id,
+                client_secret=client_secret
+            )
+            client_config = ClientConfig(
+                connect_timeout=4000,
+                read_timeout=40000
+                )
+            # Creates a PDF Services instance
+            pdf_services = PDFServices(credentials=credentials, client_config=client_config)
+
+            # Creates an asset(s) from source file(s) and upload
+            input_asset = pdf_services.upload(input_stream=input_stream, mime_type=PDFServicesMediaType.PDF)
+
+            # Create parameters for the job
+            extract_pdf_params = ExtractPDFParams(
+                elements_to_extract=[ExtractElementType.TEXT, ExtractElementType.TABLES],
+                elements_to_extract_renditions=[ExtractRenditionsElementType.TABLES, ExtractRenditionsElementType.FIGURES],
+            )
+
+            # Creates a new job instance
+            extract_pdf_job = ExtractPDFJob(input_asset=input_asset, extract_pdf_params=extract_pdf_params)
+
+            # Submit the job and gets the job result
+            location = pdf_services.submit(extract_pdf_job)
+            pdf_services_response = pdf_services.get_job_result(location, ExtractPDFResult)
+
+            # Get content from the resulting asset(s)
+            result_asset: CloudAsset = pdf_services_response.get_result().get_resource()
+            stream_asset: StreamAsset = pdf_services.get_content(result_asset)
+
+            # Creates an output stream and copy stream asset's content to it
+            os.makedirs("output/ExtractTextInfoFromPDF", exist_ok=True)
+            output_file_path = f"output/ExtractTextInfoFromPDF/extract${filename}.zip"
+            with open(output_file_path, "wb") as file:
+                file.write(stream_asset.get_input_stream())
+            
+            logging.info(f'Filename : {filename} | Adobe Extract API completed successfully')
+            return  # Success! Exit the retry loop
+
+        except (ServiceApiException, ServiceUsageException, SdkException) as e:
+            error_str = str(e)
+            
+            # Check if this is a 429 error (rate limit)
+            if '429' in error_str or 'Too Many Requests' in error_str:
+                retry_count += 1
+                last_error = e
+                
+                # Set global backoff to slow down ALL containers
+                backoff_time = BASE_429_BACKOFF * retry_count
+                set_global_backoff(backoff_time)
+                
+                logging.warning(f'Filename : {filename} | Got 429 error, retry {retry_count}/{MAX_429_RETRIES}. '
+                              f'Setting global backoff for {backoff_time}s')
+                
+                # Log the 429 but don't invoke failure analysis (it's retryable)
+                custom_cw_logger.log_adobe_api_error(filename, api_type="extract", error=e)
+                
+                # Release slot before waiting
+                release_slot('extract', filename=filename)
+                logging.info(f'Filename : {filename} | Released rate limit slot (extract) for retry')
+                
+                if retry_count <= MAX_429_RETRIES:
+                    # Wait for backoff plus some jitter
+                    wait_time = backoff_time + random.uniform(5, 15)
+                    logging.info(f'Filename : {filename} | Waiting {wait_time:.1f}s before retry...')
+                    time.sleep(wait_time)
+                    continue  # Retry the loop
+                else:
+                    # Max retries exceeded
+                    logging.error(f'Filename : {filename} | Max 429 retries ({MAX_429_RETRIES}) exceeded')
+                    if s3_bucket and s3_key:
+                        invoke_failure_analysis(s3_bucket, s3_key, filename, e, 'extract')
+                    raise RuntimeError(f"Max 429 retries exceeded for extract API call: {e}")
+            else:
+                # Non-429 error - don't retry
+                logging.error(f'Filename : {filename} | Adobe Extract API failed: {e}')
+                custom_cw_logger.log_adobe_api_error(filename, api_type="extract", error=e)
+                if s3_bucket and s3_key:
+                    invoke_failure_analysis(s3_bucket, s3_key, filename, e, 'extract')
+                raise  # Re-raise to stop the container
+        finally:
+            # CRITICAL: Always release the slot if we haven't already (for non-429 errors)
+            # For 429 errors, we release before the retry wait
+            if retry_count == 0 or '429' not in str(last_error if last_error else ''):
+                release_slot('extract', filename=filename)
+                logging.info(f'Filename : {filename} | Released rate limit slot (extract)')
 
 def unzip_file(filename,zip_path, extract_to):
     """
@@ -739,8 +834,9 @@ def main():
     # VERSION MARKER - This proves the new code is running
     # If you see this in CloudWatch logs, the deployment was successful
     logging.info("=" * 60)
-    logging.info("CONTAINER VERSION: 2.5-EXTENDED-TIMEOUT")
-    logging.info("Rate limiter: 10min timeout + adaptive backoff for end-of-batch")
+    logging.info("CONTAINER VERSION: 2.6-RETRY-ON-429")
+    logging.info("Rate limiter: 429 retry with global backoff, reduced limits")
+    logging.info(f"Max retries for 429: {MAX_429_RETRIES}, Base backoff: {BASE_429_BACKOFF}s")
     logging.info("=" * 60)
     
     file_key = None
