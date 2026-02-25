@@ -15,10 +15,16 @@ This Lambda handles the "front door" - how many Step Functions start at once.
 Runs every 2 minutes via EventBridge schedule.
 
 Configurable via SSM Parameters:
+- /pdf-processing/queue-enabled: Enable/disable queue processing (default: true)
 - /pdf-processing/queue-max-in-flight: Max in-flight before skipping (default: 10)
 - /pdf-processing/queue-max-executions: Max running executions before skipping (default: 50)
 - /pdf-processing/queue-batch-size: Files to move per invocation (default: 5)
 - /pdf-processing/queue-batch-size-low-load: Files to move when load is low (default: 10)
+
+File Selection:
+- Files are selected by LastModified timestamp (oldest first - FIFO)
+- S3 only shows files after upload completes, so partial uploads are safe
+- Use queue-enabled=false to pause processing during large batch uploads
 """
 
 import json
@@ -45,12 +51,14 @@ RATE_LIMIT_TABLE = os.environ.get('RATE_LIMIT_TABLE', '')
 STATE_MACHINE_ARN = os.environ.get('STATE_MACHINE_ARN', '')
 
 # SSM Parameter names (can be overridden via environment variables)
+SSM_QUEUE_ENABLED = os.environ.get('SSM_QUEUE_ENABLED_PARAM', '/pdf-processing/queue-enabled')
 SSM_MAX_IN_FLIGHT = os.environ.get('SSM_MAX_IN_FLIGHT_PARAM', '/pdf-processing/queue-max-in-flight')
 SSM_MAX_EXECUTIONS = os.environ.get('SSM_MAX_EXECUTIONS_PARAM', '/pdf-processing/queue-max-executions')
 SSM_BATCH_SIZE = os.environ.get('SSM_BATCH_SIZE_PARAM', '/pdf-processing/queue-batch-size')
 SSM_BATCH_SIZE_LOW = os.environ.get('SSM_BATCH_SIZE_LOW_PARAM', '/pdf-processing/queue-batch-size-low-load')
 
 # Default values (used if SSM parameters don't exist)
+DEFAULT_QUEUE_ENABLED = True
 DEFAULT_MAX_IN_FLIGHT = 10
 DEFAULT_MAX_EXECUTIONS = 50
 DEFAULT_BATCH_SIZE = 5
@@ -60,6 +68,37 @@ DEFAULT_BATCH_SIZE_LOW = 10
 _ssm_cache = {}
 _ssm_cache_time = {}
 SSM_CACHE_TTL = 60  # 1 minute cache (short so changes take effect quickly)
+
+
+def get_ssm_parameter_string(param_name: str, default: str) -> str:
+    """Get a string parameter from SSM with caching."""
+    current_time = time.time()
+    
+    cache_key = f"str_{param_name}"
+    if cache_key in _ssm_cache:
+        cache_age = current_time - _ssm_cache_time.get(cache_key, 0)
+        if cache_age < SSM_CACHE_TTL:
+            return _ssm_cache[cache_key]
+    
+    try:
+        response = ssm.get_parameter(Name=param_name)
+        value = response['Parameter']['Value']
+        _ssm_cache[cache_key] = value
+        _ssm_cache_time[cache_key] = current_time
+        logger.info(f"Loaded SSM parameter {param_name}: {value}")
+        return value
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'ParameterNotFound':
+            logger.debug(f"SSM parameter {param_name} not found, using default: {default}")
+            return default
+        logger.error(f"Error getting SSM parameter {param_name}: {e}")
+        return default
+
+
+def is_queue_enabled() -> bool:
+    """Check if queue processing is enabled via SSM parameter."""
+    value = get_ssm_parameter_string(SSM_QUEUE_ENABLED, 'true')
+    return value.lower() in ('true', '1', 'yes', 'on', 'enabled')
 
 
 def get_ssm_parameter(param_name: str, default: int) -> int:
@@ -77,6 +116,7 @@ def get_ssm_parameter(param_name: str, default: int) -> int:
         _ssm_cache[param_name] = value
         _ssm_cache_time[param_name] = current_time
         logger.info(f"Loaded SSM parameter {param_name}: {value}")
+        return value
         return value
     except ClientError as e:
         if e.response['Error']['Code'] == 'ParameterNotFound':
@@ -234,19 +274,33 @@ def handler(event, context):
     Lambda handler - runs on schedule to process queue and retry files.
     
     Priority order:
-    1. Check capacity (in-flight, running executions, global backoff)
-    2. Process retry/ files first (they've been waiting longer)
-    3. Then process queue/ files (new work)
+    1. Check if queue processing is enabled (SSM parameter)
+    2. Check capacity (in-flight, running executions, global backoff)
+    3. Process retry/ files first (they've been waiting longer)
+    4. Then process queue/ files (new work)
     
     Controls intake rate to prevent overwhelming AWS infrastructure.
     
     Configuration via SSM Parameters:
+    - /pdf-processing/queue-enabled (default: true) - ON/OFF switch
     - /pdf-processing/queue-max-in-flight (default: 10)
     - /pdf-processing/queue-max-executions (default: 50)
     - /pdf-processing/queue-batch-size (default: 5)
     - /pdf-processing/queue-batch-size-low-load (default: 10)
     """
     logger.info("PDF Queue Processor starting")
+    
+    # Check if queue processing is enabled (allows pausing during uploads)
+    if not is_queue_enabled():
+        logger.info("Queue processing is DISABLED via SSM parameter - skipping")
+        return {
+            'statusCode': 200,
+            'body': json.dumps({
+                'action': 'DISABLED',
+                'reason': 'Queue processing disabled via /pdf-processing/queue-enabled parameter',
+                'files_processed': 0
+            })
+        }
     
     if not BUCKET_NAME:
         logger.error("BUCKET_NAME environment variable not set")

@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Check the status of the PDF processing queue
-# Shows counts in queue/, retry/, pdf/, and result/ folders
+# Shows counts in queue/, retry/, pdf/, failed/, and result/ folders
 #
 # Usage: ./bin/check-queue-status.sh [bucket-name]
 #
@@ -14,6 +14,18 @@ echo "=== PDF Processing Queue Status ==="
 echo "Bucket: $BUCKET_NAME"
 echo ""
 
+# Check if queue processing is enabled
+QUEUE_ENABLED=$(aws ssm get-parameter \
+    --name "/pdf-processing/queue-enabled" \
+    --query 'Parameter.Value' \
+    --output text 2>/dev/null || echo "true")
+if [ "$QUEUE_ENABLED" = "true" ] || [ "$QUEUE_ENABLED" = "1" ]; then
+    echo "Queue Processing: ENABLED"
+else
+    echo "Queue Processing: PAUSED (run ./bin/queue-resume.sh to enable)"
+fi
+echo ""
+
 # Count files in each folder
 echo "Folder counts:"
 
@@ -23,11 +35,15 @@ echo "  queue/  : $QUEUE_COUNT PDFs (waiting to be processed)"
 
 RETRY_COUNT=$(aws s3 ls "s3://${BUCKET_NAME}/retry/" --recursive 2>/dev/null | grep "\.pdf$" | wc -l | tr -d ' ')
 RETRY_COUNT=${RETRY_COUNT:-0}
-echo "  retry/  : $RETRY_COUNT PDFs (failed, waiting for retry)"
+echo "  retry/  : $RETRY_COUNT PDFs (legacy retry folder)"
 
 PDF_COUNT=$(aws s3 ls "s3://${BUCKET_NAME}/pdf/" --recursive 2>/dev/null | grep "\.pdf$" | wc -l | tr -d ' ')
 PDF_COUNT=${PDF_COUNT:-0}
 echo "  pdf/    : $PDF_COUNT PDFs (currently processing)"
+
+FAILED_COUNT=$(aws s3 ls "s3://${BUCKET_NAME}/failed/" --recursive 2>/dev/null | grep "\.pdf$" | wc -l | tr -d ' ')
+FAILED_COUNT=${FAILED_COUNT:-0}
+echo "  failed/ : $FAILED_COUNT PDFs (max retries exceeded)"
 
 RESULT_COUNT=$(aws s3 ls "s3://${BUCKET_NAME}/result/" --recursive 2>/dev/null | grep "\.pdf$" | wc -l | tr -d ' ')
 RESULT_COUNT=${RESULT_COUNT:-0}
