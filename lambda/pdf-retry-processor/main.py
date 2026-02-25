@@ -13,10 +13,17 @@ The in-flight tracking in the ECS containers still handles Adobe API rate limiti
 This Lambda handles the "front door" - how many Step Functions start at once.
 
 Runs every 2 minutes via EventBridge schedule.
+
+Configurable via SSM Parameters:
+- /pdf-processing/queue-max-in-flight: Max in-flight before skipping (default: 10)
+- /pdf-processing/queue-max-executions: Max running executions before skipping (default: 50)
+- /pdf-processing/queue-batch-size: Files to move per invocation (default: 5)
+- /pdf-processing/queue-batch-size-low-load: Files to move when load is low (default: 10)
 """
 
 import json
 import os
+import time
 import boto3
 import logging
 from datetime import datetime
@@ -30,21 +37,66 @@ logger.setLevel(logging.INFO)
 s3 = boto3.client('s3')
 dynamodb = boto3.resource('dynamodb')
 sfn = boto3.client('stepfunctions')
+ssm = boto3.client('ssm')
 
 # Environment variables
 BUCKET_NAME = os.environ.get('BUCKET_NAME', '')
 RATE_LIMIT_TABLE = os.environ.get('RATE_LIMIT_TABLE', '')
 STATE_MACHINE_ARN = os.environ.get('STATE_MACHINE_ARN', '')
 
-# Thresholds for when to process files
-MAX_IN_FLIGHT_THRESHOLD = 10  # Only process when in-flight is below this
-MAX_RUNNING_EXECUTIONS = 50   # Only process when fewer than this many executions running
+# SSM Parameter names (can be overridden via environment variables)
+SSM_MAX_IN_FLIGHT = os.environ.get('SSM_MAX_IN_FLIGHT_PARAM', '/pdf-processing/queue-max-in-flight')
+SSM_MAX_EXECUTIONS = os.environ.get('SSM_MAX_EXECUTIONS_PARAM', '/pdf-processing/queue-max-executions')
+SSM_BATCH_SIZE = os.environ.get('SSM_BATCH_SIZE_PARAM', '/pdf-processing/queue-batch-size')
+SSM_BATCH_SIZE_LOW = os.environ.get('SSM_BATCH_SIZE_LOW_PARAM', '/pdf-processing/queue-batch-size-low-load')
 
-# How many files to move per invocation (controls intake rate)
-# At 2-minute intervals, this gives ~15-30 files/hour baseline
-# Increases when queue is very low
-FILES_PER_BATCH_NORMAL = 5
-FILES_PER_BATCH_LOW_LOAD = 10  # When very few executions running
+# Default values (used if SSM parameters don't exist)
+DEFAULT_MAX_IN_FLIGHT = 10
+DEFAULT_MAX_EXECUTIONS = 50
+DEFAULT_BATCH_SIZE = 5
+DEFAULT_BATCH_SIZE_LOW = 10
+
+# SSM cache
+_ssm_cache = {}
+_ssm_cache_time = {}
+SSM_CACHE_TTL = 60  # 1 minute cache (short so changes take effect quickly)
+
+
+def get_ssm_parameter(param_name: str, default: int) -> int:
+    """Get an integer parameter from SSM with caching."""
+    current_time = time.time()
+    
+    if param_name in _ssm_cache:
+        cache_age = current_time - _ssm_cache_time.get(param_name, 0)
+        if cache_age < SSM_CACHE_TTL:
+            return _ssm_cache[param_name]
+    
+    try:
+        response = ssm.get_parameter(Name=param_name)
+        value = int(response['Parameter']['Value'])
+        _ssm_cache[param_name] = value
+        _ssm_cache_time[param_name] = current_time
+        logger.info(f"Loaded SSM parameter {param_name}: {value}")
+        return value
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'ParameterNotFound':
+            logger.debug(f"SSM parameter {param_name} not found, using default: {default}")
+            return default
+        logger.error(f"Error getting SSM parameter {param_name}: {e}")
+        return default
+    except ValueError:
+        logger.warning(f"Invalid value for {param_name}, using default: {default}")
+        return default
+
+
+def get_config() -> dict:
+    """Get all configuration values from SSM (with defaults)."""
+    return {
+        'max_in_flight': get_ssm_parameter(SSM_MAX_IN_FLIGHT, DEFAULT_MAX_IN_FLIGHT),
+        'max_executions': get_ssm_parameter(SSM_MAX_EXECUTIONS, DEFAULT_MAX_EXECUTIONS),
+        'batch_size': get_ssm_parameter(SSM_BATCH_SIZE, DEFAULT_BATCH_SIZE),
+        'batch_size_low': get_ssm_parameter(SSM_BATCH_SIZE_LOW, DEFAULT_BATCH_SIZE_LOW),
+    }
 
 
 def get_current_in_flight() -> int:
@@ -187,12 +239,23 @@ def handler(event, context):
     3. Then process queue/ files (new work)
     
     Controls intake rate to prevent overwhelming AWS infrastructure.
+    
+    Configuration via SSM Parameters:
+    - /pdf-processing/queue-max-in-flight (default: 10)
+    - /pdf-processing/queue-max-executions (default: 50)
+    - /pdf-processing/queue-batch-size (default: 5)
+    - /pdf-processing/queue-batch-size-low-load (default: 10)
     """
     logger.info("PDF Queue Processor starting")
     
     if not BUCKET_NAME:
         logger.error("BUCKET_NAME environment variable not set")
         return {'statusCode': 500, 'body': 'BUCKET_NAME not configured'}
+    
+    # Load configuration from SSM
+    config = get_config()
+    logger.info(f"Config: max_in_flight={config['max_in_flight']}, max_executions={config['max_executions']}, "
+                f"batch_size={config['batch_size']}, batch_size_low={config['batch_size_low']}")
     
     # Check for global backoff (recent 429 errors from Adobe)
     backoff_remaining = get_global_backoff_remaining()
@@ -214,8 +277,8 @@ def handler(event, context):
     logger.info(f"Current capacity: {in_flight} in-flight, {running_executions} running executions")
     
     # Determine if we have capacity to process files
-    if in_flight >= MAX_IN_FLIGHT_THRESHOLD:
-        logger.info(f"In-flight count ({in_flight}) >= threshold ({MAX_IN_FLIGHT_THRESHOLD}) - skipping")
+    if in_flight >= config['max_in_flight']:
+        logger.info(f"In-flight count ({in_flight}) >= threshold ({config['max_in_flight']}) - skipping")
         return {
             'statusCode': 200,
             'body': json.dumps({
@@ -226,8 +289,8 @@ def handler(event, context):
             })
         }
     
-    if running_executions >= MAX_RUNNING_EXECUTIONS:
-        logger.info(f"Running executions ({running_executions}) >= threshold ({MAX_RUNNING_EXECUTIONS}) - skipping")
+    if running_executions >= config['max_executions']:
+        logger.info(f"Running executions ({running_executions}) >= threshold ({config['max_executions']}) - skipping")
         return {
             'statusCode': 200,
             'body': json.dumps({
@@ -240,10 +303,10 @@ def handler(event, context):
     
     # Determine batch size based on current load
     if running_executions < 10 and in_flight < 3:
-        files_per_batch = FILES_PER_BATCH_LOW_LOAD
+        files_per_batch = config['batch_size_low']
         logger.info(f"Low load detected - processing up to {files_per_batch} files")
     else:
-        files_per_batch = FILES_PER_BATCH_NORMAL
+        files_per_batch = config['batch_size']
         logger.info(f"Normal load - processing up to {files_per_batch} files")
     
     processed_files = []

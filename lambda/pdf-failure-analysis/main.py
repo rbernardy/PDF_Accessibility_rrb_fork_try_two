@@ -272,26 +272,12 @@ def lambda_handler(event, context):
     # Log structured output
     logger.info(f"PDF_FAILURE_ANALYSIS: {json.dumps(log_entry)}")
     
-    # Save reports to S3
+    # Save Word document report to S3
     if SAVE_REPORTS_TO_S3 and REPORT_BUCKET:
         timestamp_str = datetime.now().strftime('%Y%m%d_%H%M%S')
         base_filename = os.path.splitext(filename)[0]
         
-        # Save human-readable text report
-        try:
-            text_report = format_text_report(log_entry, result)
-            text_key = f"reports/failure_analysis/{base_filename}_analysis_{timestamp_str}.txt"
-            s3.put_object(
-                Bucket=REPORT_BUCKET,
-                Key=text_key,
-                Body=text_report.encode('utf-8'),
-                ContentType='text/plain'
-            )
-            logger.info(f"Saved text report to s3://{REPORT_BUCKET}/{text_key}")
-        except Exception as e:
-            logger.warning(f"Failed to save text report to S3: {e}")
-        
-        # Save Word document report
+        # Save Word document report only (no .txt version)
         try:
             docx_bytes = create_docx_report(log_entry, result)
             docx_key = f"reports/failure_analysis/{base_filename}_analysis_{timestamp_str}.docx"

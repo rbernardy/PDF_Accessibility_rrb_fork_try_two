@@ -769,12 +769,13 @@ class PDFAccessibility(Stack):
             environment={
                 "FAILURE_TABLE": pdf_failure_records_table.table_name,
                 "LOG_GROUP_NAME": pdf_cleanup_log_group.log_group_name,
-                "BUCKET_NAME": pdf_processing_bucket.bucket_name
+                "BUCKET_NAME": pdf_processing_bucket.bucket_name,
+                "MAX_RETRIES": "3"  # After 3 failures, move to failed/ folder
             }
         )
         
         # Grant permissions to cleanup Lambda
-        pdf_processing_bucket.grant_read(pdf_failure_cleanup_lambda)
+        pdf_processing_bucket.grant_read_write(pdf_failure_cleanup_lambda)  # Need write for moving to queue/failed folders
         pdf_processing_bucket.grant_delete(pdf_failure_cleanup_lambda)
         pdf_failure_records_table.grant_write_data(pdf_failure_cleanup_lambda)
         pdf_cleanup_log_group.grant_write(pdf_failure_cleanup_lambda)
@@ -800,6 +801,15 @@ class PDFAccessibility(Stack):
                     f"arn:aws:logs:{region}:{account_id}:log-group:/ecs/pdf-remediation/adobe-autotag:*",
                     f"arn:aws:logs:{region}:{account_id}:log-group:/ecs/pdf-remediation/alt-text-generator:*"
                 ]
+            )
+        )
+        
+        # SSM read permissions for max-retries parameter
+        pdf_failure_cleanup_lambda.add_to_role_policy(
+            iam.PolicyStatement(
+                effect=iam.Effect.ALLOW,
+                actions=["ssm:GetParameter"],
+                resources=[f"arn:aws:ssm:{region}:{account_id}:parameter/pdf-processing/*"]
             )
         )
         
@@ -939,6 +949,17 @@ class PDFAccessibility(Stack):
         # Grant Step Functions read to check running executions
         pdf_remediation_state_machine.grant_read(pdf_queue_processor_lambda)
         
+        # Grant SSM read for configuration parameters
+        pdf_queue_processor_lambda.add_to_role_policy(
+            iam.PolicyStatement(
+                effect=iam.Effect.ALLOW,
+                actions=["ssm:GetParameter"],
+                resources=[
+                    f"arn:aws:ssm:{region}:{account_id}:parameter/pdf-processing/queue-*"
+                ]
+            )
+        )
+        
         # Schedule queue processor to run every 2 minutes
         pdf_queue_schedule = events.Rule(
             self, "PdfQueueProcessorSchedule",
@@ -982,6 +1003,13 @@ class PDFAccessibility(Stack):
         
         # Store log group name for dashboard
         pdf_failure_analysis_log_group_name = pdf_failure_analysis_log_group.log_group_name
+        
+        # Connect cleanup Lambda to failure analysis Lambda
+        # (cleanup Lambda is defined earlier, so we add the env var here)
+        pdf_failure_cleanup_lambda.add_environment(
+            "FAILURE_ANALYSIS_LAMBDA_ARN", pdf_failure_analysis_lambda.function_arn
+        )
+        pdf_failure_analysis_lambda.grant_invoke(pdf_failure_cleanup_lambda)
 
         # =============================================================================
         # Rate Limit Widget Lambda - Custom CloudWatch widget for real-time in-flight status

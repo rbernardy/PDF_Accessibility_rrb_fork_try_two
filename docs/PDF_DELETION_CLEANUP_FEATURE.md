@@ -2,17 +2,29 @@
 
 ## Overview
 
-Automatically clean up PDFs and their temporary files when processing fails in the Step Function pipeline. Failures are logged and users receive a daily digest email summarizing what failed and was cleaned up.
+Automatically handle PDFs when processing fails in the Step Function pipeline. **PDFs are NEVER deleted** - they are moved back to the queue for automatic retry. After a configurable number of retries (default: 3), PDFs move to a `failed/` folder for manual review.
 
-## Feature Requirements
+## Key Behavior
 
-1. Detect when a PDF fails processing (Step Function execution fails/times out/aborts)
-2. Automatically delete the original PDF from `/pdf/[folder]/filename.pdf`
-3. Automatically delete the temp folder `/temp/[folder]/[filename minus extension]/` and all contents
-4. Log all cleanup actions to a dedicated CloudWatch log group
-5. Store failure records in DynamoDB for daily digest
-6. Send ONE daily digest email per user at 11:55 PM with all their failures for that day
-7. Add dashboard widgets showing failure/cleanup activity
+- **ALL failures** move PDFs back to `queue/` folder for automatic retry
+- Retry count is tracked in S3 object metadata
+- After MAX_RETRIES failures, PDFs move to `failed/` folder (not deleted)
+- Temp files are always cleaned up
+- Failure records stored for daily digest email
+- Folder structure is preserved throughout: `pdf/collection/doc.pdf` → `queue/collection/doc.pdf`
+
+## Configuration
+
+### SSM Parameters
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `/pdf-processing/max-retries` | 3 | Number of retry attempts before moving to failed/ |
+
+Set via CLI:
+```bash
+./bin/set-max-retries.sh 5  # Allow 5 retries before giving up
+```
 
 ## Architecture
 
@@ -24,12 +36,13 @@ Automatically clean up PDFs and their temporary files when processing fails in t
 │  │ Step Function    │    │ EventBridge Rule │    │ Cleanup Lambda             │ │
 │  │ Execution FAILS  │───▶│ (catches FAILED, │───▶│                            │ │
 │  │ or TIMES_OUT     │    │  TIMED_OUT,      │    │ 1. Parse execution input   │ │
-│  │ or ABORTS        │    │  ABORTED)        │    │ 2. Delete /pdf/[file].pdf  │ │
-│  └──────────────────┘    └──────────────────┘    │ 3. Delete /temp/[folder]/  │ │
-│                                                  │ 4. Query CloudTrail for    │ │
-│                                                  │    uploader                │ │
-│                                                  │ 5. Store in DynamoDB       │ │
-│                                                  │ 6. Log to CloudWatch       │ │
+│  │ or ABORTS        │    │  ABORTED)        │    │ 2. Get retry count         │ │
+│  └──────────────────┘    └──────────────────┘    │ 3. If < MAX_RETRIES:       │ │
+│                                                  │    Move to queue/          │ │
+│                                                  │ 4. If >= MAX_RETRIES:      │ │
+│                                                  │    Move to failed/         │ │
+│                                                  │ 5. Delete temp folder      │ │
+│                                                  │ 6. Store failure record    │ │
 │                                                  └────────────────────────────┘ │
 │                                                               │                 │
 │                      ┌────────────────────────────────────────┘                 │
@@ -61,252 +74,139 @@ Automatically clean up PDFs and their temporary files when processing fails in t
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-## S3 Path Mapping
+## S3 Path Flow
 
-When a PDF fails processing:
+### Normal Retry (retry_count < MAX_RETRIES)
 ```
-DELETE: s3://bucket/pdf/reports-2025/quarterly-report.pdf
-        └─────────────────────────────────────────────────┘
-                      │
-                      ▼ also deletes
-DELETE: s3://bucket/temp/reports-2025/quarterly-report/
-        └─────────────────────────────────────────────────┘
-        (entire folder and all contents)
+FAILURE: pdf/reports-2025/quarterly-report.pdf
+         │
+         ▼ moves to (with incremented retry-count metadata)
+QUEUE:   queue/reports-2025/quarterly-report.pdf
+         │
+         ▼ queue processor picks up when capacity available
+PROCESS: pdf/reports-2025/quarterly-report.pdf
 ```
+
+### Max Retries Exceeded (retry_count >= MAX_RETRIES)
+```
+FAILURE: pdf/reports-2025/quarterly-report.pdf (retry-count: 3)
+         │
+         ▼ moves original PDF to
+FAILED:  failed/reports-2025/quarterly-report.pdf
+         │
+         ▼ failure analysis generates
+REPORT:  reports/failure_analysis/quarterly-report_analysis_{timestamp}.docx
+```
+
+### Temp Folder Cleanup (always happens)
+```
+DELETE: temp/reports-2025/quarterly-report/
+        (entire folder and all contents - chunks, extracted data, etc.)
+```
+
+## S3 Object Metadata
+
+Retry count is tracked in S3 object metadata:
+
+| Metadata Key | Description |
+|--------------|-------------|
+| `retry-count` | Number of times this PDF has failed processing |
+| `max-retries-exceeded` | Set to "true" when moved to failed/ folder |
+
+## Folder Structure
+
+| Folder | Purpose |
+|--------|---------|
+| `queue/` | PDFs waiting to be processed (teams upload here) |
+| `pdf/` | PDFs currently being processed |
+| `temp/` | Temporary processing files (chunks, extracted data) |
+| `result/` | Successfully processed PDFs |
+| `failed/` | Original PDFs that exceeded max retries |
+| `reports/failure_analysis/` | Failure analysis reports (.docx) |
 
 ## Components
 
-### 1. EventBridge Rule for Step Function Failures
-
-Triggers on Step Function execution state changes to FAILED, TIMED_OUT, or ABORTED.
-
-```python
-# CDK
-failure_rule = events.Rule(
-    self, "PdfProcessingFailureRule",
-    event_pattern=events.EventPattern(
-        source=["aws.states"],
-        detail_type=["Step Functions Execution Status Change"],
-        detail={
-            "stateMachineArn": [state_machine.state_machine_arn],
-            "status": ["FAILED", "TIMED_OUT", "ABORTED"]
-        }
-    )
-)
-failure_rule.add_target(targets.LambdaFunction(cleanup_lambda))
-```
-
-### 2. DynamoDB Tables
-
-#### Failure Records Table
-Stores each failure for daily digest processing.
-
-| Attribute | Type | Description |
-|-----------|------|-------------|
-| failure_id | String (PK) | UUID for the failure record |
-| failure_date | String (GSI PK) | Date in YYYY-MM-DD format for querying |
-| timestamp | String | ISO timestamp of failure |
-| iam_username | String | Who uploaded the PDF |
-| user_arn | String | Full ARN of uploader |
-| pdf_key | String | S3 key of deleted PDF |
-| temp_folder | String | S3 prefix of deleted temp folder |
-| temp_files_deleted | Number | Count of temp files deleted |
-| failure_reason | String | Why the Step Function failed |
-| execution_arn | String | Step Function execution ARN |
-| notified | Boolean | Whether digest email was sent |
-
-#### Notification Preferences Table
-Maps IAM usernames to email addresses (managed via CLI tool).
-
-| Attribute | Type | Description |
-|-----------|------|-------------|
-| iam_username | String (PK) | IAM username |
-| email | String | Email address for notifications |
-| enabled | Boolean | Whether notifications are enabled |
-
-### 3. Cleanup Lambda
+### 1. Cleanup Lambda
 
 Triggered by EventBridge when Step Function fails.
 
 **Responsibilities:**
 1. Parse the failed execution input to extract PDF path
-2. Delete the original PDF from `/pdf/`
-3. Delete all temp files from `/temp/[folder]/[filename]/`
-4. Query CloudTrail to find who uploaded the PDF (PutObject event)
-5. Store failure record in DynamoDB
-6. Log the cleanup action to CloudWatch
+2. Get current retry count from S3 object metadata
+3. If retry_count < MAX_RETRIES: Move PDF to `queue/` folder (increment retry count)
+4. If retry_count >= MAX_RETRIES: Move original PDF to `failed/` folder
+5. Delete all temp files from `/temp/[folder]/[filename]/`
+6. Invoke failure analysis Lambda (generates .docx report)
+7. Store failure record in DynamoDB
+8. Log the cleanup action to CloudWatch
 
-### 4. Email Digest Lambda
+### 2. Queue Processor Lambda
 
-Triggered daily at 11:55 PM by EventBridge schedule.
+Runs every 2 minutes, moves files from `queue/` to `pdf/` at controlled rate.
 
-**Responsibilities:**
-1. Query DynamoDB for all failures from today where `notified = false`
-2. Group failures by `iam_username`
-3. For each user, look up their email in the notification preferences table
-4. Send one digest email per user summarizing all their failures
-5. Mark all processed records as `notified = true`
+**Priority:**
+1. Process `retry/` files first (legacy, for backwards compatibility)
+2. Then process `queue/` files
 
-### 5. CloudWatch Log Group
+### 3. DynamoDB Failure Records
 
-Dedicated log group `/pdf-processing/cleanup` for all cleanup events.
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| failure_id | String (PK) | UUID for the failure record |
+| failure_date | String (GSI PK) | Date in YYYY-MM-DD format |
+| timestamp | String | ISO timestamp of failure |
+| iam_username | String | Who uploaded the PDF |
+| pdf_key | String | Original S3 key of PDF |
+| queue_key | String | New location in queue/ (if retrying) |
+| failed_key | String | New location in failed/ (if max retries exceeded) |
+| retry_count | Number | Current retry count |
+| max_retries_exceeded | Boolean | Whether max retries was exceeded |
+| failure_reason | String | Why the Step Function failed |
+| notified | Boolean | Whether digest email was sent |
 
-**Log Format:**
+### 4. CloudWatch Log Format
+
 ```json
 {
-  "timestamp": "2025-02-19T14:30:00Z",
+  "timestamp": "2025-02-25T14:30:00Z",
   "event_type": "PIPELINE_FAILURE_CLEANUP",
+  "action": "MOVED_TO_QUEUE",
   "execution_arn": "arn:aws:states:...:execution:...",
   "failure_reason": "ECS task failed",
-  "deleted_pdf": "pdf/reports-2025/quarterly-report.pdf",
-  "deleted_temp_folder": "temp/reports-2025/quarterly-report/",
-  "temp_files_deleted": 15,
-  "uploaded_by": "jane.doe",
-  "uploaded_by_arn": "arn:aws:iam::123456789:user/jane.doe"
+  "pdf_key": "pdf/reports-2025/quarterly-report.pdf",
+  "queue_key": "queue/reports-2025/quarterly-report.pdf",
+  "retry_count": 2,
+  "uploaded_by": "jane.doe"
 }
 ```
 
-### 6. Dashboard Widgets
+## Helper Scripts
 
-- Pipeline Failure Cleanup Activity
-- Failures by User (today)
-- Daily Digest Emails Sent
-
-## Email Digest Template
-
-**Subject:** `PDF Processing Failures - Daily Summary for [date]`
-
-**Body:**
-```
-PDF Processing Failure Summary
-==============================
-
-Date: February 19, 2025
-User: jane.doe
-
-The following PDFs failed processing and have been automatically cleaned up:
-
-1. quarterly-report.pdf
-   - Original location: pdf/reports-2025/quarterly-report.pdf
-   - Failure reason: ECS task timeout
-   - Temp files deleted: 15
-   - Failed at: 2025-02-19 10:30:00 UTC
-
-2. annual-summary.pdf
-   - Original location: pdf/reports-2025/annual-summary.pdf
-   - Failure reason: Adobe API error
-   - Temp files deleted: 8
-   - Failed at: 2025-02-19 14:45:00 UTC
-
-Total failures today: 2
-
-To retry processing, please re-upload the original PDF files to the appropriate folder.
-
-This is an automated notification.
-```
-
-## CLI Tool: manage-notifications.py
-
-Located at `/bin/manage-notifications.py`
-
-**Usage:**
-```bash
-# Add or update a user's notification email
-./bin/manage-notifications.py add <iam_username> <email>
-
-# Remove a user from notifications
-./bin/manage-notifications.py remove <iam_username>
-
-# Disable notifications for a user (keeps record)
-./bin/manage-notifications.py disable <iam_username>
-
-# Enable notifications for a user
-./bin/manage-notifications.py enable <iam_username>
-
-# List all configured users
-./bin/manage-notifications.py list
-```
-
-## IAM Permissions Required
-
-### Cleanup Lambda
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": ["s3:DeleteObject", "s3:ListBucket"],
-      "Resource": ["arn:aws:s3:::bucket", "arn:aws:s3:::bucket/*"]
-    },
-    {
-      "Effect": "Allow",
-      "Action": ["cloudtrail:LookupEvents"],
-      "Resource": "*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": ["dynamodb:PutItem"],
-      "Resource": "arn:aws:dynamodb:*:*:table/pdf-failure-records"
-    },
-    {
-      "Effect": "Allow",
-      "Action": ["logs:CreateLogStream", "logs:PutLogEvents"],
-      "Resource": "arn:aws:logs:*:*:log-group:/pdf-processing/cleanup:*"
-    }
-  ]
-}
-```
-
-### Email Digest Lambda
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": ["dynamodb:Query", "dynamodb:UpdateItem"],
-      "Resource": [
-        "arn:aws:dynamodb:*:*:table/pdf-failure-records",
-        "arn:aws:dynamodb:*:*:table/pdf-failure-records/index/*"
-      ]
-    },
-    {
-      "Effect": "Allow",
-      "Action": ["dynamodb:GetItem"],
-      "Resource": "arn:aws:dynamodb:*:*:table/pdf-cleanup-notifications"
-    },
-    {
-      "Effect": "Allow",
-      "Action": ["ses:SendEmail"],
-      "Resource": "*"
-    }
-  ]
-}
-```
-
-## Files
-
-| File | Purpose |
-|------|---------|
-| `docs/PDF_DELETION_CLEANUP_FEATURE.md` | This design document |
-| `bin/manage-notifications.py` | CLI tool to manage user email notifications |
-| `lambda/pdf-failure-cleanup/main.py` | Lambda for cleanup on failure |
-| `lambda/pdf-failure-cleanup/requirements.txt` | Dependencies |
-| `lambda/pdf-failure-cleanup/Dockerfile` | Container build |
-| `lambda/pdf-failure-digest/main.py` | Lambda for daily email digest |
-| `lambda/pdf-failure-digest/requirements.txt` | Dependencies |
-| `lambda/pdf-failure-digest/Dockerfile` | Container build |
+| Script | Purpose |
+|--------|---------|
+| `bin/set-max-retries.sh [count]` | Set max retry count (default: 3) |
+| `bin/check-queue-status.sh` | Check queue/retry folder status |
+| `bin/clear-rate-limit-table.sh` | Clear in-flight tracking table |
 
 ## Testing
 
-1. Add a test user: `./bin/manage-notifications.py add testuser test@example.com`
-2. Upload a PDF that will fail (e.g., corrupted file)
-3. Wait for Step Function to fail
-4. Verify:
-   - PDF is deleted from `/pdf/`
-   - Temp folder is deleted
+1. Upload a PDF that will fail (e.g., corrupted file)
+2. Wait for Step Function to fail
+3. Verify:
+   - PDF moved to `queue/` folder (not deleted)
+   - Retry count incremented in metadata
+   - Temp folder deleted
    - CloudWatch log entry exists
    - DynamoDB record created
-5. Wait until 11:55 PM (or manually invoke digest Lambda)
-6. Verify email received with failure summary
+4. Let it fail MAX_RETRIES times
+5. Verify:
+   - PDF moved to `failed/` folder
+   - Placeholder file created
+   - Daily digest includes the failure
+
+## Migration Notes
+
+- The `retry/` folder is now legacy but still supported
+- Queue processor handles both `retry/` and `queue/` folders
+- Old behavior (deleting PDFs) is completely removed
+- All failures now result in retry or move to failed/
