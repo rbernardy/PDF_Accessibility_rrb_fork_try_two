@@ -17,16 +17,20 @@ echo ""
 # Count files in each folder
 echo "Folder counts:"
 
-QUEUE_COUNT=$(aws s3 ls "s3://${BUCKET_NAME}/queue/" --recursive 2>/dev/null | grep -c "\.pdf$" || echo "0")
+QUEUE_COUNT=$(aws s3 ls "s3://${BUCKET_NAME}/queue/" --recursive 2>/dev/null | grep "\.pdf$" | wc -l | tr -d ' ')
+QUEUE_COUNT=${QUEUE_COUNT:-0}
 echo "  queue/  : $QUEUE_COUNT PDFs (waiting to be processed)"
 
-RETRY_COUNT=$(aws s3 ls "s3://${BUCKET_NAME}/retry/" --recursive 2>/dev/null | grep -c "\.pdf$" || echo "0")
+RETRY_COUNT=$(aws s3 ls "s3://${BUCKET_NAME}/retry/" --recursive 2>/dev/null | grep "\.pdf$" | wc -l | tr -d ' ')
+RETRY_COUNT=${RETRY_COUNT:-0}
 echo "  retry/  : $RETRY_COUNT PDFs (failed, waiting for retry)"
 
-PDF_COUNT=$(aws s3 ls "s3://${BUCKET_NAME}/pdf/" --recursive 2>/dev/null | grep -c "\.pdf$" || echo "0")
+PDF_COUNT=$(aws s3 ls "s3://${BUCKET_NAME}/pdf/" --recursive 2>/dev/null | grep "\.pdf$" | wc -l | tr -d ' ')
+PDF_COUNT=${PDF_COUNT:-0}
 echo "  pdf/    : $PDF_COUNT PDFs (currently processing)"
 
-RESULT_COUNT=$(aws s3 ls "s3://${BUCKET_NAME}/result/" --recursive 2>/dev/null | grep -c "\.pdf$" || echo "0")
+RESULT_COUNT=$(aws s3 ls "s3://${BUCKET_NAME}/result/" --recursive 2>/dev/null | grep "\.pdf$" | wc -l | tr -d ' ')
+RESULT_COUNT=${RESULT_COUNT:-0}
 echo "  result/ : $RESULT_COUNT PDFs (completed)"
 
 echo ""
@@ -81,6 +85,6 @@ fi
 
 echo ""
 echo "=== Summary ==="
-TOTAL_PENDING=$((QUEUE_COUNT + RETRY_COUNT + PDF_COUNT))
+TOTAL_PENDING=$((${QUEUE_COUNT:-0} + ${RETRY_COUNT:-0} + ${PDF_COUNT:-0}))
 echo "  Total pending: $TOTAL_PENDING"
-echo "  Completed: $RESULT_COUNT"
+echo "  Completed: ${RESULT_COUNT:-0}"
