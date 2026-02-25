@@ -1,0 +1,279 @@
+PDF Processing Failure Summary
+==============================
+
+Date: February 25, 2026
+User: unknown
+
+The following PDFs failed processing and have been automatically cleaned up:
+
+1. Jelson_Baymon_Junious_Jr.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Jelson_Baymon_Junious_Jr.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-25 01:10:25,823 - ERROR - Filename : COMPLIANT_Jelson_Baymon_Junious_Jr_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c42b2bf4-11e6-11f1-aebd-0a58a...
+   - Detailed error: Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c42b2bf4-11e6-11f1-aebd-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+   - Temp files deleted: 2
+   - Failed at: 2026-02-25T01:10:53.843601Z
+
+2. Morris_Fannie.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Morris_Fannie.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-25 01:10:20,176 - ERROR - Filename : COMPLIANT_Morris_Fannie_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c0d28bb4-11e6-11f1-aa89-0a58a9feac02; st...
+   - Detailed error: Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c0d28bb4-11e6-11f1-aa89-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+   - Temp files deleted: 2
+   - Failed at: 2026-02-25T01:10:50.351122Z
+
+3. Williams_Willie.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Williams_Willie.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-25 01:09:15,245 - ERROR - Error getting SSM parameter /pdf-processing/adobe-api-rps: An error occurred (AccessDeniedException) when calling the GetParameter operation: User: arn:aws:sts::44391...
+   - Detailed error: 2026-02-25 01:14:44,844 - ERROR - File: Williams_Willie_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-25T01:15:11.480964Z
+
+4. Perry_Thelma_Louise.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Perry_Thelma_Louise.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-25 01:10:22,948 - ERROR - Filename : COMPLIANT_Perry_Thelma_Louise_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=581cb899-4847-4129-894e-ad58993bfa...
+   - Detailed error: Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=581cb899-4847-4129-894e-ad58993bfa51; statusCode=429; errorCode=TOO_MANY_REQUESTS
+   - Temp files deleted: 2
+   - Failed at: 2026-02-25T01:10:52.034290Z
+
+5. Montgomery_Jeams.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Montgomery_Jeams.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-25 01:10:24,898 - ERROR - Filename : COMPLIANT_Montgomery_Jeams_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c3a3db22-11e6-11f1-a210-0a58a9feac02;...
+   - Detailed error: Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c3a3db22-11e6-11f1-a210-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+   - Temp files deleted: 2
+   - Failed at: 2026-02-25T01:10:55.888106Z
+
+6. Isom_Mattie.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Isom_Mattie.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-25 01:10:21,839 - ERROR - Filename : COMPLIANT_Isom_Mattie_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c1cfc784-11e6-11f1-9189-0a58a9feac02; stat...
+   - Detailed error: Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c1cfc784-11e6-11f1-9189-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+   - Temp files deleted: 2
+   - Failed at: 2026-02-25T01:10:51.716051Z
+
+7. Grooner_Dennie.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Grooner_Dennie.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-25 01:10:22,230 - ERROR - Filename : COMPLIANT_Grooner_Dennie_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c20acd16-11e6-11f1-9ea0-0a58a9feac02; s...
+   - Detailed error: Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c20acd16-11e6-11f1-9ea0-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+   - Temp files deleted: 2
+   - Failed at: 2026-02-25T01:10:52.261934Z
+
+8. Gatewood_Howard.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Gatewood_Howard.pdf
+   - Failure reason: ECS Task Failed (alt-text-generator): Essential container in task exited (exit code: 1)
+   - Detailed error: Alt text generation failed for image 12: The aspect ratio of the provided image must be a maximum of 20:1. Try again with a valid image.
+   - Temp files deleted: 6
+   - Failed at: 2026-02-25T01:15:01.668739Z
+
+9. Williams_Almaria.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Williams_Almaria.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-25 01:10:26,732 - ERROR - Filename : COMPLIANT_Williams_Almaria_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c4be7224-11e6-11f1-a1e3-0a58a9feac02;...
+   - Detailed error: Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c4be7224-11e6-11f1-a1e3-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+   - Temp files deleted: 2
+   - Failed at: 2026-02-25T01:10:55.401101Z
+
+10. Worthy_Saddie.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Worthy_Saddie.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-25 01:09:20,022 - ERROR - Error getting SSM parameter /pdf-processing/adobe-api-rps: An error occurred (AccessDeniedException) when calling the GetParameter operation: User: arn:aws:sts::44391...
+   - Detailed error: Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=26f5e0e9-9d8a-49b2-9eda-b0ecda3848f7; statusCode=429; errorCode=TOO_MANY_REQUESTS
+   - Temp files deleted: 2
+   - Failed at: 2026-02-25T01:10:57.667369Z
+
+11. Smith_George.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Smith_George.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-25 01:09:17,965 - ERROR - Error getting SSM parameter /pdf-processing/adobe-api-rps: An error occurred (AccessDeniedException) when calling the GetParameter operation: User: arn:aws:sts::44391...
+   - Detailed error: Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=957ab70b-b2a6-4e94-96d3-e4aba0bb7c53; statusCode=429; errorCode=TOO_MANY_REQUESTS
+   - Temp files deleted: 2
+   - Failed at: 2026-02-25T01:10:52.260600Z
+
+12. Green_Queen.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Green_Queen.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-25 01:10:22,914 - ERROR - Filename : COMPLIANT_Green_Queen_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c2768506-11e6-11f1-9248-0a58a9feac02; stat...
+   - Detailed error: Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c2768506-11e6-11f1-9248-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+   - Temp files deleted: 2
+   - Failed at: 2026-02-25T01:10:51.486592Z
+
+13. Kirkland_Nelsey.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Kirkland_Nelsey.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-25 01:10:22,676 - ERROR - Filename : COMPLIANT_Kirkland_Nelsey_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c24f3c76-11e6-11f1-b3c1-0a58a9feac02; ...
+   - Detailed error: Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c24f3c76-11e6-11f1-b3c1-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+   - Temp files deleted: 2
+   - Failed at: 2026-02-25T01:10:51.366923Z
+
+14. Green_Gladiola.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Green_Gladiola.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-25 01:10:22,723 - ERROR - Filename : COMPLIANT_Green_Gladiola_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c25a1c22-11e6-11f1-9ddd-0a58a9feac02; s...
+   - Detailed error: Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c25a1c22-11e6-11f1-9ddd-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+   - Temp files deleted: 2
+   - Failed at: 2026-02-25T01:10:51.319511Z
+
+15. Jones_Arthur.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Jones_Arthur.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-25 01:10:23,940 - ERROR - Filename : COMPLIANT_Jones_Arthur_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c313e120-11e6-11f1-a278-0a58a9feac02; sta...
+   - Detailed error: Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c313e120-11e6-11f1-a278-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+   - Temp files deleted: 2
+   - Failed at: 2026-02-25T01:10:52.925255Z
+
+16. Lewis_Willie_Jr.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Lewis_Willie_Jr.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-25 01:10:21,012 - ERROR - Filename : COMPLIANT_Lewis_Willie_Jr_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=f6276aeb-ab29-4583-bd40-cf0266cb9b2e; ...
+   - Detailed error: Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=f6276aeb-ab29-4583-bd40-cf0266cb9b2e; statusCode=429; errorCode=TOO_MANY_REQUESTS
+   - Temp files deleted: 2
+   - Failed at: 2026-02-25T01:10:52.004656Z
+
+17. Protho_Mary_Stillborn.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Protho_Mary_Stillborn.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-25 01:10:24,854 - ERROR - Filename : COMPLIANT_Protho_Mary_Stillborn_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c39e8adc-11e6-11f1-b45b-0a58a9fe...
+   - Detailed error: Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c39e8adc-11e6-11f1-b45b-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+   - Temp files deleted: 2
+   - Failed at: 2026-02-25T01:10:52.301557Z
+
+18. Johnson_Jinnie_Lee.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Johnson_Jinnie_Lee.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-25 01:10:24,110 - ERROR - Filename : COMPLIANT_Johnson_Jinnie_Lee_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c2d072be-11e6-11f1-ad08-0a58a9feac0...
+   - Detailed error: Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c2d072be-11e6-11f1-ad08-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+   - Temp files deleted: 2
+   - Failed at: 2026-02-25T01:10:51.278459Z
+
+19. Williams_Mary_Jane.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Williams_Mary_Jane.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-25 01:10:23,773 - ERROR - Filename : COMPLIANT_Williams_Mary_Jane_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c2f7bfd6-11e6-11f1-b67c-0a58a9feac0...
+   - Detailed error: Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c2f7bfd6-11e6-11f1-b67c-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+   - Temp files deleted: 2
+   - Failed at: 2026-02-25T01:10:50.686726Z
+
+20. Rattrey_T_P.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Rattrey_T_P.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-25 01:10:25,705 - ERROR - Filename : COMPLIANT_Rattrey_T_P_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=8517ac1d-1a6b-49b9-8421-671f617d1ae3; stat...
+   - Detailed error: Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=8517ac1d-1a6b-49b9-8421-671f617d1ae3; statusCode=429; errorCode=TOO_MANY_REQUESTS
+   - Temp files deleted: 2
+   - Failed at: 2026-02-25T01:10:56.167041Z
+
+21. Johnson_Melvin.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Johnson_Melvin.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-25 01:10:24,557 - ERROR - Filename : COMPLIANT_Johnson_Melvin_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c37167be-11e6-11f1-852f-0a58a9feac02; s...
+   - Detailed error: Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c37167be-11e6-11f1-852f-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+   - Temp files deleted: 2
+   - Failed at: 2026-02-25T01:10:54.096643Z
+
+22. Polk_Fred.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Polk_Fred.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-25 01:10:20,701 - ERROR - Filename : COMPLIANT_Polk_Fred_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c120cfa4-11e6-11f1-a247-0a58a9feac02; status...
+   - Detailed error: Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c120cfa4-11e6-11f1-a247-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+   - Temp files deleted: 2
+   - Failed at: 2026-02-25T01:10:49.824491Z
+
+23. Massey_Infant.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Massey_Infant.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-25 01:10:25,663 - ERROR - Filename : COMPLIANT_Massey_Infant_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=6f20247b-6417-4faf-84d5-2be7021eec3c; st...
+   - Detailed error: Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=6f20247b-6417-4faf-84d5-2be7021eec3c; statusCode=429; errorCode=TOO_MANY_REQUESTS
+   - Temp files deleted: 2
+   - Failed at: 2026-02-25T01:10:54.972684Z
+
+24. Minor_Vivian.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Minor_Vivian.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): Essential container in task exited (exit code: 1)
+   - Detailed error: 2026-02-25 01:14:44,140 - ERROR - File: Minor_Vivian_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-25T01:15:13.498394Z
+
+25. Rivers_Ullus_Jr.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Rivers_Ullus_Jr.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-25 01:10:24,756 - ERROR - Filename : COMPLIANT_Rivers_Ullus_Jr_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c38eb382-11e6-11f1-bcb9-0a58a9feac02; ...
+   - Detailed error: Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c38eb382-11e6-11f1-bcb9-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+   - Temp files deleted: 2
+   - Failed at: 2026-02-25T01:10:52.735119Z
+
+26. Rofile_Ruth.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Rofile_Ruth.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-25 01:10:26,831 - ERROR - Filename : COMPLIANT_Rofile_Ruth_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c4c95ea0-11e6-11f1-b539-0a58a9feac02; stat...
+   - Detailed error: Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c4c95ea0-11e6-11f1-b539-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+   - Temp files deleted: 2
+   - Failed at: 2026-02-25T01:10:53.793491Z
+
+27. Hill_Ethel_Lee.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Hill_Ethel_Lee.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-25 01:10:26,949 - ERROR - Filename : COMPLIANT_Hill_Ethel_Lee_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c4dd1b70-11e6-11f1-875f-0a58a9feac02; s...
+   - Detailed error: Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c4dd1b70-11e6-11f1-875f-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+   - Temp files deleted: 2
+   - Failed at: 2026-02-25T01:11:01.376528Z
+
+28. Howard_Willie.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Howard_Willie.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-25 01:10:21,404 - ERROR - Filename : COMPLIANT_Howard_Willie_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c1915206-11e6-11f1-b0b8-0a58a9feac02; st...
+   - Detailed error: Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c1915206-11e6-11f1-b0b8-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+   - Temp files deleted: 2
+   - Failed at: 2026-02-25T01:10:51.140224Z
+
+29. Dunnawood_Hannah.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Dunnawood_Hannah.pdf
+   - Failure reason: OperationException: 'errorMessage':'','errorType':'OperationException','requestId':'e7161da1-da0b-4324-8ace-b03b72dad826','stackTrace':['  File '/var/...
+   - Temp files deleted: 17
+   - Failed at: 2026-02-25T01:13:46.272767Z
+
+30. Glover_Elizabeth.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Glover_Elizabeth.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-25 01:10:23,707 - ERROR - Filename : COMPLIANT_Glover_Elizabeth_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c2f36ef4-11e6-11f1-a919-0a58a9feac02;...
+   - Detailed error: Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c2f36ef4-11e6-11f1-a919-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+   - Temp files deleted: 2
+   - Failed at: 2026-02-25T01:10:52.405389Z
+
+31. Henderson_Infant.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Henderson_Infant.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-25 01:10:23,493 - ERROR - Filename : COMPLIANT_Henderson_Infant_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c2cec6d0-11e6-11f1-9996-0a58a9feac02;...
+   - Detailed error: Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c2cec6d0-11e6-11f1-9996-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+   - Temp files deleted: 2
+   - Failed at: 2026-02-25T01:10:51.964865Z
+
+32. Miller_John.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Miller_John.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-25 01:10:26,762 - ERROR - Filename : COMPLIANT_Miller_John_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=69f68f97-7d56-4bf0-a4d0-bf6fd9959a2a; stat...
+   - Detailed error: Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=69f68f97-7d56-4bf0-a4d0-bf6fd9959a2a; statusCode=429; errorCode=TOO_MANY_REQUESTS
+   - Temp files deleted: 2
+   - Failed at: 2026-02-25T01:10:55.232855Z
+
+33. Potter_Infant.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Potter_Infant.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-25 01:10:24,783 - ERROR - Filename : COMPLIANT_Potter_Infant_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c39523ca-11e6-11f1-b7ba-0a58a9feac02; st...
+   - Detailed error: Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c39523ca-11e6-11f1-b7ba-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+   - Temp files deleted: 2
+   - Failed at: 2026-02-25T01:10:52.987546Z
+
+34. Burgess_Laura.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Burgess_Laura.pdf
+   - Failure reason: ECS Task Failed (alt-text-generator): Error invoking model: ModelErrorException: The model encountered an unexpected error during inferencing. Try your request again.
+   - Detailed error: Error processing images: ModelErrorException: The model encountered an unexpected error during inferencing. Try your request again.
+   - Temp files deleted: 5
+   - Failed at: 2026-02-25T01:14:37.984411Z
+
+35. Lewis_Noah.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Lewis_Noah.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-25 01:10:24,791 - ERROR - Filename : COMPLIANT_Lewis_Noah_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c394344c-11e6-11f1-aa6b-0a58a9feac02; statu...
+   - Detailed error: Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c394344c-11e6-11f1-aa6b-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+   - Temp files deleted: 2
+   - Failed at: 2026-02-25T01:10:52.891102Z
+
+36. Mobley_Sallie.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Mobley_Sallie.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-25 01:10:24,248 - ERROR - Filename : COMPLIANT_Mobley_Sallie_chunk_1.pdf | Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=657db17d-d6cf-49e2-9b76-c3227788ca40; st...
+   - Detailed error: Adobe Extract API failed: description =Too Many Requests.; requestTrackingId=657db17d-d6cf-49e2-9b76-c3227788ca40; statusCode=429; errorCode=TOO_MANY_REQUESTS
+   - Temp files deleted: 2
+   - Failed at: 2026-02-25T01:10:51.470787Z
+
+37. Jerningon_Robert.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Jerningon_Robert.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-25 01:10:25,675 - ERROR - Filename : COMPLIANT_Jerningon_Robert_chunk_1.pdf | Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c41e3a70-11e6-11f1-8f51-0a58a9feac02;...
+   - Detailed error: Adobe Autotag API failed: description =Too Many Requests.; requestTrackingId=c41e3a70-11e6-11f1-8f51-0a58a9feac02; statusCode=429; errorCode=TOO_MANY_REQUESTS
+   - Temp files deleted: 2
+   - Failed at: 2026-02-25T01:10:53.663356Z
+
+38. Tate_Robert.pdf
+   - Original location: pdf/pdfs-test-failures-02_242count/Tate_Robert.pdf
+   - Failure reason: ECS Task Failed (adobe-autotag): 2026-02-25 01:09:19,321 - ERROR - Error getting SSM parameter /pdf-processing/adobe-api-rps: An error occurred (AccessDeniedException) when calling the GetParameter operation: User: arn:aws:sts::44391...
+   - Detailed error: 2026-02-25 01:14:50,840 - ERROR - File: Tate_Robert_chunk_1.pdf, Status: Failed in First ECS task
+   - Temp files deleted: 2
+   - Failed at: 2026-02-25T01:15:17.369267Z
+
+
+Total failures today: 38
+
+To retry processing, please re-upload the original PDF files to the appropriate folder.
+
+This is an automated report.

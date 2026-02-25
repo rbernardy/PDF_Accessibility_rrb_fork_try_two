@@ -51,12 +51,12 @@ class PDFAccessibility(Stack):
         
         # SSM Parameter for max in-flight Adobe API requests (configurable without redeployment)
         # This controls how many API calls can be "in progress" at any time across all ECS tasks
-        # Reduced from 50 to 25 to prevent burst overload on Adobe's API
+        # Reduced from 25 to 15 to prevent burst overload on Adobe's API
         adobe_api_max_in_flight_param_name = '/pdf-processing/adobe-api-max-in-flight'
         adobe_api_max_in_flight_param = ssm.StringParameter(
             self, "AdobeApiMaxInFlightParam",
             parameter_name=adobe_api_max_in_flight_param_name,
-            string_value="25",  # Default: 25 concurrent requests (reduced from 50 to prevent bursts)
+            string_value="15",  # Default: 15 concurrent requests (reduced from 25 to prevent bursts)
             description="Adobe PDF Services API max concurrent in-flight requests"
         )
         
@@ -83,7 +83,7 @@ class PDFAccessibility(Stack):
         adobe_api_rps_param = ssm.StringParameter(
             self, "AdobeApiRpsParam",
             parameter_name=adobe_api_rps_param_name,
-            string_value="5",  # 5 requests per second max (burst control)
+            string_value="3",  # 3 requests per second max (reduced from 5 for safety)
             description="Adobe PDF Services API max requests per second (burst control)"
         )
         
@@ -238,12 +238,13 @@ class PDFAccessibility(Stack):
             resources=[adobe_rate_limit_table.table_arn],
         ))
         
-        # SSM permissions for reading Adobe API configuration (RPM and max in-flight)
+        # SSM permissions for reading Adobe API configuration (RPM, RPS, and max in-flight)
         ecs_task_role.add_to_policy(iam.PolicyStatement(
             actions=["ssm:GetParameter"],
             resources=[
                 f"arn:aws:ssm:{region}:{account_id}:parameter{adobe_api_rpm_param_name}",
                 f"arn:aws:ssm:{region}:{account_id}:parameter{adobe_api_max_in_flight_param_name}",
+                f"arn:aws:ssm:{region}:{account_id}:parameter{adobe_api_rps_param_name}",
             ],
         ))
         
@@ -340,6 +341,10 @@ class PDFAccessibility(Stack):
                                               tasks.TaskEnvironmentVariable(
                                                   name="ADOBE_API_RPM_PARAM",
                                                   value=adobe_api_rpm_param_name
+                                              ),
+                                              tasks.TaskEnvironmentVariable(
+                                                  name="ADOBE_API_RPS_PARAM",
+                                                  value=adobe_api_rps_param_name
                                               ),
                                           ]
                                       )],
