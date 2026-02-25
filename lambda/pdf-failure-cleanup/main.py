@@ -44,7 +44,9 @@ ADOBE_AUTOTAG_LOG_GROUP = '/ecs/pdf-remediation/adobe-autotag'
 ALT_TEXT_LOG_GROUP = '/ecs/pdf-remediation/alt-text-generator'
 
 # Patterns that indicate rate limit / transient errors (should retry, not delete)
+# These include both Adobe API rate limits AND AWS infrastructure throttling
 RATE_LIMIT_PATTERNS = [
+    # Adobe API rate limits
     '429',
     'Too Many Requests',
     'rate limit',
@@ -55,29 +57,48 @@ RATE_LIMIT_PATTERNS = [
     'Quota exceeded',
     'Max 429 retries exceeded',  # Our own retry exhaustion message
     'RATE_LIMIT',
+    # AWS ECS throttling (happens when too many tasks start at once)
+    'Rate exceeded',
+    'ThrottlingException',
+    'ECS.AmazonECSException',
+    # AWS infrastructure capacity issues (transient)
+    'InsufficientFreeAddressesInSubnet',
+    'TaskFailedToStart',
+    'CannotPullContainerError',
+    'ResourceInitializationError',
 ]
 
 
 def is_rate_limit_failure(failure_reason: str, raw_cause: str) -> bool:
     """
-    Check if the failure was due to rate limiting (429 errors).
+    Check if the failure was due to rate limiting or transient infrastructure issues.
     
     These failures are transient and the file should be retried, not deleted.
+    Includes:
+    - Adobe API 429 errors
+    - AWS ECS throttling (too many tasks starting)
+    - VPC/subnet capacity issues
+    - Container pull/start failures
     
     Args:
         failure_reason: The cleaned failure reason string
         raw_cause: The raw failure cause from Step Functions
         
     Returns:
-        True if this is a rate limit failure, False otherwise
+        True if this is a transient/retryable failure, False otherwise
     """
     # Check both the clean reason and raw cause for rate limit patterns
     combined_text = f"{failure_reason} {raw_cause}".lower()
     
     for pattern in RATE_LIMIT_PATTERNS:
         if pattern.lower() in combined_text:
-            logger.info(f"Detected rate limit failure (pattern: {pattern})")
+            logger.info(f"Detected transient/rate-limit failure (pattern: '{pattern}')")
             return True
+    
+    # Also check for specific ECS stop codes that indicate transient failures
+    if 'taskfailedtostart' in combined_text:
+        logger.info("Detected TaskFailedToStart - treating as transient failure")
+        return True
     
     return False
 
