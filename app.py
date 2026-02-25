@@ -906,12 +906,12 @@ class PDFAccessibility(Stack):
         pdf_cleanup_log_group_name = pdf_cleanup_log_group.log_group_name
 
         # =============================================================================
-        # PDF Retry Processor Lambda - Reprocesses rate-limited PDFs from retry/ folder
+        # PDF Queue Processor Lambda - Manages controlled intake from queue/ and retry/
         # =============================================================================
         
-        pdf_retry_processor_lambda = lambda_.Function(
-            self, "PdfRetryProcessorLambda",
-            function_name="pdf-retry-processor",
+        pdf_queue_processor_lambda = lambda_.Function(
+            self, "PdfQueueProcessorLambda",
+            function_name="pdf-queue-processor",
             runtime=lambda_.Runtime.PYTHON_3_12,
             handler="main.handler",
             code=lambda_.Code.from_docker_build(
@@ -930,23 +930,23 @@ class PDFAccessibility(Stack):
             }
         )
         
-        # Grant S3 read/write for moving files between retry/ and pdf/
-        pdf_processing_bucket.grant_read_write(pdf_retry_processor_lambda)
+        # Grant S3 read/write for moving files between queue/, retry/, and pdf/
+        pdf_processing_bucket.grant_read_write(pdf_queue_processor_lambda)
         
         # Grant DynamoDB read to check in-flight count
-        adobe_rate_limit_table.grant_read_data(pdf_retry_processor_lambda)
+        adobe_rate_limit_table.grant_read_data(pdf_queue_processor_lambda)
         
         # Grant Step Functions read to check running executions
-        pdf_remediation_state_machine.grant_read(pdf_retry_processor_lambda)
+        pdf_remediation_state_machine.grant_read(pdf_queue_processor_lambda)
         
-        # Schedule retry processor to run every 5 minutes
-        pdf_retry_schedule = events.Rule(
-            self, "PdfRetryProcessorSchedule",
-            rule_name="pdf-retry-processor-schedule",
-            description="Processes rate-limited PDFs from retry folder every 5 minutes",
-            schedule=events.Schedule.rate(Duration.minutes(5))
+        # Schedule queue processor to run every 2 minutes
+        pdf_queue_schedule = events.Rule(
+            self, "PdfQueueProcessorSchedule",
+            rule_name="pdf-queue-processor-schedule",
+            description="Processes PDFs from queue/ and retry/ folders every 2 minutes",
+            schedule=events.Schedule.rate(Duration.minutes(2))
         )
-        pdf_retry_schedule.add_target(targets.LambdaFunction(pdf_retry_processor_lambda))
+        pdf_queue_schedule.add_target(targets.LambdaFunction(pdf_queue_processor_lambda))
 
         # =============================================================================
         # PDF Failure Analysis Lambda - Analyzes PDFs that fail Adobe API processing

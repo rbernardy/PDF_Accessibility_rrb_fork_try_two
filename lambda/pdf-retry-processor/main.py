@@ -1,15 +1,18 @@
 """
-PDF Retry Processor Lambda
+PDF Queue Processor Lambda
 
-Scheduled Lambda that monitors the retry/ folder and moves PDFs back to pdf/
-for reprocessing when the queue has capacity.
+Scheduled Lambda that manages the controlled intake of PDFs into the processing pipeline.
+Handles two sources:
+1. queue/ folder - Primary intake where teams upload PDFs
+2. retry/ folder - Transient failures waiting for reprocessing
 
-This handles rate-limited (429) failures by:
-1. Checking current queue capacity (in-flight count, RPM usage)
-2. If capacity available, moving ONE file from retry/ to pdf/
-3. The S3 trigger on pdf/ will automatically start processing
+This prevents overwhelming AWS infrastructure (ECS throttling, subnet exhaustion)
+by controlling how many PDFs enter the pipeline at once.
 
-Runs every 5 minutes via EventBridge schedule.
+The in-flight tracking in the ECS containers still handles Adobe API rate limiting.
+This Lambda handles the "front door" - how many Step Functions start at once.
+
+Runs every 2 minutes via EventBridge schedule.
 """
 
 import json
@@ -33,16 +36,22 @@ BUCKET_NAME = os.environ.get('BUCKET_NAME', '')
 RATE_LIMIT_TABLE = os.environ.get('RATE_LIMIT_TABLE', '')
 STATE_MACHINE_ARN = os.environ.get('STATE_MACHINE_ARN', '')
 
-# Thresholds for when to process retry files
-MAX_IN_FLIGHT_THRESHOLD = 5  # Only retry when in-flight is below this
-MAX_RUNNING_EXECUTIONS = 10  # Only retry when fewer than this many executions running
+# Thresholds for when to process files
+MAX_IN_FLIGHT_THRESHOLD = 10  # Only process when in-flight is below this
+MAX_RUNNING_EXECUTIONS = 50   # Only process when fewer than this many executions running
+
+# How many files to move per invocation (controls intake rate)
+# At 2-minute intervals, this gives ~15-30 files/hour baseline
+# Increases when queue is very low
+FILES_PER_BATCH_NORMAL = 5
+FILES_PER_BATCH_LOW_LOAD = 10  # When very few executions running
 
 
 def get_current_in_flight() -> int:
     """Get the current number of in-flight Adobe API requests."""
     if not RATE_LIMIT_TABLE:
         logger.warning("RATE_LIMIT_TABLE not set")
-        return 999  # Return high number to prevent retries
+        return 999
     
     try:
         table = dynamodb.Table(RATE_LIMIT_TABLE)
@@ -94,99 +103,101 @@ def get_global_backoff_remaining() -> int:
         return 0
 
 
-def list_retry_files(bucket: str, max_files: int = 10) -> list:
+def list_pdf_files(bucket: str, prefix: str, max_files: int = 20) -> list:
     """
-    List PDF files in the retry/ folder.
+    List PDF files in a folder.
     
-    Returns list of dicts with 'key' and 'last_modified'.
-    Sorted by last_modified (oldest first) to process in FIFO order.
+    Returns list of dicts with 'key', 'last_modified', 'size'.
+    Sorted by last_modified (oldest first - FIFO order).
     """
-    retry_files = []
+    pdf_files = []
     
     try:
         paginator = s3.get_paginator('list_objects_v2')
         
-        for page in paginator.paginate(Bucket=bucket, Prefix='retry/'):
+        for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
             if 'Contents' not in page:
                 continue
             
             for obj in page['Contents']:
                 key = obj['Key']
-                if key.lower().endswith('.pdf'):
-                    retry_files.append({
+                # Only include PDF files, skip folder markers
+                if key.lower().endswith('.pdf') and obj['Size'] > 0:
+                    pdf_files.append({
                         'key': key,
                         'last_modified': obj['LastModified'],
                         'size': obj['Size']
                     })
         
         # Sort by last_modified (oldest first - FIFO)
-        retry_files.sort(key=lambda x: x['last_modified'])
+        pdf_files.sort(key=lambda x: x['last_modified'])
         
-        logger.info(f"Found {len(retry_files)} files in retry/ folder")
-        return retry_files[:max_files]
+        return pdf_files[:max_files]
         
     except ClientError as e:
-        logger.error(f"Error listing retry files: {e}")
+        logger.error(f"Error listing files in {prefix}: {e}")
         return []
 
 
-def move_retry_to_pdf(bucket: str, retry_key: str) -> str:
+def move_file_to_pdf_folder(bucket: str, source_key: str, source_prefix: str) -> str:
     """
-    Move a file from retry/ back to pdf/ for reprocessing.
+    Move a file from source folder (queue/ or retry/) to pdf/ folder.
     
     Preserves folder structure:
-        retry/folder-name/document.pdf -> pdf/folder-name/document.pdf
+        queue/collection-A/doc1.pdf -> pdf/collection-A/doc1.pdf
+        retry/collection-A/doc1.pdf -> pdf/collection-A/doc1.pdf
     
     Returns the new pdf key if successful, None otherwise.
     """
-    if not retry_key.startswith('retry/'):
-        logger.error(f"Invalid retry key format: {retry_key}")
+    if not source_key.startswith(source_prefix):
+        logger.error(f"Invalid source key format: {source_key}")
         return None
     
-    # Create pdf key by replacing 'retry/' with 'pdf/'
-    pdf_key = 'pdf/' + retry_key[6:]  # Remove 'retry/' prefix, add 'pdf/'
+    # Create pdf key by replacing source prefix with 'pdf/'
+    relative_path = source_key[len(source_prefix):]
+    pdf_key = f"pdf/{relative_path}"
     
     try:
         # Copy to pdf folder
         s3.copy_object(
             Bucket=bucket,
-            CopySource={'Bucket': bucket, 'Key': retry_key},
+            CopySource={'Bucket': bucket, 'Key': source_key},
             Key=pdf_key
         )
-        logger.info(f"Copied s3://{bucket}/{retry_key} to s3://{bucket}/{pdf_key}")
+        logger.info(f"Copied s3://{bucket}/{source_key} to s3://{bucket}/{pdf_key}")
         
-        # Delete from retry folder
-        s3.delete_object(Bucket=bucket, Key=retry_key)
-        logger.info(f"Deleted s3://{bucket}/{retry_key}")
+        # Delete from source folder
+        s3.delete_object(Bucket=bucket, Key=source_key)
+        logger.info(f"Deleted s3://{bucket}/{source_key}")
         
         return pdf_key
         
     except ClientError as e:
-        logger.error(f"Error moving retry file to pdf: {e}")
+        logger.error(f"Error moving file to pdf folder: {e}")
         return None
 
 
 def handler(event, context):
     """
-    Lambda handler - runs on schedule to process retry files.
+    Lambda handler - runs on schedule to process queue and retry files.
     
-    Only processes files when:
-    1. No global backoff is active
-    2. In-flight count is below threshold
-    3. Running executions count is below threshold
+    Priority order:
+    1. Check capacity (in-flight, running executions, global backoff)
+    2. Process retry/ files first (they've been waiting longer)
+    3. Then process queue/ files (new work)
     
-    Processes ONE file at a time to avoid overwhelming the queue.
+    Controls intake rate to prevent overwhelming AWS infrastructure.
     """
-    logger.info(f"PDF Retry Processor starting - checking queue capacity")
+    logger.info("PDF Queue Processor starting")
     
     if not BUCKET_NAME:
         logger.error("BUCKET_NAME environment variable not set")
         return {'statusCode': 500, 'body': 'BUCKET_NAME not configured'}
     
-    # Check for global backoff (recent 429 errors)
+    # Check for global backoff (recent 429 errors from Adobe)
     backoff_remaining = get_global_backoff_remaining()
     if backoff_remaining > 0:
-        logger.info(f"Global backoff active ({backoff_remaining}s remaining) - skipping retry processing")
+        logger.info(f"Global backoff active ({backoff_remaining}s remaining) - skipping processing")
         return {
             'statusCode': 200,
             'body': json.dumps({
@@ -196,87 +207,121 @@ def handler(event, context):
             })
         }
     
-    # Check in-flight count
+    # Check current capacity
     in_flight = get_current_in_flight()
-    logger.info(f"Current in-flight count: {in_flight}")
-    
-    if in_flight >= MAX_IN_FLIGHT_THRESHOLD:
-        logger.info(f"In-flight count ({in_flight}) >= threshold ({MAX_IN_FLIGHT_THRESHOLD}) - skipping retry processing")
-        return {
-            'statusCode': 200,
-            'body': json.dumps({
-                'action': 'SKIPPED',
-                'reason': f'In-flight count ({in_flight}) above threshold ({MAX_IN_FLIGHT_THRESHOLD})',
-                'files_processed': 0
-            })
-        }
-    
-    # Check running executions
     running_executions = get_running_executions_count()
     
-    if running_executions >= MAX_RUNNING_EXECUTIONS:
-        logger.info(f"Running executions ({running_executions}) >= threshold ({MAX_RUNNING_EXECUTIONS}) - skipping retry processing")
+    logger.info(f"Current capacity: {in_flight} in-flight, {running_executions} running executions")
+    
+    # Determine if we have capacity to process files
+    if in_flight >= MAX_IN_FLIGHT_THRESHOLD:
+        logger.info(f"In-flight count ({in_flight}) >= threshold ({MAX_IN_FLIGHT_THRESHOLD}) - skipping")
         return {
             'statusCode': 200,
             'body': json.dumps({
                 'action': 'SKIPPED',
-                'reason': f'Running executions ({running_executions}) above threshold ({MAX_RUNNING_EXECUTIONS})',
-                'files_processed': 0
+                'reason': f'In-flight count ({in_flight}) above threshold',
+                'files_processed': 0,
+                'queue_status': {'in_flight': in_flight, 'running_executions': running_executions}
             })
         }
     
-    # Get files from retry folder
-    retry_files = list_retry_files(BUCKET_NAME, max_files=5)
-    
-    if not retry_files:
-        logger.info("No files in retry/ folder")
+    if running_executions >= MAX_RUNNING_EXECUTIONS:
+        logger.info(f"Running executions ({running_executions}) >= threshold ({MAX_RUNNING_EXECUTIONS}) - skipping")
         return {
             'statusCode': 200,
             'body': json.dumps({
-                'action': 'NO_FILES',
-                'reason': 'No files in retry folder',
-                'files_processed': 0
+                'action': 'SKIPPED',
+                'reason': f'Running executions ({running_executions}) above threshold',
+                'files_processed': 0,
+                'queue_status': {'in_flight': in_flight, 'running_executions': running_executions}
             })
         }
     
-    # Process ONE file (conservative approach to avoid overwhelming queue)
-    # We could process more if capacity is very low, but one at a time is safest
-    files_to_process = 1
-    if in_flight == 0 and running_executions < 5:
-        # Queue is very empty - process up to 3 files
-        files_to_process = min(3, len(retry_files))
+    # Determine batch size based on current load
+    if running_executions < 10 and in_flight < 3:
+        files_per_batch = FILES_PER_BATCH_LOW_LOAD
+        logger.info(f"Low load detected - processing up to {files_per_batch} files")
+    else:
+        files_per_batch = FILES_PER_BATCH_NORMAL
+        logger.info(f"Normal load - processing up to {files_per_batch} files")
     
     processed_files = []
+    files_remaining_retry = 0
+    files_remaining_queue = 0
     
-    for i in range(files_to_process):
-        retry_file = retry_files[i]
-        retry_key = retry_file['key']
-        
-        logger.info(f"Processing retry file: {retry_key}")
-        
-        pdf_key = move_retry_to_pdf(BUCKET_NAME, retry_key)
-        
-        if pdf_key:
-            processed_files.append({
-                'retry_key': retry_key,
-                'pdf_key': pdf_key,
-                'size': retry_file['size'],
-                'original_failure_time': retry_file['last_modified'].isoformat()
-            })
-            logger.info(f"Successfully moved {retry_key} to {pdf_key} for reprocessing")
-        else:
-            logger.error(f"Failed to move {retry_key}")
+    # Priority 1: Process retry/ files first (they've been waiting)
+    retry_files = list_pdf_files(BUCKET_NAME, 'retry/', max_files=files_per_batch)
+    files_remaining_retry = len(retry_files)
     
-    remaining_files = len(retry_files) - len(processed_files)
+    if retry_files:
+        logger.info(f"Found {len(retry_files)} files in retry/ folder")
+        
+        for retry_file in retry_files:
+            if len(processed_files) >= files_per_batch:
+                break
+            
+            source_key = retry_file['key']
+            pdf_key = move_file_to_pdf_folder(BUCKET_NAME, source_key, 'retry/')
+            
+            if pdf_key:
+                processed_files.append({
+                    'source': source_key,
+                    'destination': pdf_key,
+                    'type': 'retry',
+                    'size': retry_file['size'],
+                    'waited_since': retry_file['last_modified'].isoformat()
+                })
+                logger.info(f"Moved retry file: {source_key} -> {pdf_key}")
     
-    logger.info(f"Retry processing complete: {len(processed_files)} files moved, {remaining_files} remaining in retry folder")
+    # Priority 2: Process queue/ files if we have remaining capacity
+    remaining_capacity = files_per_batch - len(processed_files)
+    
+    if remaining_capacity > 0:
+        queue_files = list_pdf_files(BUCKET_NAME, 'queue/', max_files=remaining_capacity + 10)
+        files_remaining_queue = len(queue_files)
+        
+        if queue_files:
+            logger.info(f"Found {len(queue_files)} files in queue/ folder")
+            
+            for queue_file in queue_files:
+                if len(processed_files) >= files_per_batch:
+                    break
+                
+                source_key = queue_file['key']
+                pdf_key = move_file_to_pdf_folder(BUCKET_NAME, source_key, 'queue/')
+                
+                if pdf_key:
+                    processed_files.append({
+                        'source': source_key,
+                        'destination': pdf_key,
+                        'type': 'queue',
+                        'size': queue_file['size'],
+                        'queued_since': queue_file['last_modified'].isoformat()
+                    })
+                    logger.info(f"Moved queue file: {source_key} -> {pdf_key}")
+    
+    # Calculate remaining files (approximate - we only fetched a limited number)
+    total_remaining = max(0, files_remaining_retry - len([f for f in processed_files if f['type'] == 'retry']))
+    total_remaining += max(0, files_remaining_queue - len([f for f in processed_files if f['type'] == 'queue']))
+    
+    # Summary
+    retry_processed = len([f for f in processed_files if f['type'] == 'retry'])
+    queue_processed = len([f for f in processed_files if f['type'] == 'queue'])
+    
+    if processed_files:
+        logger.info(f"Processing complete: {retry_processed} from retry/, {queue_processed} from queue/")
+    else:
+        logger.info("No files to process in queue/ or retry/ folders")
     
     return {
         'statusCode': 200,
         'body': json.dumps({
-            'action': 'PROCESSED',
+            'action': 'PROCESSED' if processed_files else 'NO_FILES',
             'files_processed': len(processed_files),
-            'files_remaining': remaining_files,
+            'retry_processed': retry_processed,
+            'queue_processed': queue_processed,
+            'files_remaining_estimate': total_remaining,
             'processed_files': processed_files,
             'queue_status': {
                 'in_flight': in_flight,
