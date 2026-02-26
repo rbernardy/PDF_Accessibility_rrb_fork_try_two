@@ -970,6 +970,84 @@ class PDFAccessibility(Stack):
         pdf_queue_schedule.add_target(targets.LambdaFunction(pdf_queue_processor_lambda))
 
         # =============================================================================
+        # In-Flight Reconciler Lambda - Prevents stuck in-flight counter
+        # =============================================================================
+        # This Lambda runs every 5 minutes to detect and fix stuck in-flight counters.
+        # If ECS tasks crash without releasing their slots, the counter can get stuck,
+        # blocking all new processing. This reconciler compares the counter against
+        # actual running tasks and resets it if clearly stale.
+        
+        in_flight_reconciler_lambda = lambda_.Function(
+            self, "InFlightReconcilerLambda",
+            function_name="in-flight-reconciler",
+            runtime=lambda_.Runtime.PYTHON_3_12,
+            handler="main.handler",
+            code=lambda_.Code.from_asset("lambda/in-flight-reconciler"),
+            memory_size=256,
+            timeout=Duration.seconds(60),
+            architecture=lambda_arch,
+            environment={
+                "RATE_LIMIT_TABLE": adobe_rate_limit_table.table_name,
+                "ECS_CLUSTER": ecs_cluster.cluster_name,
+                "STATE_MACHINE_ARN": pdf_remediation_state_machine.state_machine_arn
+            }
+        )
+        
+        # Grant DynamoDB read/write for checking and resetting counter
+        adobe_rate_limit_table.grant_read_write_data(in_flight_reconciler_lambda)
+        
+        # Grant ECS read to list running tasks
+        in_flight_reconciler_lambda.add_to_role_policy(
+            iam.PolicyStatement(
+                effect=iam.Effect.ALLOW,
+                actions=["ecs:ListTasks", "ecs:DescribeTasks"],
+                resources=["*"],
+                conditions={
+                    "ArnEquals": {
+                        "ecs:cluster": ecs_cluster.cluster_arn
+                    }
+                }
+            )
+        )
+        
+        # Grant Step Functions read to list running executions
+        pdf_remediation_state_machine.grant_read(in_flight_reconciler_lambda)
+        
+        # Grant SSM read for configuration parameters
+        in_flight_reconciler_lambda.add_to_role_policy(
+            iam.PolicyStatement(
+                effect=iam.Effect.ALLOW,
+                actions=["ssm:GetParameter"],
+                resources=[
+                    f"arn:aws:ssm:{region}:{account_id}:parameter/pdf-processing/reconciler-*"
+                ]
+            )
+        )
+        
+        # Grant CloudWatch metrics publish
+        in_flight_reconciler_lambda.add_to_role_policy(
+            iam.PolicyStatement(
+                effect=iam.Effect.ALLOW,
+                actions=["cloudwatch:PutMetricData"],
+                resources=["*"],
+                conditions={
+                    "StringEquals": {
+                        "cloudwatch:namespace": "PDF-Processing/RateLimiting"
+                    }
+                }
+            )
+        )
+        
+        # Schedule reconciler to run every 5 minutes
+        reconciler_schedule = events.Rule(
+            self, "InFlightReconcilerSchedule",
+            rule_name="in-flight-reconciler-schedule",
+            description="Reconciles in-flight counter every 5 minutes to prevent stuck state",
+            schedule=events.Schedule.rate(Duration.minutes(5))
+        )
+        reconciler_schedule.add_target(targets.LambdaFunction(in_flight_reconciler_lambda))
+
+        # =============================================================================
         # PDF Failure Analysis Lambda - Analyzes PDFs that fail Adobe API processing
         # =============================================================================
         
@@ -1347,6 +1425,58 @@ class PDFAccessibility(Stack):
                     | display @timestamp, @message
                     | sort @timestamp desc
                     | limit 50''',
+                width=12,
+                height=6
+            ),
+        )
+
+        # Add In-Flight Reconciler monitoring widget
+        dashboard.add_widgets(
+            cloudwatch.GraphWidget(
+                title="In-Flight Counter Reconciliation",
+                left=[
+                    cloudwatch.Metric(
+                        namespace="PDF-Processing/RateLimiting",
+                        metric_name="InFlightCounter",
+                        statistic="Maximum",
+                        period=Duration.minutes(5),
+                        label="In-Flight Counter"
+                    ),
+                    cloudwatch.Metric(
+                        namespace="PDF-Processing/RateLimiting",
+                        metric_name="TrackedFiles",
+                        statistic="Maximum",
+                        period=Duration.minutes(5),
+                        label="Tracked Files"
+                    ),
+                    cloudwatch.Metric(
+                        namespace="PDF-Processing/RateLimiting",
+                        metric_name="RunningECSTasks",
+                        statistic="Maximum",
+                        period=Duration.minutes(5),
+                        label="Running ECS Tasks"
+                    ),
+                ],
+                right=[
+                    cloudwatch.Metric(
+                        namespace="PDF-Processing/RateLimiting",
+                        metric_name="ReconciliationResets",
+                        statistic="Sum",
+                        period=Duration.minutes(5),
+                        label="Counter Resets",
+                        color="#d13212"
+                    ),
+                ],
+                width=12,
+                height=6
+            ),
+            cloudwatch.LogQueryWidget(
+                title="Reconciler Activity",
+                log_group_names=[f"/aws/lambda/in-flight-reconciler"],
+                query_string='''fields @timestamp, @message
+                    | filter @message like /reset|RESET|reconcil/i
+                    | sort @timestamp desc
+                    | limit 20''',
                 width=12,
                 height=6
             ),
