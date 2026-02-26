@@ -44,25 +44,27 @@ def log_chunk_created(filename):
         'body': 'Metric status updated to failed.'
     }
 
-def split_pdf_into_pages(source_content, original_key, s3_client, bucket_name, pages_per_chunk):
+def split_pdf_into_pages(source_content, original_key, s3_client, bucket_name, pages_per_chunk, max_chunk_size_mb=95):
     """
-    Splits a PDF file into chunks of specified page size and uploads each chunk to S3.
+    Splits a PDF file into chunks based on page count AND file size limits.
     
-    This function takes a PDF file's content, splits it into chunks of the specified number 
-    of pages, and uploads each chunk back to the S3 bucket. It also returns metadata about 
-    the uploaded chunks for further processing.
+    Adobe API has a 104MB limit, so we use 95MB as a safe threshold.
+    If a chunk exceeds the size limit, it's automatically split into smaller pieces.
     
     Parameters:
         source_content (bytes): The binary content of the PDF file.
         original_key (str): The original S3 key of the PDF file.
         s3_client (boto3.client): The Boto3 S3 client instance for interacting with S3.
         bucket_name (str): The name of the S3 bucket.
-        pages_per_chunk (int): The number of pages per chunk.
+        pages_per_chunk (int): The maximum number of pages per chunk.
+        max_chunk_size_mb (int): Maximum chunk size in MB (default 95MB, Adobe limit is 104MB).
 
     Returns:
         list: A list of dictionaries containing metadata for each uploaded chunk.
     """
     from pypdf import PdfReader, PdfWriter
+    
+    max_chunk_size_bytes = max_chunk_size_mb * 1024 * 1024
     
     reader = PdfReader(io.BytesIO(source_content))
     num_pages = len(reader.pages)
@@ -72,45 +74,94 @@ def split_pdf_into_pages(source_content, original_key, s3_client, bucket_name, p
     original_pdf_key = original_key
     
     # Extract folder path (everything between 'pdf/' and filename)
-    # Example: 'pdf/batch1/subfolder/doc.pdf' -> 'batch1/subfolder'
     key_without_prefix = original_key.replace('pdf/', '', 1)
     folder_path = key_without_prefix.rsplit('/', 1)[0] if '/' in key_without_prefix else ''
     
     chunks = []
-
-    # Iterate through the PDF pages in chunks
-    for start in range(0, num_pages, pages_per_chunk):
-        output = io.BytesIO()
-        writer = PdfWriter()
-
-        # Add pages to the current chunk
-        for i in range(start, min(start + pages_per_chunk, num_pages)):
-            writer.add_page(reader.pages[i])
-
-        writer.write(output)
-        output.seek(0)
-
-        # Create the filename and S3 key for this chunk
-        chunk_index = start // pages_per_chunk + 1
-        page_filename = f"{file_basename}_chunk_{chunk_index}.pdf"
-        folder_prefix = f"{folder_path}/" if folder_path else ""
-        s3_key = f"temp/{folder_prefix}{file_basename}/{page_filename}"
-
-        # Upload the chunk to S3
-        s3_client.upload_fileobj(
-            Fileobj=output,
-            Bucket=bucket_name,
-            Key=s3_key
-        )
-        print(f'Filename - {page_filename} | Uploaded {page_filename} to S3 at {s3_key}')
-        # Store metadata for the chunk
-        chunks.append({
-            "s3_bucket": bucket_name,
-            "s3_key": s3_key,
-            "chunk_key": s3_key,
-            "original_pdf_key": original_pdf_key,
-            "folder_path": folder_path
-        })
+    chunk_index = 0
+    current_page = 0
+    
+    while current_page < num_pages:
+        chunk_index += 1
+        
+        # Try to create a chunk with the target page count
+        end_page = min(current_page + pages_per_chunk, num_pages)
+        
+        # Binary search to find the maximum pages that fit within size limit
+        chunk_created = False
+        while not chunk_created and current_page < end_page:
+            output = io.BytesIO()
+            writer = PdfWriter()
+            
+            # Add pages to the current chunk
+            for i in range(current_page, end_page):
+                writer.add_page(reader.pages[i])
+            
+            writer.write(output)
+            chunk_size = output.tell()
+            output.seek(0)
+            
+            pages_in_chunk = end_page - current_page
+            
+            if chunk_size <= max_chunk_size_bytes:
+                # Chunk is within size limit, upload it
+                page_filename = f"{file_basename}_chunk_{chunk_index}.pdf"
+                folder_prefix = f"{folder_path}/" if folder_path else ""
+                s3_key = f"temp/{folder_prefix}{file_basename}/{page_filename}"
+                
+                s3_client.upload_fileobj(
+                    Fileobj=output,
+                    Bucket=bucket_name,
+                    Key=s3_key
+                )
+                
+                chunk_size_mb = chunk_size / (1024 * 1024)
+                print(f'Filename - {page_filename} | Uploaded to S3 at {s3_key} | Pages: {pages_in_chunk} | Size: {chunk_size_mb:.1f}MB')
+                
+                chunks.append({
+                    "s3_bucket": bucket_name,
+                    "s3_key": s3_key,
+                    "chunk_key": s3_key,
+                    "original_pdf_key": original_pdf_key,
+                    "folder_path": folder_path
+                })
+                
+                current_page = end_page
+                chunk_created = True
+            else:
+                # Chunk too large, reduce page count
+                if pages_in_chunk <= 1:
+                    # Single page exceeds limit - upload anyway and let Adobe handle the error
+                    # This is an edge case for extremely large single pages
+                    page_filename = f"{file_basename}_chunk_{chunk_index}.pdf"
+                    folder_prefix = f"{folder_path}/" if folder_path else ""
+                    s3_key = f"temp/{folder_prefix}{file_basename}/{page_filename}"
+                    
+                    s3_client.upload_fileobj(
+                        Fileobj=output,
+                        Bucket=bucket_name,
+                        Key=s3_key
+                    )
+                    
+                    chunk_size_mb = chunk_size / (1024 * 1024)
+                    print(f'WARNING - {page_filename} | Single page exceeds size limit ({chunk_size_mb:.1f}MB) | Uploading anyway')
+                    
+                    chunks.append({
+                        "s3_bucket": bucket_name,
+                        "s3_key": s3_key,
+                        "chunk_key": s3_key,
+                        "original_pdf_key": original_pdf_key,
+                        "folder_path": folder_path
+                    })
+                    
+                    current_page = end_page
+                    chunk_created = True
+                else:
+                    # Reduce pages by half and retry
+                    reduction = max(1, pages_in_chunk // 2)
+                    end_page = current_page + (pages_in_chunk - reduction)
+                    chunk_size_mb = chunk_size / (1024 * 1024)
+                    print(f'Filename - {file_basename} | Chunk too large ({chunk_size_mb:.1f}MB), reducing from {pages_in_chunk} to {end_page - current_page} pages')
 
     return chunks
 
@@ -154,7 +205,9 @@ def lambda_handler(event, context):
         pdf_file_content = response['Body'].read()
   
         # Split the PDF into pages and upload them to S3
-        chunks = split_pdf_into_pages(pdf_file_content, pdf_file_key, s3, bucket_name, 90)  # changed 200 to 90 - related to Adobe API limitations-Number of pages-up to 100 pages for scanned pdfs 
+        # Uses both page count (90 max) AND file size (95MB max) limits
+        # Adobe API limit is 104MB, we use 95MB for safety margin
+        chunks = split_pdf_into_pages(pdf_file_content, pdf_file_key, s3, bucket_name, 90, max_chunk_size_mb=95)
         
         log_chunk_created(file_basename)
 
