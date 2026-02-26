@@ -8,6 +8,10 @@
 
 set -e
 
+while true; do
+
+clear
+date +"%Y-%m-%d %H:%M:%S"
 BUCKET_NAME="${1:-pdfaccessibility-pdfaccessibilitybucket149b7021e-ljzn29qgmwog}"
 
 echo "=== PDF Processing Queue Status ==="
@@ -104,3 +108,7 @@ echo "=== Summary ==="
 TOTAL_PENDING=$((${QUEUE_COUNT:-0} + ${RETRY_COUNT:-0} + ${PDF_COUNT:-0}))
 echo "  Total pending: $TOTAL_PENDING"
 echo "  Completed: ${RESULT_COUNT:-0}"
+
+sleep 2m
+done
+
