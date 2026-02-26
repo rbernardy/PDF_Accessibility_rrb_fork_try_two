@@ -2,6 +2,7 @@
 #
 # Check the status of the PDF processing queue
 # Shows counts in queue/, retry/, pdf/, failed/, and result/ folders
+# Lists individual files under each folder
 #
 # Usage: ./bin/check-queue-status.sh [bucket-name]
 #
@@ -33,23 +34,64 @@ echo ""
 # Count files in each folder
 echo "Folder counts:"
 
-QUEUE_COUNT=$(aws s3 ls "s3://${BUCKET_NAME}/queue/" --recursive 2>/dev/null | grep "\.pdf$" | wc -l | tr -d ' ')
+# Queue folder
+QUEUE_FILES=$(aws s3 ls "s3://${BUCKET_NAME}/queue/" --recursive 2>/dev/null | grep "\.pdf$" || true)
+QUEUE_COUNT=$(echo "$QUEUE_FILES" | grep -c "\.pdf$" 2>/dev/null || echo "0")
 QUEUE_COUNT=${QUEUE_COUNT:-0}
 echo "  queue/  : $QUEUE_COUNT PDFs (waiting to be processed)"
+if [ "$QUEUE_COUNT" -gt 0 ] && [ -n "$QUEUE_FILES" ]; then
+    echo "$QUEUE_FILES" | while read -r line; do
+        FILE=$(echo "$line" | awk '{print $NF}')
+        SIZE=$(echo "$line" | awk '{print $3}')
+        DATE=$(echo "$line" | awk '{print $1, $2}')
+        echo -e "\t  $FILE ($SIZE bytes, $DATE)"
+    done
+fi
 
-RETRY_COUNT=$(aws s3 ls "s3://${BUCKET_NAME}/retry/" --recursive 2>/dev/null | grep "\.pdf$" | wc -l | tr -d ' ')
+# Retry folder (legacy)
+RETRY_FILES=$(aws s3 ls "s3://${BUCKET_NAME}/retry/" --recursive 2>/dev/null | grep "\.pdf$" || true)
+RETRY_COUNT=$(echo "$RETRY_FILES" | grep -c "\.pdf$" 2>/dev/null || echo "0")
 RETRY_COUNT=${RETRY_COUNT:-0}
 echo "  retry/  : $RETRY_COUNT PDFs (legacy retry folder)"
+if [ "$RETRY_COUNT" -gt 0 ] && [ -n "$RETRY_FILES" ]; then
+    echo "$RETRY_FILES" | while read -r line; do
+        FILE=$(echo "$line" | awk '{print $NF}')
+        SIZE=$(echo "$line" | awk '{print $3}')
+        DATE=$(echo "$line" | awk '{print $1, $2}')
+        echo -e "\t  $FILE ($SIZE bytes, $DATE)"
+    done
+fi
 
-PDF_COUNT=$(aws s3 ls "s3://${BUCKET_NAME}/pdf/" --recursive 2>/dev/null | grep "\.pdf$" | wc -l | tr -d ' ')
+# PDF folder (currently processing)
+PDF_FILES=$(aws s3 ls "s3://${BUCKET_NAME}/pdf/" --recursive 2>/dev/null | grep "\.pdf$" || true)
+PDF_COUNT=$(echo "$PDF_FILES" | grep -c "\.pdf$" 2>/dev/null || echo "0")
 PDF_COUNT=${PDF_COUNT:-0}
 echo "  pdf/    : $PDF_COUNT PDFs (currently processing)"
+if [ "$PDF_COUNT" -gt 0 ] && [ -n "$PDF_FILES" ]; then
+    echo "$PDF_FILES" | while read -r line; do
+        FILE=$(echo "$line" | awk '{print $NF}')
+        SIZE=$(echo "$line" | awk '{print $3}')
+        DATE=$(echo "$line" | awk '{print $1, $2}')
+        echo -e "\t  $FILE ($SIZE bytes, $DATE)"
+    done
+fi
 
-FAILED_COUNT=$(aws s3 ls "s3://${BUCKET_NAME}/failed/" --recursive 2>/dev/null | grep "\.pdf$" | wc -l | tr -d ' ')
+# Failed folder
+FAILED_FILES=$(aws s3 ls "s3://${BUCKET_NAME}/failed/" --recursive 2>/dev/null | grep "\.pdf$" || true)
+FAILED_COUNT=$(echo "$FAILED_FILES" | grep -c "\.pdf$" 2>/dev/null || echo "0")
 FAILED_COUNT=${FAILED_COUNT:-0}
 echo "  failed/ : $FAILED_COUNT PDFs (max retries exceeded)"
+if [ "$FAILED_COUNT" -gt 0 ] && [ -n "$FAILED_FILES" ]; then
+    echo "$FAILED_FILES" | while read -r line; do
+        FILE=$(echo "$line" | awk '{print $NF}')
+        SIZE=$(echo "$line" | awk '{print $3}')
+        DATE=$(echo "$line" | awk '{print $1, $2}')
+        echo -e "\t  $FILE ($SIZE bytes, $DATE)"
+    done
+fi
 
-RESULT_COUNT=$(aws s3 ls "s3://${BUCKET_NAME}/result/" --recursive 2>/dev/null | grep "\.pdf$" | wc -l | tr -d ' ')
+# Result folder (just count, don't list - could be many)
+RESULT_COUNT=$(aws s3 ls "s3://${BUCKET_NAME}/result/" --recursive 2>/dev/null | grep -c "\.pdf$" || echo "0")
 RESULT_COUNT=${RESULT_COUNT:-0}
 echo "  result/ : $RESULT_COUNT PDFs (completed)"
 
@@ -108,7 +150,9 @@ echo "=== Summary ==="
 TOTAL_PENDING=$((${QUEUE_COUNT:-0} + ${RETRY_COUNT:-0} + ${PDF_COUNT:-0}))
 echo "  Total pending: $TOTAL_PENDING"
 echo "  Completed: ${RESULT_COUNT:-0}"
+if [ "${FAILED_COUNT:-0}" -gt 0 ]; then
+    echo "  ⚠️  Failed: ${FAILED_COUNT:-0} (review failed/ folder)"
+fi
 
 sleep 2m
 done
-
