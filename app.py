@@ -988,7 +988,7 @@ class PDFAccessibility(Stack):
             architecture=lambda_arch,
             environment={
                 "RATE_LIMIT_TABLE": adobe_rate_limit_table.table_name,
-                "ECS_CLUSTER": ecs_cluster.cluster_name,
+                "ECS_CLUSTER": pdf_remediation_cluster.cluster_name,
                 "STATE_MACHINE_ARN": pdf_remediation_state_machine.state_machine_arn
             }
         )
@@ -1004,7 +1004,7 @@ class PDFAccessibility(Stack):
                 resources=["*"],
                 conditions={
                     "ArnEquals": {
-                        "ecs:cluster": ecs_cluster.cluster_arn
+                        "ecs:cluster": pdf_remediation_cluster.cluster_arn
                     }
                 }
             )
