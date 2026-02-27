@@ -358,6 +358,43 @@ if [ "$HOUR_SECONDS" -gt 0 ] && [ "$HOUR_PROCESSED" -gt 0 ] && [ "$TOTAL_PENDING
     fi
 fi
 
+# Deadline projection (April 26, 2026)
+echo ""
+echo "=== Deadline Projection (04/26/2026) ==="
+TARGET_TOTAL=250000
+DEADLINE_DATE="2026-04-26"
+TODAY=$(date +%s)
+DEADLINE=$(date -d "$DEADLINE_DATE" +%s)
+DAYS_REMAINING=$(( (DEADLINE - TODAY) / 86400 ))
+REMAINING_TO_PROCESS=$((TARGET_TOTAL - RESULT_COUNT))
+
+echo "  Target: ${TARGET_TOTAL} PDFs"
+echo "  Completed: ${RESULT_COUNT} PDFs"
+echo "  Remaining: ${REMAINING_TO_PROCESS} PDFs"
+echo "  Days until deadline: ${DAYS_REMAINING}"
+
+if [ "$DAY_SECONDS" -gt 0 ] && [ "$DAY_PROCESSED" -gt 0 ]; then
+    DAILY_RATE=$(awk "BEGIN {printf \"%.1f\", ($DAY_PROCESSED / $DAY_SECONDS) * 86400}")
+    PROJECTED_COMPLETION=$(awk "BEGIN {printf \"%.0f\", $DAILY_RATE * $DAYS_REMAINING}")
+    REQUIRED_DAILY=$(awk "BEGIN {printf \"%.1f\", $REMAINING_TO_PROCESS / $DAYS_REMAINING}")
+    
+    echo "  Current rate: ${DAILY_RATE} PDFs/day"
+    echo "  Required rate: ${REQUIRED_DAILY} PDFs/day"
+    echo "  Projected completion: ${PROJECTED_COMPLETION} PDFs by deadline"
+    
+    if [ "$(echo "$PROJECTED_COMPLETION >= $REMAINING_TO_PROCESS" | bc)" -eq 1 ]; then
+        BUFFER=$(awk "BEGIN {printf \"%.0f\", $PROJECTED_COMPLETION - $REMAINING_TO_PROCESS}")
+        echo "  ✅ ON TRACK (+${BUFFER} buffer)"
+    else
+        SHORTFALL=$(awk "BEGIN {printf \"%.0f\", $REMAINING_TO_PROCESS - $PROJECTED_COMPLETION}")
+        RATE_INCREASE=$(awk "BEGIN {printf \"%.1f\", ($REQUIRED_DAILY / $DAILY_RATE - 1) * 100}")
+        echo "  ⚠️  BEHIND SCHEDULE (shortfall: ${SHORTFALL} PDFs)"
+        echo "      Need ${RATE_INCREASE}% rate increase to meet deadline"
+    fi
+else
+    echo "  -- (collecting throughput data)"
+fi
+
 # Save current state for next run
 save_state
 

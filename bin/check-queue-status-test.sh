@@ -256,6 +256,89 @@ if [ -n "$PREV_TIMESTAMP" ] && [ "$PREV_RESULT_COUNT" != "" ]; then
     fi
 fi
 
+echo ""
+echo "=== Throughput Averages ==="
+
+HOUR_DATA=$(calc_throughput 3600)
+HOUR_PROCESSED=$(echo "$HOUR_DATA" | cut -d',' -f1)
+HOUR_SECONDS=$(echo "$HOUR_DATA" | cut -d',' -f2)
+if [ "$HOUR_SECONDS" -gt 0 ] && [ "$HOUR_PROCESSED" -gt 0 ]; then
+    HOUR_RATE=$(awk "BEGIN {printf \"%.1f\", ($HOUR_PROCESSED / $HOUR_SECONDS) * 3600}")
+    HOUR_MINS=$((HOUR_SECONDS / 60))
+    echo "  Per hour:  $HOUR_RATE PDFs/hr (based on last ${HOUR_MINS}m)"
+else
+    echo "  Per hour:  -- (collecting data)"
+fi
+
+DAY_DATA=$(calc_throughput 86400)
+DAY_PROCESSED=$(echo "$DAY_DATA" | cut -d',' -f1)
+DAY_SECONDS=$(echo "$DAY_DATA" | cut -d',' -f2)
+if [ "$DAY_SECONDS" -gt 0 ] && [ "$DAY_PROCESSED" -gt 0 ]; then
+    DAY_RATE=$(awk "BEGIN {printf \"%.1f\", ($DAY_PROCESSED / $DAY_SECONDS) * 86400}")
+    DAY_HOURS=$((DAY_SECONDS / 3600))
+    echo "  Per day:   $DAY_RATE PDFs/day (based on last ${DAY_HOURS}h, actual: $DAY_PROCESSED)"
+else
+    echo "  Per day:   -- (collecting data)"
+fi
+
+WEEK_DATA=$(calc_throughput 604800)
+WEEK_PROCESSED=$(echo "$WEEK_DATA" | cut -d',' -f1)
+WEEK_SECONDS=$(echo "$WEEK_DATA" | cut -d',' -f2)
+if [ "$WEEK_SECONDS" -gt 0 ] && [ "$WEEK_PROCESSED" -gt 0 ]; then
+    WEEK_RATE=$(awk "BEGIN {printf \"%.1f\", ($WEEK_PROCESSED / $WEEK_SECONDS) * 604800}")
+    WEEK_DAYS=$(awk "BEGIN {printf \"%.1f\", $WEEK_SECONDS / 86400}")
+    echo "  Per week:  $WEEK_RATE PDFs/wk (based on last ${WEEK_DAYS}d, actual: $WEEK_PROCESSED)"
+else
+    echo "  Per week:  -- (collecting data)"
+fi
+
+# Estimate time to complete queue
+if [ "$HOUR_SECONDS" -gt 0 ] && [ "$HOUR_PROCESSED" -gt 0 ] && [ "$TOTAL_PENDING" -gt 0 ]; then
+    HOURLY_RATE=$(awk "BEGIN {printf \"%.2f\", ($HOUR_PROCESSED / $HOUR_SECONDS) * 3600}")
+    if [ "$(echo "$HOURLY_RATE > 0" | bc)" -eq 1 ]; then
+        HOURS_REMAINING=$(awk "BEGIN {printf \"%.1f\", $TOTAL_PENDING / $HOURLY_RATE}")
+        echo ""
+        echo "  ⏱️  Est. time to clear queue: ${HOURS_REMAINING} hours"
+    fi
+fi
+
+# Deadline projection (April 26, 2026)
+echo ""
+echo "=== Deadline Projection (04/26/2026) ==="
+TARGET_TOTAL=250000
+DEADLINE_DATE="2026-04-26"
+TODAY=$(date +%s)
+DEADLINE=$(date -d "$DEADLINE_DATE" +%s)
+DAYS_REMAINING=$(( (DEADLINE - TODAY) / 86400 ))
+REMAINING_TO_PROCESS=$((TARGET_TOTAL - RESULT_COUNT))
+
+echo "  Target: ${TARGET_TOTAL} PDFs"
+echo "  Completed: ${RESULT_COUNT} PDFs"
+echo "  Remaining: ${REMAINING_TO_PROCESS} PDFs"
+echo "  Days until deadline: ${DAYS_REMAINING}"
+
+if [ "$DAY_SECONDS" -gt 0 ] && [ "$DAY_PROCESSED" -gt 0 ]; then
+    DAILY_RATE=$(awk "BEGIN {printf \"%.1f\", ($DAY_PROCESSED / $DAY_SECONDS) * 86400}")
+    PROJECTED_COMPLETION=$(awk "BEGIN {printf \"%.0f\", $DAILY_RATE * $DAYS_REMAINING}")
+    REQUIRED_DAILY=$(awk "BEGIN {printf \"%.1f\", $REMAINING_TO_PROCESS / $DAYS_REMAINING}")
+    
+    echo "  Current rate: ${DAILY_RATE} PDFs/day"
+    echo "  Required rate: ${REQUIRED_DAILY} PDFs/day"
+    echo "  Projected completion: ${PROJECTED_COMPLETION} PDFs by deadline"
+    
+    if [ "$(echo "$PROJECTED_COMPLETION >= $REMAINING_TO_PROCESS" | bc)" -eq 1 ]; then
+        BUFFER=$(awk "BEGIN {printf \"%.0f\", $PROJECTED_COMPLETION - $REMAINING_TO_PROCESS}")
+        echo "  ✅ ON TRACK (+${BUFFER} buffer)"
+    else
+        SHORTFALL=$(awk "BEGIN {printf \"%.0f\", $REMAINING_TO_PROCESS - $PROJECTED_COMPLETION}")
+        RATE_INCREASE=$(awk "BEGIN {printf \"%.1f\", ($REQUIRED_DAILY / $DAILY_RATE - 1) * 100}")
+        echo "  ⚠️  BEHIND SCHEDULE (shortfall: ${SHORTFALL} PDFs)"
+        echo "      Need ${RATE_INCREASE}% rate increase to meet deadline"
+    fi
+else
+    echo "  -- (collecting throughput data)"
+fi
+
 # Save current state for next run
 save_state
 
