@@ -4,16 +4,42 @@
 # Shows counts in queue/, retry/, pdf/, failed/, and result/ folders
 # Lists individual files under each folder
 #
-# Usage: ./bin/check-queue-status.sh [bucket-name]
+# Usage: ./bin/check-queue-status.sh [options]
+#
+# Options:
+#   --bucket NAME       S3 bucket name (default: pdfaccessibility-pdfaccessibilitybucket149b7021e-ljzn29qgmwog)
+#   --queuelines N      Limit queue folder file listing to N lines
 #
 
 set -e
+
+# Default values
+BUCKET_NAME="pdfaccessibility-pdfaccessibilitybucket149b7021e-ljzn29qgmwog"
+QUEUE_LINES=""
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --bucket)
+            BUCKET_NAME="$2"
+            shift 2
+            ;;
+        --queuelines)
+            QUEUE_LINES="$2"
+            shift 2
+            ;;
+        *)
+            # Legacy: first positional arg is bucket name
+            BUCKET_NAME="$1"
+            shift
+            ;;
+    esac
+done
 
 while true; do
 
 clear
 date +"%Y-%m-%d %H:%M:%S"
-BUCKET_NAME="${1:-pdfaccessibility-pdfaccessibilitybucket149b7021e-ljzn29qgmwog}"
 
 echo "Bucket: $BUCKET_NAME"
 
@@ -38,12 +64,25 @@ QUEUE_COUNT=$(echo "$QUEUE_COUNT" | sed 's/^0*//' | tr -d '[:space:]')
 QUEUE_COUNT=${QUEUE_COUNT:-0}
 echo "  queue/  : $QUEUE_COUNT PDFs (waiting to be processed)"
 if [ "$QUEUE_COUNT" -gt 0 ] && [ -n "$QUEUE_FILES" ]; then
-    echo "$QUEUE_FILES" | while read -r line; do
-        FILE=$(echo "$line" | awk '{print $NF}')
-        SIZE=$(echo "$line" | awk '{print $3}' | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta')
-        DATE=$(echo "$line" | awk '{print $1, $2}')
-        echo -e "\t  $FILE ($SIZE bytes, $DATE)"
-    done
+    if [ -n "$QUEUE_LINES" ]; then
+        echo "$QUEUE_FILES" | head -n "$QUEUE_LINES" | while read -r line; do
+            FILE=$(echo "$line" | awk '{print $NF}')
+            SIZE=$(echo "$line" | awk '{print $3}' | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta')
+            DATE=$(echo "$line" | awk '{print $1, $2}')
+            echo -e "\t  $FILE ($SIZE bytes, $DATE)"
+        done
+        if [ "$QUEUE_COUNT" -gt "$QUEUE_LINES" ]; then
+            REMAINING=$((QUEUE_COUNT - QUEUE_LINES))
+            echo -e "\t  ... and $REMAINING more"
+        fi
+    else
+        echo "$QUEUE_FILES" | while read -r line; do
+            FILE=$(echo "$line" | awk '{print $NF}')
+            SIZE=$(echo "$line" | awk '{print $3}' | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta')
+            DATE=$(echo "$line" | awk '{print $1, $2}')
+            echo -e "\t  $FILE ($SIZE bytes, $DATE)"
+        done
+    fi
 fi
 
 # Retry folder (legacy)
@@ -88,7 +127,6 @@ RESULT_COUNT=$(echo "$RESULT_COUNT" | sed 's/^0*//' | tr -d '[:space:]')
 RESULT_COUNT=${RESULT_COUNT:-0}
 echo "  result/ : $RESULT_COUNT PDFs (completed)"
 
-echo ""
 echo "=== Rate Limit Status ==="
 
 # Get in-flight count from DynamoDB
@@ -118,7 +156,6 @@ else
     echo "  Global backoff: None"
 fi
 
-echo ""
 echo "=== Step Function Status ==="
 
 # Get state machine ARN (find it dynamically)
@@ -138,7 +175,6 @@ else
     echo "  Could not find state machine"
 fi
 
-echo ""
 echo "=== Summary ==="
 TOTAL_PENDING=$((${QUEUE_COUNT:-0} + ${RETRY_COUNT:-0} + ${PDF_COUNT:-0}))
 echo "  Total pending: $TOTAL_PENDING"

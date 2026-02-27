@@ -130,10 +130,11 @@ def lambda_handler(event, context):
             '''
         else:
             rows = []
-            for f in files:
+            for idx, f in enumerate(files, start=1):
                 api_color = '#1d8102' if f['api_type'] == 'autotag' else '#0073bb'
                 rows.append(f'''
                 <tr>
+                    <td style="padding: 6px 10px; border-bottom: 1px solid #eaeded; font-size: 12px; text-align: right; color: #545b64; width: 30px;">{idx}.</td>
                     <td style="padding: 6px 10px; border-bottom: 1px solid #eaeded; font-size: 12px; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{f['filename']}">{f['filename']}</td>
                     <td style="padding: 6px 10px; border-bottom: 1px solid #eaeded; text-align: center;">
                         <span style="background-color: {api_color}; color: white; padding: 2px 8px; border-radius: 3px; font-size: 11px;">{f['api_type']}</span>
@@ -147,6 +148,7 @@ def lambda_handler(event, context):
                 <table style="width: 100%; border-collapse: collapse;">
                     <thead>
                         <tr style="background-color: #fafafa;">
+                            <th style="padding: 8px 10px; text-align: right; font-size: 11px; color: #545b64; border-bottom: 2px solid #eaeded; width: 30px;">#</th>
                             <th style="padding: 8px 10px; text-align: left; font-size: 11px; color: #545b64; border-bottom: 2px solid #eaeded;">Filename</th>
                             <th style="padding: 8px 10px; text-align: center; font-size: 11px; color: #545b64; border-bottom: 2px solid #eaeded;">API Type</th>
                             <th style="padding: 8px 10px; text-align: right; font-size: 11px; color: #545b64; border-bottom: 2px solid #eaeded;">Duration</th>
