@@ -18,6 +18,9 @@ ssm = boto3.client('ssm')
 # Counter ID for the in-flight tracker (must match rate_limiter.py)
 IN_FLIGHT_COUNTER_ID = "adobe_api_in_flight"
 
+# Prefix for individual file tracking entries (must match rate_limiter.py)
+IN_FLIGHT_FILE_PREFIX = "file_"
+
 # Counter ID prefix for RPM tracking (must match rate_limiter.py)
 RPM_COUNTER_PREFIX = "rpm_window_"
 
@@ -40,6 +43,42 @@ def get_max_rpm() -> int:
         return int(response['Parameter']['Value'])
     except (ClientError, ValueError):
         return 100  # Default - global limit for all API types combined (reduced from 150)
+
+
+def get_actual_file_count(table) -> int:
+    """Count actual file_ entries in DynamoDB (the ground truth)."""
+    try:
+        scan_response = table.scan(
+            FilterExpression='begins_with(counter_id, :prefix) AND attribute_not_exists(released)',
+            ExpressionAttributeValues={
+                ':prefix': IN_FLIGHT_FILE_PREFIX
+            },
+            Select='COUNT'
+        )
+        return scan_response.get('Count', 0)
+    except ClientError:
+        return -1  # Indicate error
+
+
+def reconcile_counter(table, actual_count: int, counter_value: int) -> int:
+    """
+    Reconcile the in-flight counter with actual file count.
+    Returns the corrected value.
+    """
+    if actual_count >= 0 and counter_value != actual_count:
+        try:
+            table.update_item(
+                Key={'counter_id': IN_FLIGHT_COUNTER_ID},
+                UpdateExpression='SET in_flight = :count, last_updated = :now, last_reconciled = :now',
+                ExpressionAttributeValues={
+                    ':count': actual_count,
+                    ':now': datetime.now(timezone.utc).isoformat()
+                }
+            )
+            return actual_count
+        except ClientError:
+            pass
+    return counter_value
 
 
 def get_current_rpm_count(table, api_type: str = None) -> int:
@@ -79,11 +118,24 @@ def lambda_handler(event, context):
         max_in_flight = get_max_in_flight()
         max_rpm = get_max_rpm()  # Global limit for all API types combined
         
-        # Get current in-flight count
+        # Get current in-flight count from counter
         response = table.get_item(Key={'counter_id': IN_FLIGHT_COUNTER_ID})
         item = response.get('Item', {})
-        in_flight = max(0, int(item.get('in_flight', 0)))  # Clamp to 0 minimum
+        counter_value = int(item.get('in_flight', 0))
         last_updated = item.get('last_updated', 'Never')
+        
+        # Get actual file count (ground truth)
+        actual_file_count = get_actual_file_count(table)
+        
+        # Reconcile if there's a mismatch
+        if actual_file_count >= 0 and counter_value != actual_file_count:
+            in_flight = reconcile_counter(table, actual_file_count, counter_value)
+            was_reconciled = True
+        else:
+            in_flight = max(0, counter_value)
+            was_reconciled = False
+        
+        in_flight = max(0, in_flight)  # Clamp to 0 minimum
         
         # Get current RPM count (combined for all API types)
         current_rpm = max(0, get_current_rpm_count(table))
@@ -133,6 +185,11 @@ def lambda_handler(event, context):
         else:
             last_updated_display = 'Never'
         
+        # Reconciliation note
+        reconcile_note = ''
+        if was_reconciled:
+            reconcile_note = f'<div style="font-size: 11px; color: #ff9900;">⚠️ Counter reconciled: {counter_value} → {in_flight}</div>'
+        
         # Current minute window for display
         now = datetime.now(timezone.utc)
         current_window = now.strftime('%H:%M')
@@ -148,6 +205,7 @@ def lambda_handler(event, context):
                 <div>
                     <span style="font-size: 14px; color: #545b64;">Adobe API Rate Limiting</span>
                     <div style="font-size: 12px; color: #879596;">Last update: {last_updated_display}</div>
+                    {reconcile_note}
                 </div>
                 <div style="background-color: {status_color}; color: white; padding: 5px 12px; border-radius: 3px; font-weight: bold;">
                     {status_text}
