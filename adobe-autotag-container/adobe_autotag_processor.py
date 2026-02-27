@@ -269,6 +269,7 @@ def autotag_pdf_with_options(filename, client_id, client_secret, s3_bucket=None,
         # Log the API call to custom CloudWatch stream
         custom_cw_logger.log_adobe_api_call(filename, filename, api_type="autotag")
         
+        api_start_time = time.time()
         try:
             with open(filename, 'rb') as file:
                 input_stream = file.read()
@@ -320,7 +321,8 @@ def autotag_pdf_with_options(filename, client_id, client_secret, s3_bucket=None,
             with open(output_file_path_report, "wb") as file:
                 file.write(stream_asset_report.get_input_stream())
             
-            logging.info(f'Filename : {filename} | Adobe Autotag completed successfully')
+            api_duration = time.time() - api_start_time
+            logging.info(f'Filename : {filename} | Adobe Autotag completed successfully | API duration: {api_duration:.1f}s')
             return  # Success! Exit the retry loop
 
         except (ServiceApiException, ServiceUsageException, SdkException) as e:
@@ -410,6 +412,7 @@ def extract_api(filename, client_id, client_secret, s3_bucket=None, s3_key=None)
         # Log the API call to custom CloudWatch stream
         custom_cw_logger.log_adobe_api_call(filename, filename, api_type="extract")
         
+        api_start_time = time.time()
         try:
             with open(filename, 'rb') as file:
                 input_stream = file.read()
@@ -452,7 +455,8 @@ def extract_api(filename, client_id, client_secret, s3_bucket=None, s3_key=None)
             with open(output_file_path, "wb") as file:
                 file.write(stream_asset.get_input_stream())
             
-            logging.info(f'Filename : {filename} | Adobe Extract API completed successfully')
+            api_duration = time.time() - api_start_time
+            logging.info(f'Filename : {filename} | Adobe Extract API completed successfully | API duration: {api_duration:.1f}s')
             return  # Success! Exit the retry loop
 
         except (ServiceApiException, ServiceUsageException, SdkException) as e:
