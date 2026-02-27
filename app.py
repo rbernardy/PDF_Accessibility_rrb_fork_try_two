@@ -1474,7 +1474,7 @@ class PDFAccessibility(Stack):
                 title="Reconciler Activity",
                 log_group_names=[f"/aws/lambda/in-flight-reconciler"],
                 query_string='''fields @timestamp, @message
-                    | filter @message like /reset|RESET|reconcil/i
+                    | filter @message like /(?i)reset|reconcil/
                     | sort @timestamp desc
                     | limit 20''',
                 width=12,
