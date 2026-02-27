@@ -91,14 +91,19 @@ def lambda_handler(event, context):
             started_at = item.get('started_at', '')
             # Calculate duration
             duration_str = ''
+            duration_seconds = 0
+            is_stale = False
             if started_at:
                 try:
                     start_dt = datetime.fromisoformat(started_at.replace('Z', '+00:00'))
                     now = datetime.now(timezone.utc)
                     duration = now - start_dt
-                    minutes = int(duration.total_seconds() // 60)
-                    seconds = int(duration.total_seconds() % 60)
+                    duration_seconds = duration.total_seconds()
+                    minutes = int(duration_seconds // 60)
+                    seconds = int(duration_seconds % 60)
                     duration_str = f"{minutes}m {seconds}s"
+                    # Flag as stale if > 10 minutes (API calls should complete in < 2 min)
+                    is_stale = duration_seconds > 600
                 except:
                     duration_str = 'unknown'
             
@@ -106,7 +111,9 @@ def lambda_handler(event, context):
                 'filename': item.get('filename', 'unknown'),
                 'api_type': item.get('api_type', 'unknown'),
                 'started_at': started_at,
-                'duration': duration_str
+                'duration': duration_str,
+                'duration_seconds': duration_seconds,
+                'is_stale': is_stale
             })
         
         # Sort by started_at (oldest first)
@@ -122,6 +129,7 @@ def lambda_handler(event, context):
         in_flight_count = reconcile_counter_if_needed(table, len(files), raw_counter_value)
         
         # Build HTML response
+        stale_warning = ''
         if not files:
             file_list_html = '''
             <div style="text-align: center; color: #545b64; padding: 20px;">
@@ -130,16 +138,28 @@ def lambda_handler(event, context):
             '''
         else:
             rows = []
+            stale_count = 0
             for idx, f in enumerate(files, start=1):
                 api_color = '#1d8102' if f['api_type'] == 'autotag' else '#0073bb'
+                # Highlight stale entries in red
+                if f.get('is_stale'):
+                    stale_count += 1
+                    row_style = 'background-color: #fff0f0;'
+                    duration_style = 'color: #d13212; font-weight: bold;'
+                    duration_display = f"⚠️ {f['duration']}"
+                else:
+                    row_style = ''
+                    duration_style = 'color: #545b64;'
+                    duration_display = f['duration']
+                
                 rows.append(f'''
-                <tr>
+                <tr style="{row_style}">
                     <td style="padding: 6px 10px; border-bottom: 1px solid #eaeded; font-size: 12px; text-align: right; color: #545b64; width: 30px;">{idx}.</td>
                     <td style="padding: 6px 10px; border-bottom: 1px solid #eaeded; font-size: 12px; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{f['filename']}">{f['filename']}</td>
                     <td style="padding: 6px 10px; border-bottom: 1px solid #eaeded; text-align: center;">
                         <span style="background-color: {api_color}; color: white; padding: 2px 8px; border-radius: 3px; font-size: 11px;">{f['api_type']}</span>
                     </td>
-                    <td style="padding: 6px 10px; border-bottom: 1px solid #eaeded; text-align: right; font-size: 12px; color: #545b64;">{f['duration']}</td>
+                    <td style="padding: 6px 10px; border-bottom: 1px solid #eaeded; text-align: right; font-size: 12px; {duration_style}">{duration_display}</td>
                 </tr>
                 ''')
             
@@ -160,6 +180,12 @@ def lambda_handler(event, context):
                 </table>
             </div>
             '''
+            
+            # Add stale warning if any
+            if stale_count > 0:
+                stale_warning = f'<div style="color: #d13212; font-size: 11px; margin-bottom: 5px;">⚠️ {stale_count} stale entries (>10min) - will be cleaned by reconciler</div>'
+            else:
+                stale_warning = ''
         
         html = f'''
         <div style="font-family: Amazon Ember, Arial, sans-serif; padding: 10px;">
@@ -171,6 +197,7 @@ def lambda_handler(event, context):
                     {len(files)} files / {in_flight_count} slots used / {max_in_flight} max
                 </div>
             </div>
+            {stale_warning if files else ''}
             {file_list_html}
             <div style="margin-top: 10px; font-size: 11px; color: #879596; text-align: center;">
                 Shows files actively using Adobe API slots. Auto-refreshes with dashboard.

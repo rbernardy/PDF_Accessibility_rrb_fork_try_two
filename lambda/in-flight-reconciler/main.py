@@ -158,13 +158,17 @@ def reset_counter(new_value: int, reason: str) -> bool:
 
 
 def cleanup_stale_file_entries() -> int:
-    """Remove file entries that are clearly stale (started > 2 hours ago and not released)."""
+    """Remove file entries that are clearly stale (started > 15 minutes ago and not released).
+    
+    Adobe API calls typically complete in 20-60 seconds. If an entry is 15+ minutes old,
+    the container almost certainly crashed without releasing the slot.
+    """
     if not RATE_LIMIT_TABLE:
         return 0
     
     try:
         table = dynamodb.Table(RATE_LIMIT_TABLE)
-        cutoff = (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat()
+        cutoff = (datetime.now(timezone.utc) - timedelta(minutes=15)).isoformat()
         
         # Find stale entries
         response = table.scan(
