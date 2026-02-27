@@ -326,6 +326,13 @@ if [ "$DAY_SECONDS" -gt 0 ] && [ "$DAY_PROCESSED" -gt 0 ]; then
     echo "  Required rate: ${REQUIRED_DAILY} PDFs/day"
     echo "  Projected completion: ${PROJECTED_COMPLETION} PDFs by deadline"
     
+    # Calculate projected finish date based on current rate
+    if [ "$(echo "$DAILY_RATE > 0" | bc)" -eq 1 ]; then
+        DAYS_TO_FINISH=$(awk "BEGIN {printf \"%.0f\", $REMAINING_TO_PROCESS / $DAILY_RATE}")
+        FINISH_DATE=$(date -d "+${DAYS_TO_FINISH} days" +"%Y-%m-%d")
+        echo "  📅 Projected finish date: ${FINISH_DATE} (in ${DAYS_TO_FINISH} days)"
+    fi
+    
     if [ "$(echo "$PROJECTED_COMPLETION >= $REMAINING_TO_PROCESS" | bc)" -eq 1 ]; then
         BUFFER=$(awk "BEGIN {printf \"%.0f\", $PROJECTED_COMPLETION - $REMAINING_TO_PROCESS}")
         echo "  ✅ ON TRACK (+${BUFFER} buffer)"
