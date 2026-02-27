@@ -3,6 +3,8 @@
 # Check the status of the PDF processing queue
 # Shows counts in queue/, retry/, pdf/, failed/, and result/ folders
 # Lists individual files under each folder
+# Tracks percentage change between runs
+# Computes running averages per hour, day, and week
 #
 # Usage: ./bin/check-queue-status.sh [options]
 #
@@ -16,6 +18,11 @@ set -e
 # Default values
 BUCKET_NAME="pdfaccessibility-pdfaccessibilitybucket149b7021e-tcuthkjujq0m"
 QUEUE_LINES=""
+
+# State file for tracking previous counts
+STATE_FILE="/tmp/queue-status-live-state.txt"
+# History file for tracking result counts over time (for averages)
+HISTORY_FILE="/tmp/queue-status-live-history.txt"
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -36,10 +43,113 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Function to load previous state
+load_previous_state() {
+    if [ -f "$STATE_FILE" ]; then
+        source "$STATE_FILE"
+    else
+        PREV_QUEUE_COUNT=0
+        PREV_PDF_COUNT=0
+        PREV_RESULT_COUNT=0
+        PREV_FAILED_COUNT=0
+        PREV_TOTAL_PENDING=0
+        PREV_TIMESTAMP=""
+    fi
+}
+
+# Function to save current state
+save_state() {
+    cat > "$STATE_FILE" << EOF
+PREV_QUEUE_COUNT=$QUEUE_COUNT
+PREV_PDF_COUNT=$PDF_COUNT
+PREV_RESULT_COUNT=$RESULT_COUNT
+PREV_FAILED_COUNT=$FAILED_COUNT
+PREV_TOTAL_PENDING=$TOTAL_PENDING
+PREV_TIMESTAMP="$CURRENT_TIMESTAMP"
+EOF
+}
+
+# Function to append to history file
+# Format: timestamp,result_count
+append_history() {
+    local ts=$(date +%s)
+    echo "$ts,$RESULT_COUNT" >> "$HISTORY_FILE"
+    
+    # Keep only last 7 days of history (clean up old entries)
+    local cutoff=$((ts - 604800))  # 7 days in seconds
+    if [ -f "$HISTORY_FILE" ]; then
+        awk -F',' -v cutoff="$cutoff" '$1 >= cutoff' "$HISTORY_FILE" > "${HISTORY_FILE}.tmp"
+        mv "${HISTORY_FILE}.tmp" "$HISTORY_FILE"
+    fi
+}
+
+# Function to calculate throughput for a time period
+# Returns: PDFs processed in that period
+calc_throughput() {
+    local seconds_ago=$1
+    local now=$(date +%s)
+    local cutoff=$((now - seconds_ago))
+    
+    if [ ! -f "$HISTORY_FILE" ]; then
+        echo "0"
+        return
+    fi
+    
+    # Get the oldest entry within the time window
+    local oldest_in_window=$(awk -F',' -v cutoff="$cutoff" '$1 >= cutoff {print; exit}' "$HISTORY_FILE")
+    # Get the newest entry (current)
+    local newest=$(tail -1 "$HISTORY_FILE")
+    
+    if [ -z "$oldest_in_window" ] || [ -z "$newest" ]; then
+        echo "0"
+        return
+    fi
+    
+    local oldest_count=$(echo "$oldest_in_window" | cut -d',' -f2)
+    local newest_count=$(echo "$newest" | cut -d',' -f2)
+    local oldest_ts=$(echo "$oldest_in_window" | cut -d',' -f1)
+    
+    local diff=$((newest_count - oldest_count))
+    local time_diff=$((now - oldest_ts))
+    
+    # Return: processed_count,actual_seconds
+    echo "$diff,$time_diff"
+}
+
+# Function to calculate and format change
+format_change() {
+    local current=$1
+    local previous=$2
+    local name=$3
+    
+    if [ "$previous" = "" ] || [ "$previous" = "0" ]; then
+        echo ""
+        return
+    fi
+    
+    local diff=$((current - previous))
+    
+    if [ $diff -eq 0 ]; then
+        echo " (no change)"
+    elif [ $diff -gt 0 ]; then
+        echo " (+$diff)"
+    else
+        echo " ($diff)"
+    fi
+}
+
 while true; do
 
 clear
-date +"%Y-%m-%d %H:%M:%S"
+CURRENT_TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
+echo "$CURRENT_TIMESTAMP"
+
+# Load previous state
+load_previous_state
+
+if [ -n "$PREV_TIMESTAMP" ]; then
+    echo "Previous check: $PREV_TIMESTAMP"
+fi
 
 echo "Bucket: $BUCKET_NAME"
 
@@ -62,7 +172,8 @@ QUEUE_FILES=$(aws s3 ls "s3://${BUCKET_NAME}/queue/" --recursive 2>/dev/null | g
 QUEUE_COUNT=$(echo "$QUEUE_FILES" | grep -c "\.pdf$" 2>/dev/null || echo "0")
 QUEUE_COUNT=$(echo "$QUEUE_COUNT" | sed 's/^0*//' | tr -d '[:space:]')
 QUEUE_COUNT=${QUEUE_COUNT:-0}
-echo "  queue/  : $QUEUE_COUNT PDFs (waiting to be processed)"
+QUEUE_CHANGE=$(format_change $QUEUE_COUNT $PREV_QUEUE_COUNT "queue")
+echo "  queue/  : $QUEUE_COUNT PDFs (waiting to be processed)$QUEUE_CHANGE"
 if [ "$QUEUE_COUNT" -gt 0 ] && [ -n "$QUEUE_FILES" ]; then
     if [ -n "$QUEUE_LINES" ]; then
         echo "$QUEUE_FILES" | head -n "$QUEUE_LINES" | while read -r line; do
@@ -104,14 +215,16 @@ fi
 PDF_COUNT=$(aws s3 ls "s3://${BUCKET_NAME}/pdf/" --recursive 2>/dev/null | grep -c "\.pdf$" || echo "0")
 PDF_COUNT=$(echo "$PDF_COUNT" | sed 's/^0*//' | tr -d '[:space:]')
 PDF_COUNT=${PDF_COUNT:-0}
-echo "  pdf/    : $PDF_COUNT PDFs (currently processing)"
+PDF_CHANGE=$(format_change $PDF_COUNT $PREV_PDF_COUNT "pdf")
+echo "  pdf/    : $PDF_COUNT PDFs (currently processing)$PDF_CHANGE"
 
 # Failed folder
 FAILED_FILES=$(aws s3 ls "s3://${BUCKET_NAME}/failed/" --recursive 2>/dev/null | grep "\.pdf$" || true)
 FAILED_COUNT=$(echo "$FAILED_FILES" | grep -c "\.pdf$" 2>/dev/null || echo "0")
 FAILED_COUNT=$(echo "$FAILED_COUNT" | sed 's/^0*//' | tr -d '[:space:]')
 FAILED_COUNT=${FAILED_COUNT:-0}
-echo "  failed/ : $FAILED_COUNT PDFs (max retries exceeded)"
+FAILED_CHANGE=$(format_change $FAILED_COUNT $PREV_FAILED_COUNT "failed")
+echo "  failed/ : $FAILED_COUNT PDFs (max retries exceeded)$FAILED_CHANGE"
 if [ "$FAILED_COUNT" -gt 0 ] && [ -n "$FAILED_FILES" ]; then
     echo "$FAILED_FILES" | while read -r line; do
         FILE=$(echo "$line" | awk '{print $NF}')
@@ -125,7 +238,11 @@ fi
 RESULT_COUNT=$(aws s3 ls "s3://${BUCKET_NAME}/result/" --recursive 2>/dev/null | grep -c "\.pdf$" || echo "0")
 RESULT_COUNT=$(echo "$RESULT_COUNT" | sed 's/^0*//' | tr -d '[:space:]')
 RESULT_COUNT=${RESULT_COUNT:-0}
-echo "  result/ : $RESULT_COUNT PDFs (completed)"
+RESULT_CHANGE=$(format_change $RESULT_COUNT $PREV_RESULT_COUNT "result")
+echo "  result/ : $RESULT_COUNT PDFs (completed)$RESULT_CHANGE"
+
+# Append current result count to history
+append_history
 
 echo "=== Rate Limit Status ==="
 
@@ -177,11 +294,72 @@ fi
 
 echo "=== Summary ==="
 TOTAL_PENDING=$((${QUEUE_COUNT:-0} + ${RETRY_COUNT:-0} + ${PDF_COUNT:-0}))
-echo "  Total pending: $TOTAL_PENDING"
-echo "  Completed: ${RESULT_COUNT:-0}"
+PENDING_CHANGE=$(format_change $TOTAL_PENDING $PREV_TOTAL_PENDING "pending")
+echo "  Total pending: $TOTAL_PENDING$PENDING_CHANGE"
+echo "  Completed: ${RESULT_COUNT:-0}$RESULT_CHANGE"
 if [ "${FAILED_COUNT:-0}" -gt 0 ]; then
     echo "  ⚠️  Failed: ${FAILED_COUNT:-0} (review failed/ folder)"
 fi
+
+# Calculate throughput if we have previous data
+if [ -n "$PREV_TIMESTAMP" ] && [ "$PREV_RESULT_COUNT" != "" ]; then
+    COMPLETED_DIFF=$((RESULT_COUNT - PREV_RESULT_COUNT))
+    if [ $COMPLETED_DIFF -gt 0 ]; then
+        echo "  📈 Processed since last check: $COMPLETED_DIFF PDFs"
+    fi
+fi
+
+echo ""
+echo "=== Throughput Averages ==="
+
+# Calculate hourly average (last hour)
+HOUR_DATA=$(calc_throughput 3600)
+HOUR_PROCESSED=$(echo "$HOUR_DATA" | cut -d',' -f1)
+HOUR_SECONDS=$(echo "$HOUR_DATA" | cut -d',' -f2)
+if [ "$HOUR_SECONDS" -gt 0 ] && [ "$HOUR_PROCESSED" -gt 0 ]; then
+    HOUR_RATE=$(awk "BEGIN {printf \"%.1f\", ($HOUR_PROCESSED / $HOUR_SECONDS) * 3600}")
+    HOUR_MINS=$((HOUR_SECONDS / 60))
+    echo "  Per hour:  $HOUR_RATE PDFs/hr (based on last ${HOUR_MINS}m)"
+else
+    echo "  Per hour:  -- (collecting data)"
+fi
+
+# Calculate daily average (last 24 hours)
+DAY_DATA=$(calc_throughput 86400)
+DAY_PROCESSED=$(echo "$DAY_DATA" | cut -d',' -f1)
+DAY_SECONDS=$(echo "$DAY_DATA" | cut -d',' -f2)
+if [ "$DAY_SECONDS" -gt 0 ] && [ "$DAY_PROCESSED" -gt 0 ]; then
+    DAY_RATE=$(awk "BEGIN {printf \"%.1f\", ($DAY_PROCESSED / $DAY_SECONDS) * 86400}")
+    DAY_HOURS=$((DAY_SECONDS / 3600))
+    echo "  Per day:   $DAY_RATE PDFs/day (based on last ${DAY_HOURS}h, actual: $DAY_PROCESSED)"
+else
+    echo "  Per day:   -- (collecting data)"
+fi
+
+# Calculate weekly average (last 7 days)
+WEEK_DATA=$(calc_throughput 604800)
+WEEK_PROCESSED=$(echo "$WEEK_DATA" | cut -d',' -f1)
+WEEK_SECONDS=$(echo "$WEEK_DATA" | cut -d',' -f2)
+if [ "$WEEK_SECONDS" -gt 0 ] && [ "$WEEK_PROCESSED" -gt 0 ]; then
+    WEEK_RATE=$(awk "BEGIN {printf \"%.1f\", ($WEEK_PROCESSED / $WEEK_SECONDS) * 604800}")
+    WEEK_DAYS=$(awk "BEGIN {printf \"%.1f\", $WEEK_SECONDS / 86400}")
+    echo "  Per week:  $WEEK_RATE PDFs/wk (based on last ${WEEK_DAYS}d, actual: $WEEK_PROCESSED)"
+else
+    echo "  Per week:  -- (collecting data)"
+fi
+
+# Estimate time to complete queue
+if [ "$HOUR_SECONDS" -gt 0 ] && [ "$HOUR_PROCESSED" -gt 0 ] && [ "$TOTAL_PENDING" -gt 0 ]; then
+    HOURLY_RATE=$(awk "BEGIN {printf \"%.2f\", ($HOUR_PROCESSED / $HOUR_SECONDS) * 3600}")
+    if [ "$(echo "$HOURLY_RATE > 0" | bc)" -eq 1 ]; then
+        HOURS_REMAINING=$(awk "BEGIN {printf \"%.1f\", $TOTAL_PENDING / $HOURLY_RATE}")
+        echo ""
+        echo "  ⏱️  Est. time to clear queue: ${HOURS_REMAINING} hours"
+    fi
+fi
+
+# Save current state for next run
+save_state
 
 sleep 2m
 done

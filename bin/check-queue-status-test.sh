@@ -3,6 +3,7 @@
 # Check the status of the PDF processing queue
 # Shows counts in queue/, retry/, pdf/, failed/, and result/ folders
 # Lists individual files under each folder
+# Tracks percentage change between runs
 #
 # Usage: ./bin/check-queue-status.sh [options]
 #
@@ -16,6 +17,9 @@ set -e
 # Default values
 BUCKET_NAME="pdfaccessibility-pdfaccessibilitybucket149b7021e-ljzn29qgmwog"
 QUEUE_LINES=""
+
+# State file for tracking previous counts
+STATE_FILE="/tmp/queue-status-test-state.txt"
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -36,10 +40,66 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Function to load previous state
+load_previous_state() {
+    if [ -f "$STATE_FILE" ]; then
+        source "$STATE_FILE"
+    else
+        PREV_QUEUE_COUNT=0
+        PREV_PDF_COUNT=0
+        PREV_RESULT_COUNT=0
+        PREV_FAILED_COUNT=0
+        PREV_TOTAL_PENDING=0
+        PREV_TIMESTAMP=""
+    fi
+}
+
+# Function to save current state
+save_state() {
+    cat > "$STATE_FILE" << EOF
+PREV_QUEUE_COUNT=$QUEUE_COUNT
+PREV_PDF_COUNT=$PDF_COUNT
+PREV_RESULT_COUNT=$RESULT_COUNT
+PREV_FAILED_COUNT=$FAILED_COUNT
+PREV_TOTAL_PENDING=$TOTAL_PENDING
+PREV_TIMESTAMP="$CURRENT_TIMESTAMP"
+EOF
+}
+
+# Function to calculate and format change
+format_change() {
+    local current=$1
+    local previous=$2
+    local name=$3
+    
+    if [ "$previous" = "" ] || [ "$previous" = "0" ]; then
+        echo ""
+        return
+    fi
+    
+    local diff=$((current - previous))
+    
+    if [ $diff -eq 0 ]; then
+        echo " (no change)"
+    elif [ $diff -gt 0 ]; then
+        echo " (+$diff)"
+    else
+        echo " ($diff)"
+    fi
+}
+
 while true; do
 
 clear
-date +"%Y-%m-%d %H:%M:%S"
+CURRENT_TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
+echo "$CURRENT_TIMESTAMP"
+
+# Load previous state
+load_previous_state
+
+if [ -n "$PREV_TIMESTAMP" ]; then
+    echo "Previous check: $PREV_TIMESTAMP"
+fi
 
 echo "Bucket: $BUCKET_NAME"
 
@@ -62,7 +122,8 @@ QUEUE_FILES=$(aws s3 ls "s3://${BUCKET_NAME}/queue/" --recursive 2>/dev/null | g
 QUEUE_COUNT=$(echo "$QUEUE_FILES" | grep -c "\.pdf$" 2>/dev/null || echo "0")
 QUEUE_COUNT=$(echo "$QUEUE_COUNT" | sed 's/^0*//' | tr -d '[:space:]')
 QUEUE_COUNT=${QUEUE_COUNT:-0}
-echo "  queue/  : $QUEUE_COUNT PDFs (waiting to be processed)"
+QUEUE_CHANGE=$(format_change $QUEUE_COUNT $PREV_QUEUE_COUNT "queue")
+echo "  queue/  : $QUEUE_COUNT PDFs (waiting to be processed)$QUEUE_CHANGE"
 if [ "$QUEUE_COUNT" -gt 0 ] && [ -n "$QUEUE_FILES" ]; then
     if [ -n "$QUEUE_LINES" ]; then
         echo "$QUEUE_FILES" | head -n "$QUEUE_LINES" | while read -r line; do
@@ -104,14 +165,16 @@ fi
 PDF_COUNT=$(aws s3 ls "s3://${BUCKET_NAME}/pdf/" --recursive 2>/dev/null | grep -c "\.pdf$" || echo "0")
 PDF_COUNT=$(echo "$PDF_COUNT" | sed 's/^0*//' | tr -d '[:space:]')
 PDF_COUNT=${PDF_COUNT:-0}
-echo "  pdf/    : $PDF_COUNT PDFs (currently processing)"
+PDF_CHANGE=$(format_change $PDF_COUNT $PREV_PDF_COUNT "pdf")
+echo "  pdf/    : $PDF_COUNT PDFs (currently processing)$PDF_CHANGE"
 
 # Failed folder
 FAILED_FILES=$(aws s3 ls "s3://${BUCKET_NAME}/failed/" --recursive 2>/dev/null | grep "\.pdf$" || true)
 FAILED_COUNT=$(echo "$FAILED_FILES" | grep -c "\.pdf$" 2>/dev/null || echo "0")
 FAILED_COUNT=$(echo "$FAILED_COUNT" | sed 's/^0*//' | tr -d '[:space:]')
 FAILED_COUNT=${FAILED_COUNT:-0}
-echo "  failed/ : $FAILED_COUNT PDFs (max retries exceeded)"
+FAILED_CHANGE=$(format_change $FAILED_COUNT $PREV_FAILED_COUNT "failed")
+echo "  failed/ : $FAILED_COUNT PDFs (max retries exceeded)$FAILED_CHANGE"
 if [ "$FAILED_COUNT" -gt 0 ] && [ -n "$FAILED_FILES" ]; then
     echo "$FAILED_FILES" | while read -r line; do
         FILE=$(echo "$line" | awk '{print $NF}')
@@ -125,7 +188,8 @@ fi
 RESULT_COUNT=$(aws s3 ls "s3://${BUCKET_NAME}/result/" --recursive 2>/dev/null | grep -c "\.pdf$" || echo "0")
 RESULT_COUNT=$(echo "$RESULT_COUNT" | sed 's/^0*//' | tr -d '[:space:]')
 RESULT_COUNT=${RESULT_COUNT:-0}
-echo "  result/ : $RESULT_COUNT PDFs (completed)"
+RESULT_CHANGE=$(format_change $RESULT_COUNT $PREV_RESULT_COUNT "result")
+echo "  result/ : $RESULT_COUNT PDFs (completed)$RESULT_CHANGE"
 
 echo "=== Rate Limit Status ==="
 
@@ -177,11 +241,23 @@ fi
 
 echo "=== Summary ==="
 TOTAL_PENDING=$((${QUEUE_COUNT:-0} + ${RETRY_COUNT:-0} + ${PDF_COUNT:-0}))
-echo "  Total pending: $TOTAL_PENDING"
-echo "  Completed: ${RESULT_COUNT:-0}"
+PENDING_CHANGE=$(format_change $TOTAL_PENDING $PREV_TOTAL_PENDING "pending")
+echo "  Total pending: $TOTAL_PENDING$PENDING_CHANGE"
+echo "  Completed: ${RESULT_COUNT:-0}$RESULT_CHANGE"
 if [ "${FAILED_COUNT:-0}" -gt 0 ]; then
     echo "  ⚠️  Failed: ${FAILED_COUNT:-0} (review failed/ folder)"
 fi
+
+# Calculate throughput if we have previous data
+if [ -n "$PREV_TIMESTAMP" ] && [ "$PREV_RESULT_COUNT" != "" ]; then
+    COMPLETED_DIFF=$((RESULT_COUNT - PREV_RESULT_COUNT))
+    if [ $COMPLETED_DIFF -gt 0 ]; then
+        echo "  📈 Processed since last check: $COMPLETED_DIFF PDFs"
+    fi
+fi
+
+# Save current state for next run
+save_state
 
 sleep 2m
 done
