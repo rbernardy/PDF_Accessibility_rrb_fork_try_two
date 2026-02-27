@@ -829,6 +829,42 @@ class PDFAccessibility(Stack):
         )
         pdf_failure_rule.add_target(targets.LambdaFunction(pdf_failure_cleanup_lambda))
         
+        # =============================================================================
+        # PDF Success Tracker - Records successful completions for throughput metrics
+        # =============================================================================
+        pdf_success_tracker_lambda = lambda_.Function(
+            self, "PdfSuccessTrackerLambda",
+            function_name="pdf-success-tracker",
+            runtime=lambda_.Runtime.PYTHON_3_12,
+            handler="main.handler",
+            code=lambda_.Code.from_asset("lambda/pdf-success-tracker"),
+            memory_size=128,
+            timeout=Duration.seconds(30),
+            architecture=lambda_arch,
+            environment={
+                "RATE_LIMIT_TABLE": adobe_rate_limit_table.table_name
+            }
+        )
+        
+        # Grant DynamoDB write for recording success counters
+        adobe_rate_limit_table.grant_read_write_data(pdf_success_tracker_lambda)
+        
+        # EventBridge rule to trigger on Step Function success
+        pdf_success_rule = events.Rule(
+            self, "PdfProcessingSuccessRule",
+            rule_name="pdf-processing-success-tracker",
+            description="Tracks successful PDF processing completions",
+            event_pattern=events.EventPattern(
+                source=["aws.states"],
+                detail_type=["Step Functions Execution Status Change"],
+                detail={
+                    "stateMachineArn": [pdf_remediation_state_machine.state_machine_arn],
+                    "status": ["SUCCEEDED"]
+                }
+            )
+        )
+        pdf_success_rule.add_target(targets.LambdaFunction(pdf_success_tracker_lambda))
+        
         # SSM Parameters for digest configuration (can be changed without redeploying)
         # Email enabled: aws ssm put-parameter --name "/pdf-processing/email-enabled" --value "true" --type String
         # Sender email: aws ssm put-parameter --name "/pdf-processing/sender-email" --value "your-email@domain.com" --type String
@@ -1159,6 +1195,30 @@ class PDFAccessibility(Stack):
         # Grant CloudWatch permission to invoke the custom widget Lambda
         in_flight_files_widget_lambda.grant_invoke(iam.ServicePrincipal("cloudwatch.amazonaws.com"))
 
+        # =============================================================================
+        # Success Rate Widget Lambda - Shows PDF processing throughput metrics
+        # =============================================================================
+        
+        success_rate_widget_lambda = lambda_.Function(
+            self, "SuccessRateWidgetLambda",
+            function_name="success-rate-widget",
+            runtime=lambda_.Runtime.PYTHON_3_12,
+            handler="main.handler",
+            code=lambda_.Code.from_asset("lambda/success-rate-widget"),
+            memory_size=128,
+            timeout=Duration.seconds(10),
+            architecture=lambda_arch,
+            environment={
+                "RATE_LIMIT_TABLE": adobe_rate_limit_table.table_name
+            }
+        )
+        
+        # Grant permissions to read from DynamoDB
+        adobe_rate_limit_table.grant_read_data(success_rate_widget_lambda)
+        
+        # Grant CloudWatch permission to invoke the custom widget Lambda
+        success_rate_widget_lambda.grant_invoke(iam.ServicePrincipal("cloudwatch.amazonaws.com"))
+
         timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         dashboard_name = f"PDF_Processing_Dashboard-{timestamp}"
         dashboard = cloudwatch.Dashboard(self, "PdfRemediationMonitoringDashboard", dashboard_name=dashboard_name,
@@ -1190,21 +1250,31 @@ class PDFAccessibility(Stack):
                 width=24,
                 height=4
             ),
-            # Row 2: In-Flight API Status (custom widget - full width)
+            # Row 2: In-Flight API Status (custom widget)
             cloudwatch.CustomWidget(
                 title="Adobe API In-Flight Requests (Real-time)",
                 function_arn=rate_limit_widget_lambda.function_arn,
-                width=12,
+                width=8,
                 height=8,
                 update_on_refresh=True,
                 update_on_resize=False,
                 update_on_time_range_change=False
             ),
-            # Row 2: In-Flight Files List (custom widget - side by side)
+            # Row 2: In-Flight Files List (custom widget)
             cloudwatch.CustomWidget(
                 title="Files Currently In-Flight",
                 function_arn=in_flight_files_widget_lambda.function_arn,
-                width=12,
+                width=8,
+                height=8,
+                update_on_refresh=True,
+                update_on_resize=False,
+                update_on_time_range_change=False
+            ),
+            # Row 2: Success Rate / Throughput (custom widget)
+            cloudwatch.CustomWidget(
+                title="PDF Processing Throughput",
+                function_arn=success_rate_widget_lambda.function_arn,
+                width=8,
                 height=8,
                 update_on_refresh=True,
                 update_on_resize=False,
