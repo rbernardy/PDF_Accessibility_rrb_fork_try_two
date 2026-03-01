@@ -10,6 +10,7 @@
 # Options:
 #   --bucket NAME       S3 bucket name (default: pdfaccessibility-pdfaccessibilitybucket149b7021e-ljzn29qgmwog)
 #   --queuelines N      Limit queue folder file listing to N lines
+#   --failedlines N     Limit failed folder file listing to N lines
 #
 
 set -e
@@ -17,6 +18,7 @@ set -e
 # Default values
 BUCKET_NAME="pdfaccessibility-pdfaccessibilitybucket149b7021e-ljzn29qgmwog"
 QUEUE_LINES="0"
+FAILED_LINES="0"
 
 # State file for tracking previous counts
 STATE_FILE="/tmp/queue-status-test-state.txt"
@@ -30,6 +32,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --queuelines)
             QUEUE_LINES="$2"
+            shift 2
+            ;;
+        --failedlines)
+            FAILED_LINES="$2"
             shift 2
             ;;
         *)
@@ -176,12 +182,25 @@ FAILED_COUNT=${FAILED_COUNT:-0}
 FAILED_CHANGE=$(format_change $FAILED_COUNT $PREV_FAILED_COUNT "failed")
 echo "  failed/ : $FAILED_COUNT PDFs (max retries exceeded)$FAILED_CHANGE"
 if [ "$FAILED_COUNT" -gt 0 ] && [ -n "$FAILED_FILES" ]; then
-    echo "$FAILED_FILES" | while read -r line; do
-        FILE=$(echo "$line" | awk '{print $NF}')
-        SIZE=$(echo "$line" | awk '{print $3}' | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta')
-        DATE=$(echo "$line" | awk '{print $1, $2}')
-        echo -e "\t  $FILE ($SIZE bytes, $DATE)"
-    done
+    if [ -n "$FAILED_LINES" ]; then
+        echo "$FAILED_FILES" | head -n "$FAILED_LINES" | while read -r line; do
+            FILE=$(echo "$line" | awk '{print $NF}')
+            SIZE=$(echo "$line" | awk '{print $3}' | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta')
+            DATE=$(echo "$line" | awk '{print $1, $2}')
+            echo -e "\t  $FILE ($SIZE bytes, $DATE)"
+        done
+        if [ "$FAILED_COUNT" -gt "$FAILED_LINES" ]; then
+            REMAINING=$((FAILED_COUNT - FAILED_LINES))
+            echo -e "\t  ... and $REMAINING more"
+        fi
+    else
+        echo "$FAILED_FILES" | while read -r line; do
+            FILE=$(echo "$line" | awk '{print $NF}')
+            SIZE=$(echo "$line" | awk '{print $3}' | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta')
+            DATE=$(echo "$line" | awk '{print $1, $2}')
+            echo -e "\t  $FILE ($SIZE bytes, $DATE)"
+        done
+    fi
 fi
 
 # Result folder - count only
@@ -240,9 +259,16 @@ else
 fi
 
 echo "=== Summary ==="
-TOTAL_PENDING=$((${QUEUE_COUNT:-0} + ${RETRY_COUNT:-0} + ${PDF_COUNT:-0}))
+# PDFs still processing = pdf_count - result_count (those in pdf/ but not yet in result/)
+STILL_PROCESSING=$((${PDF_COUNT:-0} - ${RESULT_COUNT:-0}))
+# Ensure we don't go negative if result > pdf (edge case)
+if [ "$STILL_PROCESSING" -lt 0 ]; then
+    STILL_PROCESSING=0
+fi
+TOTAL_PENDING=$((${QUEUE_COUNT:-0} + ${RETRY_COUNT:-0} + ${STILL_PROCESSING}))
 PENDING_CHANGE=$(format_change $TOTAL_PENDING $PREV_TOTAL_PENDING "pending")
 echo "  Total pending: $TOTAL_PENDING$PENDING_CHANGE"
+echo "    (queue: ${QUEUE_COUNT:-0}, processing: ${STILL_PROCESSING})"
 echo "  Completed: ${RESULT_COUNT:-0}$RESULT_CHANGE"
 if [ "${FAILED_COUNT:-0}" -gt 0 ]; then
     echo "  ⚠️  Failed: ${FAILED_COUNT:-0} (review failed/ folder)"
