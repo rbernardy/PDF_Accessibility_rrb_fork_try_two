@@ -23,6 +23,9 @@ FAILED_LINES="0"
 # State file for tracking previous counts
 STATE_FILE="/tmp/queue-status-test-state.txt"
 
+# History file for tracking result counts over time (for averages)
+HISTORY_FILE="/tmp/queue-status-test-history.txt"
+
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -70,6 +73,52 @@ PREV_FAILED_COUNT=$FAILED_COUNT
 PREV_TOTAL_PENDING=$TOTAL_PENDING
 PREV_TIMESTAMP="$CURRENT_TIMESTAMP"
 EOF
+}
+
+# Function to append to history file for throughput calculations
+append_history() {
+    local ts=$(date +%s)
+    echo "$ts,$RESULT_COUNT" >> "$HISTORY_FILE"
+    
+    # Keep only last 7 days of history (clean up old entries)
+    local cutoff=$((ts - 604800))  # 7 days in seconds
+    if [ -f "$HISTORY_FILE" ]; then
+        awk -F',' -v cutoff="$cutoff" '$1 >= cutoff' "$HISTORY_FILE" > "${HISTORY_FILE}.tmp"
+        mv "${HISTORY_FILE}.tmp" "$HISTORY_FILE"
+    fi
+}
+
+# Function to calculate throughput for a time period
+# Returns: PDFs processed in that period
+calc_throughput() {
+    local seconds_ago=$1
+    local now=$(date +%s)
+    local cutoff=$((now - seconds_ago))
+    
+    if [ ! -f "$HISTORY_FILE" ]; then
+        echo "0,0"
+        return
+    fi
+    
+    # Get the oldest entry within the time window
+    local oldest_in_window=$(awk -F',' -v cutoff="$cutoff" '$1 >= cutoff {print; exit}' "$HISTORY_FILE")
+    # Get the newest entry (current)
+    local newest=$(tail -1 "$HISTORY_FILE")
+    
+    if [ -z "$oldest_in_window" ] || [ -z "$newest" ]; then
+        echo "0,0"
+        return
+    fi
+    
+    local oldest_count=$(echo "$oldest_in_window" | cut -d',' -f2)
+    local newest_count=$(echo "$newest" | cut -d',' -f2)
+    local oldest_ts=$(echo "$oldest_in_window" | cut -d',' -f1)
+    
+    local diff=$((newest_count - oldest_count))
+    local time_diff=$((now - oldest_ts))
+    
+    # Return: processed_count,actual_seconds
+    echo "$diff,$time_diff"
 }
 
 # Function to calculate and format change
@@ -209,6 +258,9 @@ RESULT_COUNT=$(echo "$RESULT_COUNT" | sed 's/^0*//' | tr -d '[:space:]')
 RESULT_COUNT=${RESULT_COUNT:-0}
 RESULT_CHANGE=$(format_change $RESULT_COUNT $PREV_RESULT_COUNT "result")
 echo "  result/ : $RESULT_COUNT PDFs (completed)$RESULT_CHANGE"
+
+# Record history for throughput calculations
+append_history
 
 echo "=== Rate Limit Status ==="
 

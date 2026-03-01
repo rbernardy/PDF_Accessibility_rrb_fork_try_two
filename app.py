@@ -1234,7 +1234,7 @@ class PDFAccessibility(Stack):
                                          )
         # Add Widgets to the Dashboard
         dashboard.add_widgets(
-            # Row 1: Pipeline Status (full width)
+            # Row 1: Pipeline Status (left half)
             cloudwatch.LogQueryWidget(
                 title="Pipeline Status",
                 log_group_names=[pipeline_status_log_group_name],
@@ -1247,14 +1247,24 @@ class PDFAccessibility(Stack):
                     | display @timestamp, status, executions, tasks
                     | sort @timestamp desc
                     | limit 100''',
-                width=24,
+                width=12,
                 height=4
+            ),
+            # Row 1: PDF Processing Throughput (right half)
+            cloudwatch.CustomWidget(
+                title="PDF Processing Throughput",
+                function_arn=success_rate_widget_lambda.function_arn,
+                width=12,
+                height=4,
+                update_on_refresh=True,
+                update_on_resize=False,
+                update_on_time_range_change=False
             ),
             # Row 2: In-Flight API Status (custom widget)
             cloudwatch.CustomWidget(
                 title="Adobe API In-Flight Requests (Real-time)",
                 function_arn=rate_limit_widget_lambda.function_arn,
-                width=8,
+                width=12,
                 height=8,
                 update_on_refresh=True,
                 update_on_resize=False,
@@ -1264,17 +1274,7 @@ class PDFAccessibility(Stack):
             cloudwatch.CustomWidget(
                 title="Files Currently In-Flight",
                 function_arn=in_flight_files_widget_lambda.function_arn,
-                width=8,
-                height=8,
-                update_on_refresh=True,
-                update_on_resize=False,
-                update_on_time_range_change=False
-            ),
-            # Row 2: Success Rate / Throughput (custom widget)
-            cloudwatch.CustomWidget(
-                title="PDF Processing Throughput",
-                function_arn=success_rate_widget_lambda.function_arn,
-                width=8,
+                width=12,
                 height=8,
                 update_on_refresh=True,
                 update_on_resize=False,
