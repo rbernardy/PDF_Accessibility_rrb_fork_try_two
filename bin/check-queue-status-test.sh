@@ -16,7 +16,7 @@ set -e
 
 # Default values
 BUCKET_NAME="pdfaccessibility-pdfaccessibilitybucket149b7021e-ljzn29qgmwog"
-QUEUE_LINES=""
+QUEUE_LINES="0"
 
 # State file for tracking previous counts
 STATE_FILE="/tmp/queue-status-test-state.txt"

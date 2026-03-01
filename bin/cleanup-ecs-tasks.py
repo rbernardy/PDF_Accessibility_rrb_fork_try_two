@@ -77,8 +77,8 @@ def main():
     parser = argparse.ArgumentParser(description='Stop ECS tasks running longer than threshold')
     parser.add_argument('--threshold', type=int, default=60, 
                         help='Minutes threshold (default: 60)')
-    parser.add_argument('--dry-run', action='store_true',
-                        help='Show what would be stopped without actually stopping')
+    parser.add_argument('--stop', action='store_true',
+                        help='Actually stop the tasks (default is dry-run mode)')
     parser.add_argument('--cluster', type=str, default=None,
                         help='Specific cluster name/ARN (default: all clusters)')
     parser.add_argument('--summary-only', action='store_true',
@@ -128,10 +128,10 @@ def main():
             task_def = task.get('taskDefinitionArn', 'unknown').split('/')[-1]
             
             if runtime_minutes > args.threshold:
-                status = "WOULD STOP" if args.dry_run else "STOPPING"
+                status = "WOULD STOP" if not args.stop else "STOPPING"
                 print(f"    Task {task_id[:12]}: {runtime_minutes:.0f}m ({task_def}) - {status}")
                 
-                if not args.dry_run:
+                if args.stop:
                     try:
                         stop_task(cluster_arn, task['taskArn'], 
                                   f"Auto-stopped: running {runtime_minutes:.0f}m > {args.threshold}m threshold")
@@ -144,7 +144,7 @@ def main():
     print(f"\n{'='*60}")
     if args.summary_only:
         print("Summary complete.")
-    elif args.dry_run:
+    elif not args.stop:
         print(f"DRY RUN complete. No tasks were stopped.")
     else:
         print(f"Stopped {total_stopped} task(s)")

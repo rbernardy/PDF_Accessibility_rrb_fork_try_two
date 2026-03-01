@@ -84,7 +84,32 @@ class PerformanceMonitor:
         except Exception as e:
             print(f"Error getting in-flight status: {e}")
             return None
-    
+    def get_in_flight_files(self):
+        """Get list of files currently being processed from DynamoDB tracker."""
+        try:
+            table = dynamodb.Table(RATE_LIMIT_TABLE)
+            response = table.scan(
+                FilterExpression='begins_with(counter_id, :prefix) AND attribute_not_exists(released)',
+                ExpressionAttributeValues={':prefix': 'file_'}
+            )
+            files = []
+            for item in response.get('Items', []):
+                counter_id = item.get('counter_id', '')
+                # Extract filename from counter_id (format: file_<s3_key>)
+                if counter_id.startswith('file_'):
+                    s3_key = counter_id[5:]  # Remove 'file_' prefix
+                    filename = s3_key.split('/')[-1] if '/' in s3_key else s3_key
+                    files.append({
+                        'counter_id': counter_id,
+                        's3_key': s3_key,
+                        'filename': filename,
+                        'timestamp': item.get('timestamp', item.get('created_at', 0))
+                    })
+            return files
+        except Exception as e:
+            print(f"Error getting in-flight files: {e}")
+            return []
+
     def get_step_function_metrics(self):
         """Get Step Function execution metrics."""
         try:
@@ -182,7 +207,7 @@ class PerformanceMonitor:
                     started_at = task.get('startedAt')
                     duration = None
                     if started_at:
-                        duration = (datetime.now(timezone.utc) - started_at.replace(tzinfo=timezone.utc)).total_seconds()
+                        duration = (datetime.now(timezone.utc) - started_at).total_seconds()
                     
                     # Extract container info and environment variables to find filename
                     filename = None
@@ -466,6 +491,15 @@ class PerformanceMonitor:
                     task_id = task.get('task_id', task['task_arn'][:12])
                     warning = " ⚠️" if task['duration_seconds'] and task['duration_seconds'] > 1800 else ""
                     print(f"    - {task_id} | {container} | {filename} | {duration}{warning}")
+            
+            # Show in-flight files from DynamoDB
+            in_flight_files = self.get_in_flight_files()
+            if in_flight_files:
+                print(f"\n  Files being processed (from DynamoDB):")
+                for f in in_flight_files[:15]:  # Limit to 15
+                    print(f"    - {f['filename']}")
+                if len(in_flight_files) > 15:
+                    print(f"    ... and {len(in_flight_files) - 15} more")
         else:
             print("  Unable to fetch ECS status")
         
