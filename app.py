@@ -1248,14 +1248,14 @@ class PDFAccessibility(Stack):
                     | sort @timestamp desc
                     | limit 100''',
                 width=12,
-                height=4
+                height=8
             ),
             # Row 1: PDF Processing Throughput (right half)
             cloudwatch.CustomWidget(
                 title="PDF Processing Throughput",
                 function_arn=success_rate_widget_lambda.function_arn,
                 width=12,
-                height=4,
+                height=8,
                 update_on_refresh=True,
                 update_on_resize=False,
                 update_on_time_range_change=False
