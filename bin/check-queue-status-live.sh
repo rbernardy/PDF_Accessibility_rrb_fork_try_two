@@ -60,6 +60,7 @@ load_previous_state() {
         PREV_FAILED_COUNT=0
         PREV_FAILURE_ANALYSIS_COUNT=0
         PREV_TOTAL_PENDING=0
+        PREV_RETRY_IN_QUEUE_COUNT=0
         PREV_TIMESTAMP=""
     fi
 }
@@ -73,6 +74,7 @@ PREV_RESULT_COUNT=$RESULT_COUNT
 PREV_FAILED_COUNT=$FAILED_COUNT
 PREV_FAILURE_ANALYSIS_COUNT=$FAILURE_ANALYSIS_COUNT
 PREV_TOTAL_PENDING=$TOTAL_PENDING
+PREV_RETRY_IN_QUEUE_COUNT=$RETRY_IN_QUEUE_COUNT
 PREV_TIMESTAMP="$CURRENT_TIMESTAMP"
 EOF
 }
@@ -180,8 +182,27 @@ QUEUE_FILES=$(aws s3 ls "s3://${BUCKET_NAME}/queue/" --recursive 2>/dev/null | g
 QUEUE_COUNT=$(echo "$QUEUE_FILES" | grep -c "\.pdf$" 2>/dev/null || echo "0")
 QUEUE_COUNT=$(echo "$QUEUE_COUNT" | sed 's/^0*//' | tr -d '[:space:]')
 QUEUE_COUNT=${QUEUE_COUNT:-0}
+
+# Count retried PDFs in queue (those with retry-count metadata > 0)
+RETRY_IN_QUEUE_COUNT=0
+if [ "$QUEUE_COUNT" -gt 0 ] && [ -n "$QUEUE_FILES" ]; then
+    # Sample up to 100 files to check for retry metadata (for performance)
+    SAMPLE_FILES=$(echo "$QUEUE_FILES" | head -100 | awk '{print $NF}')
+    for FILE in $SAMPLE_FILES; do
+        RETRY_META=$(aws s3api head-object --bucket "$BUCKET_NAME" --key "$FILE" --query 'Metadata."retry-count"' --output text 2>/dev/null || echo "None")
+        if [ "$RETRY_META" != "None" ] && [ "$RETRY_META" != "" ] && [ "$RETRY_META" != "0" ]; then
+            RETRY_IN_QUEUE_COUNT=$((RETRY_IN_QUEUE_COUNT + 1))
+        fi
+    done
+fi
+
 QUEUE_CHANGE=$(format_change $QUEUE_COUNT $PREV_QUEUE_COUNT "queue")
-echo "  queue/  : $QUEUE_COUNT PDFs (waiting to be processed)$QUEUE_CHANGE"
+RETRY_CHANGE=$(format_change $RETRY_IN_QUEUE_COUNT $PREV_RETRY_IN_QUEUE_COUNT "retry")
+if [ "$RETRY_IN_QUEUE_COUNT" -gt 0 ]; then
+    echo "  queue/  : $QUEUE_COUNT PDFs (waiting to be processed, $RETRY_IN_QUEUE_COUNT retrying${RETRY_CHANGE})$QUEUE_CHANGE"
+else
+    echo "  queue/  : $QUEUE_COUNT PDFs (waiting to be processed)$QUEUE_CHANGE"
+fi
 if [ "$QUEUE_COUNT" -gt 0 ] && [ -n "$QUEUE_FILES" ]; then
     if [ -n "$QUEUE_LINES" ]; then
         echo "$QUEUE_FILES" | head -n "$QUEUE_LINES" | while read -r line; do
