@@ -19,6 +19,7 @@ set -e
 BUCKET_NAME="pdfaccessibility-pdfaccessibilitybucket149b7021e-ljzn29qgmwog"
 QUEUE_LINES="0"
 FAILED_LINES="0"
+WRITE_UNIQUE_FAILED_ANALYSIS=""
 
 # State file for tracking previous counts
 STATE_FILE="/tmp/queue-status-test-state.txt"
@@ -40,6 +41,10 @@ while [[ $# -gt 0 ]]; do
         --failedlines)
             FAILED_LINES="$2"
             shift 2
+            ;;
+        --wufafiles)
+            WRITE_UNIQUE_FAILED_ANALYSIS="yes"
+            shift
             ;;
         *)
             # Legacy: first positional arg is bucket name
@@ -289,8 +294,30 @@ FAILURE_ANALYSIS_COUNT=$(echo "$FAILURE_ANALYSIS_COUNT" | sed 's/^0*//' | tr -d 
 FAILURE_ANALYSIS_COUNT=${FAILURE_ANALYSIS_COUNT:-0}
 # Get unique PDF count by stripping _analysis_YYYYMMDD_HHMMSS.docx suffix
 if [ "$FAILURE_ANALYSIS_COUNT" -gt 0 ] && [ -n "$FAILURE_ANALYSIS_FILES" ]; then
-    FAILURE_ANALYSIS_UNIQUE=$(echo "$FAILURE_ANALYSIS_FILES" | grep "\.docx$" | awk '{print $NF}' | sed 's/_analysis_[0-9]\{8\}_[0-9]\{6\}\.docx$//' | sort -u | wc -l)
+    FAILURE_ANALYSIS_UNIQUE_LIST=$(echo "$FAILURE_ANALYSIS_FILES" | grep "\.docx$" | awk '{print $NF}' | sed 's/_analysis_[0-9]\{8\}_[0-9]\{6\}\.docx$//' | sort -u)
+    FAILURE_ANALYSIS_UNIQUE=$(echo "$FAILURE_ANALYSIS_UNIQUE_LIST" | wc -l)
     FAILURE_ANALYSIS_UNIQUE=$(echo "$FAILURE_ANALYSIS_UNIQUE" | tr -d '[:space:]')
+    
+    # Write unique failed PDFs to file if --wufafiles flag is set
+    # Only include files dated 2026-02-27 or later
+    # DISABLED - commenting out due to unexpected behavior
+    # if [ "$WRITE_UNIQUE_FAILED_ANALYSIS" = "yes" ]; then
+    #     WUFA_TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+    #     WUFA_FILE="bin/unique_failed_analysis_${WUFA_TIMESTAMP}.txt"
+    #     
+    #     # Filter for files with S3 date >= 2026-02-27 (first column of aws s3 ls output)
+    #     RECENT_FAILURE_ANALYSIS_UNIQUE_LIST=$(echo "$FAILURE_ANALYSIS_FILES" | grep "\.docx$" | \
+    #         awk '$1 >= "2026-02-27" {print $NF}' | \
+    #         sed 's/_analysis_[0-9]\{8\}_[0-9]\{6\}\.docx$//' | sort -u)
+    #     RECENT_COUNT=$(echo "$RECENT_FAILURE_ANALYSIS_UNIQUE_LIST" | grep -c . 2>/dev/null || echo "0")
+    #     
+    #     echo "# Unique PDFs with failure analysis reports (since 2026-02-27)" > "$WUFA_FILE"
+    #     echo "# Generated: $(date)" >> "$WUFA_FILE"
+    #     echo "# Total unique PDFs (recent): $RECENT_COUNT" >> "$WUFA_FILE"
+    #     echo "" >> "$WUFA_FILE"
+    #     echo "$RECENT_FAILURE_ANALYSIS_UNIQUE_LIST" >> "$WUFA_FILE"
+    #     echo "  📝 Wrote unique failed PDFs (since 2026-02-27) to: $WUFA_FILE"
+    # fi
 else
     FAILURE_ANALYSIS_UNIQUE=0
 fi
