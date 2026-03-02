@@ -262,12 +262,20 @@ RESULT_COUNT=${RESULT_COUNT:-0}
 RESULT_CHANGE=$(format_change $RESULT_COUNT $PREV_RESULT_COUNT "result")
 echo "  result/ : $RESULT_COUNT PDFs (completed)$RESULT_CHANGE"
 
-# Reports/failure_analysis folder - count only
-FAILURE_ANALYSIS_COUNT=$(aws s3 ls "s3://${BUCKET_NAME}/reports/failure_analysis/" --recursive 2>/dev/null | wc -l || echo "0")
+# Reports/failure_analysis folder - count files and unique PDFs
+FAILURE_ANALYSIS_FILES=$(aws s3 ls "s3://${BUCKET_NAME}/reports/failure_analysis/" --recursive 2>/dev/null || true)
+FAILURE_ANALYSIS_COUNT=$(echo "$FAILURE_ANALYSIS_FILES" | grep -c "\.docx$" 2>/dev/null || echo "0")
 FAILURE_ANALYSIS_COUNT=$(echo "$FAILURE_ANALYSIS_COUNT" | sed 's/^0*//' | tr -d '[:space:]')
 FAILURE_ANALYSIS_COUNT=${FAILURE_ANALYSIS_COUNT:-0}
+# Get unique PDF count by stripping _analysis_YYYYMMDD_HHMMSS.docx suffix
+if [ "$FAILURE_ANALYSIS_COUNT" -gt 0 ] && [ -n "$FAILURE_ANALYSIS_FILES" ]; then
+    FAILURE_ANALYSIS_UNIQUE=$(echo "$FAILURE_ANALYSIS_FILES" | grep "\.docx$" | awk '{print $NF}' | sed 's/_analysis_[0-9]\{8\}_[0-9]\{6\}\.docx$//' | sort -u | wc -l)
+    FAILURE_ANALYSIS_UNIQUE=$(echo "$FAILURE_ANALYSIS_UNIQUE" | tr -d '[:space:]')
+else
+    FAILURE_ANALYSIS_UNIQUE=0
+fi
 FAILURE_ANALYSIS_CHANGE=$(format_change $FAILURE_ANALYSIS_COUNT $PREV_FAILURE_ANALYSIS_COUNT "failure_analysis")
-echo "  reports/failure_analysis/ : $FAILURE_ANALYSIS_COUNT files (failure analysis reports)$FAILURE_ANALYSIS_CHANGE"
+echo "  reports/failure_analysis/ : $FAILURE_ANALYSIS_COUNT reports ($FAILURE_ANALYSIS_UNIQUE unique PDFs)$FAILURE_ANALYSIS_CHANGE"
 
 # Append current result count to history
 append_history
