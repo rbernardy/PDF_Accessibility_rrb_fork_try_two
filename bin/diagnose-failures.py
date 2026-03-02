@@ -3,9 +3,17 @@
 Step Function Failure Diagnosis Tool
 
 Analyzes recent Step Function failures to identify patterns and root causes
-in the PDF processing pipeline.
+in the PDF processing pipeline. Can fetch CloudWatch logs from ECS containers
+for detailed error context.
 
-Usage: python bin/diagnose-failures.py [--count N] [--hours N] [--verbose]
+Usage: 
+  python bin/diagnose-failures.py [--count N] [--hours N] [--verbose] [--logs]
+
+Examples:
+  python bin/diagnose-failures.py                    # Basic summary of last 10 failures
+  python bin/diagnose-failures.py -c 5 -H 4         # Last 5 failures from past 4 hours
+  python bin/diagnose-failures.py --logs            # Include CloudWatch container logs
+  python bin/diagnose-failures.py -v                # Full verbose output with logs
 """
 
 import argparse
@@ -19,64 +27,164 @@ stepfunctions = boto3.client('stepfunctions')
 logs = boto3.client('logs')
 
 
-def get_container_error_logs(task_arn, container_name='adobe-autotag-container', log_group='/ecs/pdf-remediation/adobe-autotag'):
+# Container log group configurations
+CONTAINER_LOG_CONFIGS = {
+    'adobe-autotag-container': {
+        'log_group': '/ecs/pdf-remediation/adobe-autotag',
+        'stream_prefix': 'AdobeAutotagLogs'
+    },
+    'alt-text-llm-container': {
+        'log_group': '/ecs/pdf-remediation/alt-text-generator',
+        'stream_prefix': 'AltTextGeneratorLogs'
+    }
+}
+
+# Debug flag - set via --debug argument
+DEBUG_MODE = False
+
+
+def get_container_error_logs(task_arn, container_name='adobe-autotag-container', log_group=None):
     """Fetch the last error/exception logs from a container's CloudWatch logs."""
     if not task_arn:
         return None
     
-    # Extract task ID from ARN (last segment after /)
+    # Extract task ID from ARN
+    # ARN format: arn:aws:ecs:region:account:task/cluster-name/task-id
     task_id = task_arn.split('/')[-1] if '/' in task_arn else task_arn
     
-    # Log stream name pattern: AdobeAutotagLogs/{container-name}/{task-id}
-    log_stream_prefix = f"AdobeAutotagLogs/{container_name}/{task_id}"
+    # Get log config for this container
+    config = CONTAINER_LOG_CONFIGS.get(container_name, {})
+    if not log_group:
+        log_group = config.get('log_group', '/ecs/pdf-remediation/adobe-autotag')
+    stream_prefix = config.get('stream_prefix', 'AdobeAutotagLogs')
     
-    try:
-        # First, find the log stream
-        streams_response = logs.describe_log_streams(
-            logGroupName=log_group,
-            logStreamNamePrefix=log_stream_prefix,
-            limit=1
-        )
-        
-        streams = streams_response.get('logStreams', [])
-        if not streams:
-            return None
-        
-        log_stream_name = streams[0]['logStreamName']
-        
-        # Fetch the last N log events
-        events_response = logs.get_log_events(
-            logGroupName=log_group,
-            logStreamName=log_stream_name,
-            limit=50,
-            startFromHead=False  # Get most recent
-        )
-        
-        events = events_response.get('events', [])
-        
-        # Look for error patterns in the logs (search from end)
-        error_lines = []
-        for event in reversed(events):
-            message = event.get('message', '')
-            msg_lower = message.lower()
+    # Try multiple log stream name patterns
+    # Pattern 1: {prefix}/{container-name}/{task-id} (standard ECS awslogs pattern)
+    # Pattern 2: {prefix}/{task-id}
+    # Pattern 3: Just search by task-id
+    patterns_to_try = [
+        f"{stream_prefix}/{container_name}/{task_id}",
+        f"{stream_prefix}/{task_id}",
+        task_id,  # Just the task ID as prefix
+    ]
+    
+    if DEBUG_MODE:
+        print(f"     [DEBUG] Looking for logs in {log_group}")
+        print(f"     [DEBUG] Task ARN: {task_arn}")
+        print(f"     [DEBUG] Task ID: {task_id}")
+    
+    for pattern in patterns_to_try:
+        try:
+            if DEBUG_MODE:
+                print(f"     [DEBUG] Trying stream prefix: {pattern}")
             
-            # Look for error indicators
-            if any(pattern in msg_lower for pattern in ['error', 'exception', 'traceback', 'failed', 'fatal', 'critical']):
-                error_lines.append(message.strip())
-                # Collect up to 5 error-related lines
-                if len(error_lines) >= 5:
-                    break
-        
-        if error_lines:
-            # Return errors in chronological order
-            return '\n'.join(reversed(error_lines))
-        
-        # If no explicit errors found, return the last few lines
-        last_lines = [e.get('message', '').strip() for e in events[-5:]]
-        return '\n'.join(last_lines) if last_lines else None
-        
-    except Exception as e:
-        return f"Could not fetch logs: {str(e)}"
+            streams_response = logs.describe_log_streams(
+                logGroupName=log_group,
+                logStreamNamePrefix=pattern,
+                limit=5
+            )
+            
+            streams = streams_response.get('logStreams', [])
+            
+            if DEBUG_MODE and streams:
+                print(f"     [DEBUG] Found {len(streams)} stream(s): {[s['logStreamName'] for s in streams]}")
+            
+            if not streams:
+                continue
+            
+            # Use the first matching stream
+            log_stream_name = streams[0]['logStreamName']
+            
+            # Fetch the last N log events
+            events_response = logs.get_log_events(
+                logGroupName=log_group,
+                logStreamName=log_stream_name,
+                limit=50,
+                startFromHead=False  # Get most recent
+            )
+            
+            events = events_response.get('events', [])
+            
+            if DEBUG_MODE:
+                print(f"     [DEBUG] Found {len(events)} log events")
+            
+            # Look for error patterns in the logs (search from end)
+            error_lines = []
+            for event in reversed(events):
+                message = event.get('message', '')
+                msg_lower = message.lower()
+                
+                # Look for error indicators
+                if any(pattern in msg_lower for pattern in ['error', 'exception', 'traceback', 'failed', 'fatal', 'critical']):
+                    error_lines.append(message.strip())
+                    # Collect up to 5 error-related lines
+                    if len(error_lines) >= 5:
+                        break
+            
+            if error_lines:
+                # Return errors in chronological order
+                return '\n'.join(reversed(error_lines))
+            
+            # If no explicit errors found, return the last few lines
+            last_lines = [e.get('message', '').strip() for e in events[-5:]]
+            return '\n'.join(last_lines) if last_lines else None
+            
+        except logs.exceptions.ResourceNotFoundException:
+            if DEBUG_MODE:
+                print(f"     [DEBUG] Log group {log_group} not found")
+            continue
+        except Exception as e:
+            if DEBUG_MODE:
+                print(f"     [DEBUG] Error with pattern {pattern}: {str(e)}")
+            continue
+    
+    # If we get here, try listing recent streams to help debug
+    if DEBUG_MODE:
+        try:
+            recent_streams = logs.describe_log_streams(
+                logGroupName=log_group,
+                orderBy='LastEventTime',
+                descending=True,
+                limit=5
+            )
+            streams = recent_streams.get('logStreams', [])
+            if streams:
+                print(f"     [DEBUG] Recent streams in {log_group}:")
+                for s in streams:
+                    print(f"     [DEBUG]   - {s['logStreamName']}")
+        except Exception as e:
+            print(f"     [DEBUG] Could not list recent streams: {e}")
+    
+    return None
+
+
+def get_all_container_logs_for_task(task_arn, failed_step=None):
+    """
+    Fetch logs from all relevant containers for a task.
+    Returns a dict of container_name -> log_content.
+    """
+    if not task_arn:
+        return {}
+    
+    results = {}
+    
+    # Determine which containers to check based on failed step
+    containers_to_check = list(CONTAINER_LOG_CONFIGS.keys())
+    
+    # If we know the failed step, prioritize that container
+    if failed_step:
+        step_lower = failed_step.lower()
+        if 'autotag' in step_lower or 'adobe' in step_lower:
+            containers_to_check = ['adobe-autotag-container']
+        elif 'alt' in step_lower or 'text' in step_lower:
+            containers_to_check = ['alt-text-llm-container']
+    
+    for container_name in containers_to_check:
+        logs_content = get_container_error_logs(task_arn, container_name)
+        if logs_content and 'Could not fetch logs' not in logs_content:
+            results[container_name] = logs_content
+    
+    return results
 
 
 def find_state_machine():
@@ -353,7 +461,7 @@ def categorize_error(error_type, error_message, cause):
     return error_type or 'Unknown error'
 
 
-def print_report(failures, verbose=False, cause_length=None):
+def print_report(failures, verbose=False, cause_length=None, show_logs=False):
     """Print the failure diagnosis report."""
     print("=" * 60)
     print("Step Function Failure Diagnosis")
@@ -398,10 +506,16 @@ def print_report(failures, verbose=False, cause_length=None):
         step = failure['analysis'].get('failed_step') or 'Unknown'
         filename = failure['analysis'].get('filename') or 'unknown'
         error_msg = failure['analysis'].get('error_message') or failure['analysis'].get('error_type') or 'Unknown error'
+        task_arn = failure['analysis'].get('task_arn')
         
         print(f"\n  {i}. {exec_id} | {stop_time} | {step}")
         print(f"     File: {filename}")
         print(f"     Error: {error_msg}")
+        
+        # Show task ID if available (useful for log correlation)
+        if task_arn:
+            task_id = task_arn.split('/')[-1] if '/' in task_arn else task_arn
+            print(f"     Task ID: {task_id}")
         
         if verbose:
             error_type = failure['analysis'].get('error_type')
@@ -413,15 +527,23 @@ def print_report(failures, verbose=False, cause_length=None):
                     print(f"     Full Cause: {cause[:cause_length]}...")
                 else:
                     print(f"     Full Cause: {cause}")
-            
-            # Fetch CloudWatch logs for the actual error
-            task_arn = failure['analysis'].get('task_arn')
+        
+        # Fetch CloudWatch logs if requested (via --logs or --verbose)
+        if show_logs:
             if task_arn:
-                container_logs = get_container_error_logs(task_arn)
+                container_logs = get_all_container_logs_for_task(task_arn, step)
                 if container_logs:
-                    print(f"     Container Logs:")
-                    for line in container_logs.split('\n')[:10]:
-                        print(f"       {line[:150]}")
+                    for container_name, logs_content in container_logs.items():
+                        # Shorten container name for display
+                        short_name = container_name.replace('-container', '')
+                        print(f"     [{short_name}] CloudWatch Logs:")
+                        for line in logs_content.split('\n')[:10]:
+                            print(f"       {line[:150]}")
+                else:
+                    print(f"     CloudWatch Logs: (no logs found - streams may have expired or task didn't write logs)")
+            else:
+                # No task ARN - this is likely a Lambda failure, not ECS
+                print(f"     CloudWatch Logs: (no ECS task ARN - this may be a Lambda failure, check Lambda logs)")
 
 
 def main():
@@ -446,6 +568,16 @@ def main():
         help='Show full error details for each failure'
     )
     parser.add_argument(
+        '--logs', '-L',
+        action='store_true',
+        help='Fetch and show CloudWatch container logs for each failure'
+    )
+    parser.add_argument(
+        '--debug', '-d',
+        action='store_true',
+        help='Show debug info about log stream discovery (useful for troubleshooting)'
+    )
+    parser.add_argument(
         '--cause-length', '-l',
         type=int,
         default=None,
@@ -453,6 +585,10 @@ def main():
     )
     
     args = parser.parse_args()
+    
+    # Set debug mode globally
+    global DEBUG_MODE
+    DEBUG_MODE = args.debug
     
     print(f"Analyzing last {args.count} failures from the past {args.hours} hours...\n")
     
@@ -484,8 +620,8 @@ def main():
             'analysis': analysis
         })
     
-    # Print report
-    print_report(failures, verbose=args.verbose, cause_length=args.cause_length)
+    # Print report - show logs if --logs or --verbose
+    print_report(failures, verbose=args.verbose, cause_length=args.cause_length, show_logs=args.logs or args.verbose)
     
     return 0
 

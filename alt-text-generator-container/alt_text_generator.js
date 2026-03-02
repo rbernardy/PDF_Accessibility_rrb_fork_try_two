@@ -69,6 +69,44 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+/**
+ * Retry wrapper with exponential backoff for Bedrock API calls
+ * @param {Function} fn - The async function to retry
+ * @param {number} maxRetries - Maximum number of retry attempts (default: 3)
+ * @param {number} baseDelayMs - Base delay in milliseconds (default: 1000)
+ * @returns {Promise<any>} - The result of the function call
+ */
+async function withRetry(fn, maxRetries = 3, baseDelayMs = 1000) {
+    let lastError;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+            return await fn();
+        } catch (error) {
+            lastError = error;
+            const errorMessage = error.message || String(error);
+            
+            // Check if this is a retryable error
+            const isRetryable = 
+                errorMessage.includes('ModelErrorException') ||
+                errorMessage.includes('ThrottlingException') ||
+                errorMessage.includes('ServiceUnavailableException') ||
+                errorMessage.includes('unexpected error during processing') ||
+                error.name === 'ModelErrorException' ||
+                error.name === 'ThrottlingException';
+            
+            if (!isRetryable || attempt === maxRetries) {
+                throw error;
+            }
+            
+            // Exponential backoff with jitter
+            const delay = baseDelayMs * Math.pow(2, attempt) + Math.random() * 1000;
+            logger.info(`Retryable error encountered, attempt ${attempt + 1}/${maxRetries + 1}. Waiting ${Math.round(delay)}ms before retry...`);
+            await sleep(delay);
+        }
+    }
+    throw lastError;
+}
+
 
 /**
  * Invokes the Bedrock AI model to generate alt text for a given image.
@@ -221,7 +259,7 @@ async function generateAltText(imageObject, imageBuffer) {
     `;
 
     try {
-        const response = await invokeModel(prompt, imageBuffer);
+        const response = await withRetry(() => invokeModel(prompt, imageBuffer));
         
         return response.content[0].text;
     } catch (error) {
@@ -303,7 +341,7 @@ async function generateAltTextForLink(url) {
     1. Just give only alt text. do not give give any other word or phrases like "Here is the alt text" or "The alt text is" etc.
     2. The alt text should be clear and concise, providing a brief description of the link's destination or purpose.`;
     try {
-        return await invokeModel_alt_text_links(prompt);
+        return await withRetry(() => invokeModel_alt_text_links(prompt));
     } catch (error) {
         console.error(`Error generating alt text for link: ${error}`);
         throw error;
