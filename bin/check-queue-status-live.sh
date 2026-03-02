@@ -58,6 +58,7 @@ load_previous_state() {
         PREV_PDF_COUNT=0
         PREV_RESULT_COUNT=0
         PREV_FAILED_COUNT=0
+        PREV_FAILURE_ANALYSIS_COUNT=0
         PREV_TOTAL_PENDING=0
         PREV_TIMESTAMP=""
     fi
@@ -70,6 +71,7 @@ PREV_QUEUE_COUNT=$QUEUE_COUNT
 PREV_PDF_COUNT=$PDF_COUNT
 PREV_RESULT_COUNT=$RESULT_COUNT
 PREV_FAILED_COUNT=$FAILED_COUNT
+PREV_FAILURE_ANALYSIS_COUNT=$FAILURE_ANALYSIS_COUNT
 PREV_TOTAL_PENDING=$TOTAL_PENDING
 PREV_TIMESTAMP="$CURRENT_TIMESTAMP"
 EOF
@@ -259,6 +261,13 @@ RESULT_COUNT=$(echo "$RESULT_COUNT" | sed 's/^0*//' | tr -d '[:space:]')
 RESULT_COUNT=${RESULT_COUNT:-0}
 RESULT_CHANGE=$(format_change $RESULT_COUNT $PREV_RESULT_COUNT "result")
 echo "  result/ : $RESULT_COUNT PDFs (completed)$RESULT_CHANGE"
+
+# Reports/failure_analysis folder - count only
+FAILURE_ANALYSIS_COUNT=$(aws s3 ls "s3://${BUCKET_NAME}/reports/failure_analysis/" --recursive 2>/dev/null | wc -l || echo "0")
+FAILURE_ANALYSIS_COUNT=$(echo "$FAILURE_ANALYSIS_COUNT" | sed 's/^0*//' | tr -d '[:space:]')
+FAILURE_ANALYSIS_COUNT=${FAILURE_ANALYSIS_COUNT:-0}
+FAILURE_ANALYSIS_CHANGE=$(format_change $FAILURE_ANALYSIS_COUNT $PREV_FAILURE_ANALYSIS_COUNT "failure_analysis")
+echo "  reports/failure_analysis/ : $FAILURE_ANALYSIS_COUNT files (failure analysis reports)$FAILURE_ANALYSIS_CHANGE"
 
 # Append current result count to history
 append_history
