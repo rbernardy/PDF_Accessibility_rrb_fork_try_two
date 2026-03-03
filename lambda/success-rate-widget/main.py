@@ -6,6 +6,7 @@ Custom CloudWatch widget that displays PDF processing throughput metrics:
 - PDFs processed today
 - Running average per hour (last 24 hours)
 - Current hour count
+- Remediation goal and estimated days to completion
 
 Reads from the success counters in the rate limit DynamoDB table.
 """
@@ -21,7 +22,10 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 dynamodb = boto3.resource('dynamodb')
+ssm = boto3.client('ssm')
+
 RATE_LIMIT_TABLE = os.environ.get('RATE_LIMIT_TABLE', '')
+REMEDIATION_GOAL_PARAM = os.environ.get('REMEDIATION_GOAL_PARAM', '/pdf-processing/remediation-count-goal')
 
 
 def get_counter(table, counter_id: str) -> int:
@@ -31,6 +35,16 @@ def get_counter(table, counter_id: str) -> int:
         return int(response.get('Item', {}).get('count', 0))
     except (ClientError, ValueError) as e:
         logger.error(f"Error getting counter {counter_id}: {e}")
+        return 0
+
+
+def get_ssm_parameter(param_name: str) -> int:
+    """Get an integer value from SSM parameter."""
+    try:
+        response = ssm.get_parameter(Name=param_name)
+        return int(response['Parameter']['Value'])
+    except (ClientError, ValueError, KeyError) as e:
+        logger.error(f"Error getting SSM parameter {param_name}: {e}")
         return 0
 
 
@@ -83,6 +97,15 @@ def handler(event, context):
     last_6h = sum(h['count'] for h in hourly_counts[:6])
     avg_last_6h = last_6h / 6 if last_6h > 0 else 0
     
+    # Get remediation goal and calculate estimated days
+    remediation_goal = get_ssm_parameter(REMEDIATION_GOAL_PARAM)
+    remaining = max(0, remediation_goal - total_count)
+    if total_24h > 0:
+        estimated_days = remaining / total_24h
+        days_display = f"{estimated_days:.1f}"
+    else:
+        days_display = "N/A"
+    
     # Build HTML response
     html = f'''
     <div style="font-family: Arial, sans-serif; padding: 10px;">
@@ -107,12 +130,25 @@ def handler(event, context):
             </div>
         </div>
         
-        <div style="background: #f5f5f5; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
-            <div style="font-size: 14px; color: #333;">
-                <strong>Last 6 Hours:</strong> {last_6h:,} PDFs ({avg_last_6h:.1f}/hr avg)
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 15px;">
+            <div style="background: #f5f5f5; padding: 10px; border-radius: 5px;">
+                <div style="font-size: 14px; color: #333;">
+                    <strong>Last 6 Hours:</strong> {last_6h:,} PDFs ({avg_last_6h:.1f}/hr avg)
+                </div>
+                <div style="font-size: 14px; color: #333;">
+                    <strong>Last 24 Hours:</strong> {total_24h:,} PDFs
+                </div>
             </div>
-            <div style="font-size: 14px; color: #333;">
-                <strong>Last 24 Hours:</strong> {total_24h:,} PDFs
+            <div style="background: #e8f4fd; padding: 10px; border-radius: 5px;">
+                <div style="font-size: 14px; color: #333;">
+                    <strong>Remediation Total Count Goal:</strong> {remediation_goal:,}
+                </div>
+                <div style="font-size: 14px; color: #333;">
+                    <strong>Estimated Days to Completion:</strong> {days_display}
+                </div>
+                <div style="font-size: 10px; color: #666;">
+                    (based on Last 24 Hours completion count)
+                </div>
             </div>
         </div>
         

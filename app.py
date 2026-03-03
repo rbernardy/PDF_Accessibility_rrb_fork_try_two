@@ -86,6 +86,16 @@ class PDFAccessibility(Stack):
             description="Adobe PDF Services API max requests per second (burst control)"
         )
         
+        # SSM Parameter for remediation count goal - target number of PDFs to remediate
+        # Used by the throughput widget to show progress and estimated completion time
+        remediation_goal_param_name = '/pdf-processing/remediation-count-goal'
+        remediation_goal_param = ssm.StringParameter(
+            self, "RemediationGoalParam",
+            parameter_name=remediation_goal_param_name,
+            string_value="10000",  # Default: 10,000 PDFs (update via AWS Console)
+            description="Target number of PDFs to remediate for progress tracking"
+        )
+        
         # DynamoDB table for distributed in-flight tracking across ECS tasks
         # Uses a single counter that tracks requests currently in progress
         # - Incremented when API call starts
@@ -1211,12 +1221,14 @@ class PDFAccessibility(Stack):
             timeout=Duration.seconds(10),
             architecture=lambda_arch,
             environment={
-                "RATE_LIMIT_TABLE": adobe_rate_limit_table.table_name
+                "RATE_LIMIT_TABLE": adobe_rate_limit_table.table_name,
+                "REMEDIATION_GOAL_PARAM": remediation_goal_param_name
             }
         )
         
-        # Grant permissions to read from DynamoDB
+        # Grant permissions to read from DynamoDB and SSM
         adobe_rate_limit_table.grant_read_data(success_rate_widget_lambda)
+        remediation_goal_param.grant_read(success_rate_widget_lambda)
         
         # Grant CloudWatch permission to invoke the custom widget Lambda
         success_rate_widget_lambda.grant_invoke(iam.ServicePrincipal("cloudwatch.amazonaws.com"))
