@@ -277,7 +277,8 @@ class PDFAccessibility(Stack):
                                                       cpu=1024,  # Increased from 256 for large PDFs
                                                       execution_role=ecs_task_execution_role, 
                                                       task_role=ecs_task_role,
-                                                      family="PDFAccessibilityAdobeAutotagTaskDefinitionV3"  # V3: Force new revision with rate limiter fix
+                                                      ephemeral_storage_gib=30,  # Increased from default 20GB for large PDFs
+                                                      family="PDFAccessibilityAdobeAutotagTaskDefinitionV4"  # V4: Added ephemeral storage
                                                      )
 
         adobe_autotag_container_def = adobe_autotag_task_def.add_container("adobe-autotag-container",
@@ -293,7 +294,8 @@ class PDFAccessibility(Stack):
                                                       cpu=1024,  # Increased from 256 for large PDFs
                                                       execution_role=ecs_task_execution_role, 
                                                       task_role=ecs_task_role,
-                                                      family="PDFAccessibilityAltTextTaskDefinitionV2"  # Force new version
+                                                      ephemeral_storage_gib=30,  # Increased from default 20GB for large PDFs
+                                                      family="PDFAccessibilityAltTextTaskDefinitionV3"  # V3: Added ephemeral storage
                                                       )
 
         alt_text_container_def = alt_text_task_def.add_container("alt-text-llm-container",
