@@ -18,10 +18,12 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 s3 = boto3.client('s3')
+dynamodb = boto3.resource('dynamodb')
 
 # Environment variables
 REPORT_BUCKET = os.environ.get('REPORT_BUCKET', '')
 SAVE_REPORTS_TO_S3 = os.environ.get('SAVE_REPORTS_TO_S3', 'true').lower() == 'true'
+ANALYSIS_TABLE = os.environ.get('ANALYSIS_TABLE', '')
 
 
 def format_text_report(log_entry: dict, result: AnalysisResult) -> str:
@@ -176,6 +178,49 @@ def create_docx_report(log_entry: dict, result: AnalysisResult) -> bytes:
     return buffer.getvalue()
 
 
+def save_to_dynamodb(log_entry: dict, result: AnalysisResult) -> bool:
+    """Save analysis data to DynamoDB table."""
+    if not ANALYSIS_TABLE:
+        logger.warning("ANALYSIS_TABLE not configured, skipping DynamoDB save")
+        return False
+    
+    try:
+        table = dynamodb.Table(ANALYSIS_TABLE)
+        
+        # Build the item with all analysis data
+        item = {
+            's3_key': log_entry['s3_key'],
+            'analysis_timestamp': log_entry['timestamp'],
+            'filename': log_entry['filename'],
+            's3_bucket': log_entry['s3_bucket'],
+            'api_type': log_entry['api_type'],
+            'original_error': log_entry['original_error'],
+            'file_size_mb': str(result.file_size_mb),
+            'page_count': result.page_count,
+            'image_count': result.image_count,
+            'font_count': result.font_count,
+            'has_encryption': result.has_encryption,
+            'pdf_version': result.pdf_version,
+            'likely_cause': result.likely_cause or 'Unknown',
+            'issue_count': len(result.issues),
+            'issues': json.dumps([{
+                'severity': issue.severity.value,
+                'category': issue.category.value,
+                'description': issue.description,
+                'details': issue.details
+            } for issue in result.issues]),
+            'analysis_error': result.analysis_error or ''
+        }
+        
+        table.put_item(Item=item)
+        logger.info(f"Saved analysis data to DynamoDB: {log_entry['s3_key']}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Failed to save to DynamoDB: {e}")
+        return False
+
+
 def lambda_handler(event, context):
     """
     Analyze a PDF that failed during Adobe API processing.
@@ -290,6 +335,9 @@ def lambda_handler(event, context):
             logger.info(f"Saved Word report to s3://{REPORT_BUCKET}/{docx_key}")
         except Exception as e:
             logger.warning(f"Failed to save Word report to S3: {e}")
+    
+    # Save analysis data to DynamoDB
+    save_to_dynamodb(log_entry, result)
     
     return {
         'statusCode': 200,

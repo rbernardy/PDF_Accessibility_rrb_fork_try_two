@@ -136,9 +136,9 @@ def handler(event, context):
     queue_count = get_queue_file_count(BUCKET_NAME)
     
     # Build HTML response
-    html = f'''
-    <div style="font-family: Arial, sans-serif; padding: 10px;">
-        <h3 style="margin: 0 0 15px 0; color: #232f3e;">PDF Processing Throughput</h3>
+    html = f'''<div style="font-family: Arial, sans-serif; padding: 10px;">
+        <h3 style="margin: 0; color: #232f3e;">PDF Processing Throughput</h3>
+        <div style="font-size: 11px; color: #888; margin-bottom: 15px;">Updated: {now.strftime('%Y-%m-%d %H:%M:%S')} UTC | Data based on UTC time; local time shown for reference</div>
         
         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
             <div style="background: #f0f8ff; padding: 15px; border-radius: 8px; text-align: center;">
@@ -190,10 +190,6 @@ def handler(event, context):
                     (based on Last 24 Hours completion count)
                 </div>
             </div>
-        </div>
-        
-        <div style="font-size: 11px; color: #888;">
-            Updated: {now.strftime('%Y-%m-%d %H:%M:%S')} UTC
         </div>
     </div>
     '''

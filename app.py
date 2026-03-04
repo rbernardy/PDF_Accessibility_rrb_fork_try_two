@@ -1107,6 +1107,22 @@ class PDFAccessibility(Stack):
             removal_policy=cdk.RemovalPolicy.DESTROY
         )
         
+        # DynamoDB table for storing PDF failure analysis data
+        pdf_failure_analysis_table = dynamodb.Table(
+            self, "PdfFailureAnalysisTable",
+            table_name="pdf-failure-analysis-data",
+            partition_key=dynamodb.Attribute(
+                name="s3_key",
+                type=dynamodb.AttributeType.STRING
+            ),
+            sort_key=dynamodb.Attribute(
+                name="analysis_timestamp",
+                type=dynamodb.AttributeType.STRING
+            ),
+            billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
+            removal_policy=cdk.RemovalPolicy.RETAIN
+        )
+        
         pdf_failure_analysis_lambda = lambda_.DockerImageFunction(
             self, "PdfFailureAnalysisLambda",
             function_name="pdf-failure-analysis",
@@ -1117,7 +1133,8 @@ class PDFAccessibility(Stack):
             architecture=lambda_arch,
             environment={
                 "REPORT_BUCKET": pdf_processing_bucket.bucket_name,
-                "SAVE_REPORTS_TO_S3": "true"
+                "SAVE_REPORTS_TO_S3": "true",
+                "ANALYSIS_TABLE": pdf_failure_analysis_table.table_name
             },
             log_group=pdf_failure_analysis_log_group
         )
@@ -1126,6 +1143,8 @@ class PDFAccessibility(Stack):
         pdf_processing_bucket.grant_read(pdf_failure_analysis_lambda)
         # Grant S3 write access for saving reports
         pdf_processing_bucket.grant_write(pdf_failure_analysis_lambda, "reports/failure_analysis/*")
+        # Grant DynamoDB write access for storing analysis data
+        pdf_failure_analysis_table.grant_write_data(pdf_failure_analysis_lambda)
         
         # Store log group name for dashboard
         pdf_failure_analysis_log_group_name = pdf_failure_analysis_log_group.log_group_name
@@ -1136,6 +1155,35 @@ class PDFAccessibility(Stack):
             "FAILURE_ANALYSIS_LAMBDA_ARN", pdf_failure_analysis_lambda.function_arn
         )
         pdf_failure_analysis_lambda.grant_invoke(pdf_failure_cleanup_lambda)
+
+        # =============================================================================
+        # Failure Analysis Report Generator Lambda - Generates Excel spreadsheet from analysis data
+        # =============================================================================
+        
+        failure_analysis_report_lambda = lambda_.DockerImageFunction(
+            self, "FailureAnalysisReportLambda",
+            function_name="failure-analysis-report",
+            code=lambda_.DockerImageCode.from_image_asset("lambda/failure-analysis-report"),
+            memory_size=512,
+            timeout=Duration.seconds(120),
+            architecture=lambda_arch,
+            environment={
+                "ANALYSIS_TABLE": pdf_failure_analysis_table.table_name,
+                "REPORT_BUCKET": pdf_processing_bucket.bucket_name
+            }
+        )
+        
+        # Grant permissions
+        pdf_failure_analysis_table.grant_read_data(failure_analysis_report_lambda)
+        pdf_processing_bucket.grant_write(failure_analysis_report_lambda, "reports/failure_analysis_summary/*")
+        
+        # Schedule to run daily at 11:30 PM EST (4:30 AM UTC next day)
+        events.Rule(
+            self, "FailureAnalysisReportSchedule",
+            rule_name="failure-analysis-report-schedule",
+            schedule=events.Schedule.cron(hour="4", minute="30"),
+            targets=[targets.LambdaFunction(failure_analysis_report_lambda)]
+        )
 
         # =============================================================================
         # Rate Limit Widget Lambda - Custom CloudWatch widget for real-time in-flight status
