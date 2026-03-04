@@ -1222,13 +1222,15 @@ class PDFAccessibility(Stack):
             architecture=lambda_arch,
             environment={
                 "RATE_LIMIT_TABLE": adobe_rate_limit_table.table_name,
-                "REMEDIATION_GOAL_PARAM": remediation_goal_param_name
+                "REMEDIATION_GOAL_PARAM": remediation_goal_param_name,
+                "BUCKET_NAME": pdf_processing_bucket.bucket_name
             }
         )
         
         # Grant permissions to read from DynamoDB and SSM
         adobe_rate_limit_table.grant_read_data(success_rate_widget_lambda)
         remediation_goal_param.grant_read(success_rate_widget_lambda)
+        pdf_processing_bucket.grant_read(success_rate_widget_lambda)
         
         # Grant CloudWatch permission to invoke the custom widget Lambda
         success_rate_widget_lambda.grant_invoke(iam.ServicePrincipal("cloudwatch.amazonaws.com"))

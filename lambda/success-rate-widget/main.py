@@ -23,9 +23,11 @@ logger.setLevel(logging.INFO)
 
 dynamodb = boto3.resource('dynamodb')
 ssm = boto3.client('ssm')
+s3 = boto3.client('s3')
 
 RATE_LIMIT_TABLE = os.environ.get('RATE_LIMIT_TABLE', '')
 REMEDIATION_GOAL_PARAM = os.environ.get('REMEDIATION_GOAL_PARAM', '/pdf-processing/remediation-count-goal')
+BUCKET_NAME = os.environ.get('BUCKET_NAME', '')
 
 
 def get_counter(table, counter_id: str) -> int:
@@ -45,6 +47,24 @@ def get_ssm_parameter(param_name: str) -> int:
         return int(response['Parameter']['Value'])
     except (ClientError, ValueError, KeyError) as e:
         logger.error(f"Error getting SSM parameter {param_name}: {e}")
+        return 0
+
+
+def get_queue_file_count(bucket: str, prefix: str = 'queue/') -> int:
+    """Count PDF files in the S3 queue folder."""
+    if not bucket:
+        return 0
+    
+    try:
+        count = 0
+        paginator = s3.get_paginator('list_objects_v2')
+        for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
+            for obj in page.get('Contents', []):
+                if obj['Key'].lower().endswith('.pdf'):
+                    count += 1
+        return count
+    except ClientError as e:
+        logger.error(f"Error counting queue files: {e}")
         return 0
 
 
@@ -79,6 +99,12 @@ def handler(event, context):
     table = dynamodb.Table(RATE_LIMIT_TABLE)
     now = datetime.now(timezone.utc)
     
+    # Convert to US Eastern time for display
+    eastern_offset = timedelta(hours=-5)  # EST (use -4 for EDT)
+    now_local = now + eastern_offset
+    local_hour_display = now_local.strftime('%I %p').lstrip('0')  # e.g., "3 PM"
+    local_date_display = now_local.strftime('%A %Y-%m-%d')  # e.g., "Wednesday 2026-03-04"
+    
     # Get counters
     total_count = get_counter(table, 'success_total')
     today_key = f"success_day_{now.strftime('%Y%m%d')}"
@@ -106,34 +132,48 @@ def handler(event, context):
     else:
         days_display = "N/A"
     
+    # Get queue file count
+    queue_count = get_queue_file_count(BUCKET_NAME)
+    
     # Build HTML response
     html = f'''
     <div style="font-family: Arial, sans-serif; padding: 10px;">
         <h3 style="margin: 0 0 15px 0; color: #232f3e;">PDF Processing Throughput</h3>
         
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;">
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
             <div style="background: #f0f8ff; padding: 15px; border-radius: 8px; text-align: center;">
                 <div style="font-size: 28px; font-weight: bold; color: #0073bb;">{total_count:,}</div>
                 <div style="font-size: 12px; color: #666;">Total Processed (All Time)</div>
             </div>
             <div style="background: #f0fff0; padding: 15px; border-radius: 8px; text-align: center;">
                 <div style="font-size: 28px; font-weight: bold; color: #2e7d32;">{today_count:,}</div>
-                <div style="font-size: 12px; color: #666;">Processed Today</div>
+                <div style="font-size: 12px; color: #666;">Processed Today ({local_date_display})</div>
             </div>
+            <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 28px; font-weight: bold; color: #1565c0;">{queue_count:,}</div>
+                <div style="font-size: 12px; color: #666;">Files in Queue</div>
+            </div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
             <div style="background: #fff8e1; padding: 15px; border-radius: 8px; text-align: center;">
                 <div style="font-size: 28px; font-weight: bold; color: #f57c00;">{avg_per_hour:.1f}</div>
                 <div style="font-size: 12px; color: #666;">Avg/Hour (24h)</div>
             </div>
             <div style="background: #fce4ec; padding: 15px; border-radius: 8px; text-align: center;">
                 <div style="font-size: 28px; font-weight: bold; color: #c2185b;">{current_hour_count:,}</div>
-                <div style="font-size: 12px; color: #666;">This Hour</div>
+                <div style="font-size: 12px; color: #666;">This Hour ({local_hour_display})</div>
+            </div>
+            <div style="background: #f3e5f5; padding: 15px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 28px; font-weight: bold; color: #7b1fa2;">{last_6h:,}</div>
+                <div style="font-size: 12px; color: #666;">Last 6 Hours</div>
             </div>
         </div>
         
         <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 15px;">
             <div style="background: #f5f5f5; padding: 10px; border-radius: 5px;">
                 <div style="font-size: 14px; color: #333;">
-                    <strong>Last 6 Hours:</strong> {last_6h:,} PDFs ({avg_last_6h:.1f}/hr avg)
+                    <strong>Last 6 Hours Avg:</strong> {avg_last_6h:.1f}/hr
                 </div>
                 <div style="font-size: 14px; color: #333;">
                     <strong>Last 24 Hours:</strong> {total_24h:,} PDFs
