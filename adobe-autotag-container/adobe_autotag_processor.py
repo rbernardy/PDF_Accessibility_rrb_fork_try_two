@@ -98,6 +98,72 @@ MAX_429_RETRIES = 10
 # Base backoff time in seconds for 429 retries (will be multiplied by retry count)
 BASE_429_BACKOFF = 30
 
+
+def get_pdf_page_count(filename: str) -> int:
+    """
+    Get the page count of a PDF file.
+    
+    Args:
+        filename: Path to the PDF file
+        
+    Returns:
+        Number of pages, or 0 if unable to determine
+    """
+    try:
+        doc = pymupdf.open(filename)
+        page_count = len(doc)
+        doc.close()
+        return page_count
+    except Exception as e:
+        logging.warning(f'Filename : {filename} | Could not determine page count: {e}')
+        return 0
+
+
+def get_processing_timeout(file_size_mb: float, page_count: int) -> int:
+    """
+    Calculate appropriate processingTimeout based on file characteristics.
+    
+    Adobe's default processingTimeout is 600,000 ms (10 minutes). For larger or
+    more complex files, we increase this to avoid timeout failures.
+    
+    Adobe API Limits:
+    - File size: 100 MB max
+    - Page count: 200 pages (non-scanned), 100 pages (scanned)
+    - Files with many tables may have lower effective limits
+    
+    Args:
+        file_size_mb: File size in megabytes
+        page_count: Number of pages in the PDF
+        
+    Returns:
+        Timeout in milliseconds
+    """
+    # Base timeout: 10 minutes (Adobe default)
+    base_timeout = 600_000
+    
+    # Small files (< 10 MB and < 50 pages): Use default 10 minutes
+    if file_size_mb < 10 and page_count < 50:
+        logging.info(f'Using default timeout (10 min) for small file: {file_size_mb:.1f} MB, {page_count} pages')
+        return base_timeout
+    
+    # Medium files (10-50 MB or 50-100 pages): 15 minutes
+    if file_size_mb < 50 and page_count < 100:
+        timeout = 900_000
+        logging.info(f'Using medium timeout (15 min) for file: {file_size_mb:.1f} MB, {page_count} pages')
+        return timeout
+    
+    # Large files (50-100 MB or 100-200 pages): 20 minutes
+    if file_size_mb < 100 and page_count <= 200:
+        timeout = 1_200_000
+        logging.info(f'Using large timeout (20 min) for file: {file_size_mb:.1f} MB, {page_count} pages')
+        return timeout
+    
+    # Very large files (near or exceeding limits): 30 minutes
+    # These may still fail due to Adobe's hard limits, but give them max time
+    timeout = 1_800_000
+    logging.warning(f'Using maximum timeout (30 min) for very large file: {file_size_mb:.1f} MB, {page_count} pages')
+    return timeout
+
 # Initialize custom CloudWatch logger for metrics
 custom_cw_logger = get_custom_logger()
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -241,6 +307,9 @@ def autotag_pdf_with_options(filename, client_id, client_secret, s3_bucket=None,
     it sets a global backoff to slow down ALL containers, then retries after
     the backoff period. This ensures the queue can handle any batch size.
     
+    Uses dynamic processingTimeout based on file size and page count to handle
+    larger files that may take longer to process.
+    
     Args:
         filename (str): The path to the PDF file.
         client_id (str): Adobe API client ID.
@@ -256,6 +325,14 @@ def autotag_pdf_with_options(filename, client_id, client_secret, s3_bucket=None,
     """
     retry_count = 0
     last_error = None
+    
+    # Get file characteristics for dynamic timeout
+    file_size_mb = os.path.getsize(filename) / (1024 * 1024)
+    page_count = get_pdf_page_count(filename)
+    processing_timeout = get_processing_timeout(file_size_mb, page_count)
+    
+    logging.info(f'Filename : {filename} | File size: {file_size_mb:.1f} MB, Pages: {page_count}, '
+                 f'Processing timeout: {processing_timeout // 1000}s ({processing_timeout // 60000} min)')
     
     while retry_count <= MAX_429_RETRIES:
         # Acquire in-flight slot before making API call
@@ -279,9 +356,12 @@ def autotag_pdf_with_options(filename, client_id, client_secret, s3_bucket=None,
                 client_id=client_id,
                 client_secret=client_secret
             )
+            
+            # Dynamic timeout based on file size and page count
             client_config = ClientConfig(
                 connect_timeout=8000,
-                read_timeout=40000
+                read_timeout=40000,
+                processing_timeout=processing_timeout
             )
 
             # Creates a PDF Services instance
@@ -384,6 +464,9 @@ def extract_api(filename, client_id, client_secret, s3_bucket=None, s3_key=None)
     it sets a global backoff to slow down ALL containers, then retries after
     the backoff period. This ensures the queue can handle any batch size.
     
+    Uses dynamic processingTimeout based on file size and page count to handle
+    larger files that may take longer to process.
+    
     Args:
         filename (str): The path to the PDF file.
         client_id (str): Adobe API client ID.
@@ -399,6 +482,14 @@ def extract_api(filename, client_id, client_secret, s3_bucket=None, s3_key=None)
     """
     retry_count = 0
     last_error = None
+    
+    # Get file characteristics for dynamic timeout
+    file_size_mb = os.path.getsize(filename) / (1024 * 1024)
+    page_count = get_pdf_page_count(filename)
+    processing_timeout = get_processing_timeout(file_size_mb, page_count)
+    
+    logging.info(f'Filename : {filename} | File size: {file_size_mb:.1f} MB, Pages: {page_count}, '
+                 f'Processing timeout: {processing_timeout // 1000}s ({processing_timeout // 60000} min)')
     
     while retry_count <= MAX_429_RETRIES:
         # Acquire in-flight slot before making API call
@@ -422,10 +513,14 @@ def extract_api(filename, client_id, client_secret, s3_bucket=None, s3_key=None)
                 client_id=client_id,
                 client_secret=client_secret
             )
+            
+            # Dynamic timeout based on file size and page count
             client_config = ClientConfig(
                 connect_timeout=4000,
-                read_timeout=40000
-                )
+                read_timeout=40000,
+                processing_timeout=processing_timeout
+            )
+            
             # Creates a PDF Services instance
             pdf_services = PDFServices(credentials=credentials, client_config=client_config)
 
