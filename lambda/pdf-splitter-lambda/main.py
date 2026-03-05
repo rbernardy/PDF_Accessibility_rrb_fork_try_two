@@ -3,10 +3,11 @@ This AWS Lambda function is triggered by an S3 event when a PDF file is uploaded
 The function performs the following operations:
 
 1. Downloads the PDF file from S3.
-2. Splits the PDF into chunks of specified page size (for example, one page per chunk).
-3. Uploads each PDF chunk to a temporary location in the same S3 bucket.
-4. Logs the processing status of each chunk and its upload to S3.
-5. Starts an AWS Step Functions execution with metadata about the uploaded chunks.
+2. Pre-scans the PDF to detect "risky" characteristics that may cause Adobe API failures.
+3. Splits the PDF into chunks of specified page size (adjusted based on risk assessment).
+4. Uploads each PDF chunk to a temporary location in the same S3 bucket.
+5. Logs the processing status of each chunk and its upload to S3.
+6. Starts an AWS Step Functions execution with metadata about the uploaded chunks.
 
 """
 import json
@@ -21,6 +22,134 @@ s3_client = boto3.client('s3')
 stepfunctions = boto3.client('stepfunctions')
 
 state_machine_arn = os.environ['STATE_MACHINE_ARN']
+
+
+def prescan_pdf_for_risk(pdf_content: bytes, filename: str) -> dict:
+    """
+    Pre-scan a PDF to detect characteristics that may cause Adobe API failures.
+    
+    This is a lightweight scan using pypdf to identify "risky" PDFs that should
+    use more aggressive splitting to maximize success chances.
+    
+    Risk factors detected:
+    - Large images (scanned documents, newspapers)
+    - Unusual page dimensions (non-standard sizes)
+    - High image-to-text ratio (image-heavy documents)
+    - Mixed page sizes within document
+    
+    Args:
+        pdf_content: Raw PDF bytes
+        filename: Filename for logging
+        
+    Returns:
+        dict with 'is_risky', 'risk_factors', 'recommended_pages_per_chunk'
+    """
+    from pypdf import PdfReader
+    
+    result = {
+        'is_risky': False,
+        'risk_factors': [],
+        'recommended_pages_per_chunk': 90,  # Default
+        'page_count': 0,
+        'has_large_pages': False,
+        'has_mixed_sizes': False,
+        'is_image_heavy': False
+    }
+    
+    try:
+        reader = PdfReader(io.BytesIO(pdf_content))
+        num_pages = len(reader.pages)
+        result['page_count'] = num_pages
+        
+        if num_pages == 0:
+            return result
+        
+        # Analyze page dimensions
+        page_sizes = set()
+        large_page_count = 0
+        total_images = 0
+        
+        # Standard page sizes in points (72 points = 1 inch)
+        # Letter: 612x792, A4: 595x842, Legal: 612x1008
+        STANDARD_WIDTHS = {612, 595, 792, 842, 1008}  # Include rotated
+        STANDARD_HEIGHTS = {612, 595, 792, 842, 1008}
+        LARGE_DIMENSION_THRESHOLD = 1200  # ~16.7 inches - larger than tabloid
+        
+        for page_num, page in enumerate(reader.pages):
+            # Get page dimensions
+            mediabox = page.mediabox
+            width = float(mediabox.width)
+            height = float(mediabox.height)
+            
+            # Normalize to portrait orientation for comparison
+            w, h = (min(width, height), max(width, height))
+            page_sizes.add((round(w), round(h)))
+            
+            # Check for large/unusual dimensions
+            if width > LARGE_DIMENSION_THRESHOLD or height > LARGE_DIMENSION_THRESHOLD:
+                large_page_count += 1
+            
+            # Count images on page (rough estimate)
+            if '/XObject' in page.get('/Resources', {}):
+                xobjects = page['/Resources'].get('/XObject', {})
+                if hasattr(xobjects, 'keys'):
+                    for obj_name in xobjects.keys():
+                        try:
+                            xobj = xobjects[obj_name]
+                            if xobj.get('/Subtype') == '/Image':
+                                total_images += 1
+                        except:
+                            pass
+        
+        # Assess risk factors
+        
+        # 1. Large/unusual page dimensions (newspapers, posters, scanned docs)
+        if large_page_count > 0:
+            result['has_large_pages'] = True
+            result['risk_factors'].append(f'{large_page_count} pages with large dimensions')
+            result['is_risky'] = True
+        
+        # 2. Mixed page sizes (often problematic)
+        if len(page_sizes) > 2:
+            result['has_mixed_sizes'] = True
+            result['risk_factors'].append(f'{len(page_sizes)} different page sizes')
+            result['is_risky'] = True
+        
+        # 3. Image-heavy documents (high image-to-page ratio)
+        images_per_page = total_images / num_pages if num_pages > 0 else 0
+        if images_per_page >= 1.0 or total_images > num_pages * 0.8:
+            result['is_image_heavy'] = True
+            result['risk_factors'].append(f'Image-heavy ({total_images} images in {num_pages} pages)')
+            result['is_risky'] = True
+        
+        # 4. File size per page (rough indicator of complexity)
+        file_size_mb = len(pdf_content) / (1024 * 1024)
+        mb_per_page = file_size_mb / num_pages if num_pages > 0 else 0
+        if mb_per_page > 2.0:  # More than 2MB per page is heavy
+            result['risk_factors'].append(f'High density ({mb_per_page:.1f} MB/page)')
+            result['is_risky'] = True
+        
+        # Determine recommended chunking based on risk
+        if result['is_risky']:
+            if num_pages <= 10:
+                # Small risky PDFs: per-page splitting
+                result['recommended_pages_per_chunk'] = 1
+            elif num_pages <= 20:
+                # Medium risky PDFs: 2 pages per chunk
+                result['recommended_pages_per_chunk'] = 2
+            else:
+                # Larger risky PDFs: 5 pages per chunk
+                result['recommended_pages_per_chunk'] = 5
+        
+        if result['risk_factors']:
+            print(f'Filename - {filename} | PRE-SCAN: Risky PDF detected - {", ".join(result["risk_factors"])}')
+            print(f'Filename - {filename} | PRE-SCAN: Recommending {result["recommended_pages_per_chunk"]} pages per chunk')
+        
+    except Exception as e:
+        print(f'Filename - {filename} | PRE-SCAN: Error during analysis: {e}')
+        # On error, don't change defaults
+    
+    return result
 
 def log_chunk_created(filename):
     """
@@ -187,13 +316,18 @@ def lambda_handler(event, context):
     """
     AWS Lambda function to handle S3 events and split uploaded PDF files into chunks.
 
-    This function is triggered when a PDF file is uploaded to an S3 bucket. It downloads the 
-    file from S3, splits the PDF into chunks (based on a page size), uploads each chunk back 
-    to S3, and starts an AWS Step Functions execution to process the chunks. The function 
-    also logs the processing status of each chunk.
+    This function is triggered when a PDF file is uploaded to an S3 bucket. It:
+    1. Downloads the PDF from S3
+    2. Pre-scans the PDF to detect risky characteristics (large images, unusual dimensions, etc.)
+    3. Determines optimal chunk size based on pre-scan results AND retry status
+    4. Splits the PDF into chunks and uploads them to S3
+    5. Starts a Step Functions execution to process the chunks
     
-    For retry attempts (detected via S3 metadata 'retry-count'), uses more aggressive splitting
-    to maximize success chances for previously failed PDFs.
+    Splitting strategy uses the MORE AGGRESSIVE (smaller) of:
+    - Pre-scan recommendation: Based on PDF characteristics detected during analysis
+    - Retry recommendation: Based on previous failure attempts (via S3 metadata 'retry-count')
+    
+    This proactive approach avoids wasted processing time on PDFs likely to fail.
 
     Parameters:
         event (dict): The S3 event that triggered the Lambda function, containing the S3 bucket 
@@ -234,12 +368,38 @@ def lambda_handler(event, context):
         response = s3.get_object(Bucket=bucket_name, Key=pdf_file_key)
         print(f'Filename - {pdf_file_key} | The response is: {response}')
         pdf_file_content = response['Body'].read()
+        
+        # Pre-scan PDF for risk factors that may cause Adobe API failures
+        # This detects large images, unusual dimensions, image-heavy docs, mixed page sizes
+        prescan_result = prescan_pdf_for_risk(pdf_file_content, pdf_file_key)
+        prescan_pages_per_chunk = prescan_result['recommended_pages_per_chunk']
+        
+        # Determine final pages_per_chunk: use the MORE AGGRESSIVE (smaller) of:
+        # 1. Pre-scan recommendation (based on PDF characteristics)
+        # 2. Retry-based recommendation (based on previous failures)
+        default_pages_per_chunk = 90
+        
+        # Calculate retry-based recommendation
+        if retry_count > 0:
+            num_pages = prescan_result['page_count']
+            if num_pages <= 10:
+                retry_pages_per_chunk = 1
+            else:
+                retry_pages_per_chunk = 5
+        else:
+            retry_pages_per_chunk = default_pages_per_chunk
+        
+        # Use the more aggressive (smaller) value
+        final_pages_per_chunk = min(prescan_pages_per_chunk, retry_pages_per_chunk)
+        
+        if prescan_result['is_risky'] or retry_count > 0:
+            print(f'Filename - {pdf_file_key} | SPLITTING DECISION: prescan={prescan_pages_per_chunk}, retry={retry_pages_per_chunk}, final={final_pages_per_chunk}')
   
         # Split the PDF into pages and upload them to S3
-        # Uses both page count (90 max) AND file size (95MB max) limits
+        # Uses both page count AND file size (95MB max) limits
         # Adobe API limit is 104MB, we use 95MB for safety margin
-        # For retries, uses more aggressive splitting (per-page for small PDFs)
-        chunks = split_pdf_into_pages(pdf_file_content, pdf_file_key, s3, bucket_name, 90, max_chunk_size_mb=95, retry_count=retry_count)
+        # Note: retry_count=0 passed since we already calculated final_pages_per_chunk above
+        chunks = split_pdf_into_pages(pdf_file_content, pdf_file_key, s3, bucket_name, final_pages_per_chunk, max_chunk_size_mb=95, retry_count=0)
         
         log_chunk_created(file_basename)
 
@@ -250,10 +410,15 @@ def lambda_handler(event, context):
                 "chunks": chunks, 
                 "s3_bucket": bucket_name,
                 "original_pdf_key": pdf_file_key,
-                "retry_count": retry_count
+                "retry_count": retry_count,
+                "prescan": {
+                    "is_risky": prescan_result['is_risky'],
+                    "risk_factors": prescan_result['risk_factors'],
+                    "pages_per_chunk": final_pages_per_chunk
+                }
             })
         )
-        print(f"Filename - {pdf_file_key} | Step Function started: {response['executionArn']} | retry_count: {retry_count}")
+        print(f"Filename - {pdf_file_key} | Step Function started: {response['executionArn']} | retry_count: {retry_count} | risky: {prescan_result['is_risky']} | pages_per_chunk: {final_pages_per_chunk}")
 
     except KeyError as e:
  
