@@ -12,6 +12,7 @@ the slot was released.
 import json
 import os
 import logging
+import re
 import boto3
 from datetime import datetime, timezone, timedelta
 from io import BytesIO
@@ -31,6 +32,59 @@ RATE_LIMIT_TABLE = os.environ.get('RATE_LIMIT_TABLE', 'adobe-api-in-flight-track
 
 # Prefix for individual file tracking entries (must match rate_limiter.py)
 IN_FLIGHT_FILE_PREFIX = "file_"
+
+
+def parse_adobe_error(original_error: str) -> dict:
+    """
+    Parse Adobe API error message to extract structured fields.
+    
+    Example error formats:
+    - "ServiceApiException: description='Bad Request.'; requestTrackingId='...'; statusCode=400; errorCode=BAD_REQUEST"
+    - "ServiceApiException [message=An Internal Server Error...; httpStatusCode=500, errorCode=INTERNAL_SERVER_ERROR]"
+    - "Adobe Autotag API failed: ServiceApiException: description='...'"
+    - "Adobe Extract API failed: ServiceApiException: description='...'"
+    
+    Returns:
+        dict with 'api_name', 'description', 'status_code', 'error_code' keys
+    """
+    result = {
+        'api_name': '',
+        'description': '',
+        'status_code': '',
+        'error_code': ''
+    }
+    
+    if not original_error:
+        return result
+    
+    # Extract API name from "Adobe Autotag API failed:" or "Adobe Extract API failed:"
+    api_match = re.search(r'Adobe\s+(Autotag|Extract)\s+API\s+failed', original_error, re.IGNORECASE)
+    if api_match:
+        api_type = api_match.group(1).capitalize()
+        result['api_name'] = f"Adobe {api_type} API"
+    
+    # Try to extract description - multiple formats
+    # Format 1: description='...'
+    desc_match = re.search(r"description\s*=\s*['\"]([^'\"]+)['\"]", original_error, re.IGNORECASE)
+    if desc_match:
+        result['description'] = desc_match.group(1)
+    else:
+        # Format 2: message=...;
+        msg_match = re.search(r"message\s*=\s*([^;]+)", original_error, re.IGNORECASE)
+        if msg_match:
+            result['description'] = msg_match.group(1).strip()
+    
+    # Extract statusCode or httpStatusCode
+    status_match = re.search(r"(?:statusCode|httpStatusCode)\s*=\s*(\d+)", original_error, re.IGNORECASE)
+    if status_match:
+        result['status_code'] = status_match.group(1)
+    
+    # Extract errorCode
+    error_code_match = re.search(r"errorCode\s*=\s*([A-Z_]+)", original_error, re.IGNORECASE)
+    if error_code_match:
+        result['error_code'] = error_code_match.group(1)
+    
+    return result
 
 
 def scan_all_items(table):
@@ -146,7 +200,7 @@ def create_excel_report(items: list) -> bytes:
     ws = wb.active
     ws.title = "Failure Analysis"
     
-    # Define headers - added timing columns and crash details
+    # Define headers - includes parsed error fields and timing columns
     headers = [
         'Filename',
         'S3 Key',
@@ -166,6 +220,10 @@ def create_excel_report(items: list) -> bytes:
         'PDF Version',
         'Likely Cause',
         'Issue Count',
+        'Error API',
+        'Error Description',
+        'Error Status Code',
+        'Error Code',
         'Original Error'
     ]
     
@@ -220,6 +278,10 @@ def create_excel_report(items: list) -> bytes:
             except Exception:
                 pass
         
+        # Parse Adobe error message for structured fields
+        original_error = item.get('original_error', '')
+        parsed_error = parse_adobe_error(original_error)
+        
         row_data = [
             item.get('filename', ''),
             item.get('s3_key', ''),
@@ -239,7 +301,11 @@ def create_excel_report(items: list) -> bytes:
             item.get('pdf_version', ''),
             item.get('likely_cause', ''),
             item.get('issue_count', 0),
-            item.get('original_error', '')[:500]  # Truncate long errors
+            parsed_error['api_name'],
+            parsed_error['description'],
+            parsed_error['status_code'],
+            parsed_error['error_code'],
+            original_error[:500]  # Truncate long errors
         ]
         
         for col, value in enumerate(row_data, 1):
@@ -251,7 +317,7 @@ def create_excel_report(items: list) -> bytes:
                 cell.fill = crash_fill
     
     # Auto-adjust column widths - updated for new columns
-    column_widths = [30, 50, 25, 12, 25, 25, 12, 10, 40, 10, 12, 12, 12, 12, 10, 12, 50, 12, 60]
+    column_widths = [30, 50, 25, 12, 25, 25, 12, 10, 40, 10, 12, 12, 12, 12, 10, 12, 50, 12, 20, 40, 12, 25, 60]
     for col, width in enumerate(column_widths, 1):
         ws.column_dimensions[get_column_letter(col)].width = width
     

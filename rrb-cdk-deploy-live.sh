@@ -1,5 +1,46 @@
 #!/bin/bash
 
+# Function to play completion notification
+notify_completion() {
+    local status=$1
+    local message=$2
+    
+    # Try text-to-speech first (spd-say is common on Linux)
+    if command -v spd-say &> /dev/null; then
+        spd-say "$message" 2>/dev/null &
+    elif command -v espeak &> /dev/null; then
+        espeak "$message" 2>/dev/null &
+    elif command -v say &> /dev/null; then
+        # macOS
+        say "$message" 2>/dev/null &
+    fi
+    
+    # Also try terminal bell as backup
+    echo -e '\a'
+    
+    # Play a sound file if available (Linux)
+    if [ "$status" = "success" ]; then
+        # Try common success sound locations
+        for sound in /usr/share/sounds/freedesktop/stereo/complete.oga \
+                     /usr/share/sounds/gnome/default/alerts/glass.ogg \
+                     /usr/share/sounds/ubuntu/stereo/message.ogg; do
+            if [ -f "$sound" ]; then
+                paplay "$sound" 2>/dev/null &
+                break
+            fi
+        done
+    else
+        # Try common error sound locations
+        for sound in /usr/share/sounds/freedesktop/stereo/dialog-error.oga \
+                     /usr/share/sounds/gnome/default/alerts/bark.ogg; do
+            if [ -f "$sound" ]; then
+                paplay "$sound" 2>/dev/null &
+                break
+            fi
+        done
+    fi
+}
+
 echo "Checking AWS identity..."
 echo ""
 aws sts get-caller-identity
@@ -25,10 +66,26 @@ docker system prune -af 2>/dev/null || true
 echo ""
 echo "Starting CDK deployment with forced image rebuild..."
 echo "Build timestamp will be embedded in Docker image to ensure new code is deployed."
+
+# Run CDK deploy and capture exit code
 cdk deploy PDFAccessibility -c source_bucket=pdfaccessibility-pdfaccessibilitybucket149b7021e-tcuthkjujq0m -c destination_bucket=usflibraries-pdfaccessibility-live-public --require-approval never --force
+CDK_EXIT_CODE=$?
 
 echo ""
 echo "Deployment completed at: $(date '+%Y-%m-%d %H:%M:%S')"
+
+# Notify based on success/failure
+if [ $CDK_EXIT_CODE -eq 0 ]; then
+    echo ""
+    echo "✅ LIVE deployment SUCCEEDED!"
+    notify_completion "success" "Live deployment completed successfully"
+else
+    echo ""
+    echo "❌ LIVE deployment FAILED with exit code $CDK_EXIT_CODE"
+    notify_completion "failure" "Live deployment failed"
+    exit $CDK_EXIT_CODE
+fi
+
 echo ""
 echo "IMPORTANT: After deployment, verify the new image is running:"
 echo "1. Check ECR for new image with recent timestamp"
