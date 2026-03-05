@@ -172,11 +172,16 @@ s3 = boto3.client('s3')
 lambda_client = boto3.client('lambda')
 
 
-def invoke_failure_analysis(bucket: str, key: str, filename: str, error: str, api_type: str):
+def invoke_failure_analysis(bucket: str, key: str, filename: str, error: str, api_type: str, 
+                            started_at: str = None):
     """
     Invoke the PDF failure analysis Lambda to analyze why a PDF failed.
     
     Skips invocation for rate limit errors (429) as those are transient.
+    
+    Timing data is passed to the failure analysis lambda so it can be stored
+    permanently in the failure analysis table. This ensures timing data is
+    available even after the in-flight tracker entries expire.
     
     Args:
         bucket: S3 bucket containing the PDF
@@ -184,6 +189,7 @@ def invoke_failure_analysis(bucket: str, key: str, filename: str, error: str, ap
         filename: Local filename
         error: Error message from the Adobe API
         api_type: Type of API that failed ('autotag' or 'extract')
+        started_at: ISO timestamp when the API call started (from rate limiter)
     """
     error_str = str(error)
     
@@ -193,12 +199,18 @@ def invoke_failure_analysis(bucket: str, key: str, filename: str, error: str, ap
         return
     
     try:
+        # Capture failure timestamp
+        from datetime import datetime, timezone
+        failed_at = datetime.now(timezone.utc).isoformat()
+        
         payload = {
             'bucket': bucket,
             'key': key,
             'filename': filename,
             'original_error': error_str,
-            'api_type': api_type
+            'api_type': api_type,
+            'started_at': started_at,
+            'failed_at': failed_at
         }
         
         lambda_client.invoke(
@@ -206,7 +218,7 @@ def invoke_failure_analysis(bucket: str, key: str, filename: str, error: str, ap
             InvocationType='Event',  # Async invocation
             Payload=json.dumps(payload)
         )
-        logging.info(f'Filename : {filename} | Invoked failure analysis Lambda')
+        logging.info(f'Filename : {filename} | Invoked failure analysis Lambda with timing data')
     except Exception as e:
         logging.warning(f'Filename : {filename} | Failed to invoke failure analysis: {e}')
 
@@ -340,6 +352,10 @@ def autotag_pdf_with_options(filename, client_id, client_secret, s3_bucket=None,
         if not acquire_slot('autotag', filename=filename):
             raise RuntimeError(f"Failed to acquire rate limit slot for autotag API call")
         
+        # Capture started_at timestamp for failure analysis (stored permanently)
+        from datetime import datetime, timezone
+        started_at = datetime.now(timezone.utc).isoformat()
+        
         usage = get_current_usage()
         logging.info(f'Filename : {filename} | In-flight status: {usage["in_flight"]}/{usage["max_in_flight"]} ({usage["utilization_pct"]}% utilized)')
         
@@ -437,14 +453,14 @@ def autotag_pdf_with_options(filename, client_id, client_secret, s3_bucket=None,
                     # Max retries exceeded
                     logging.error(f'Filename : {filename} | Max 429 retries ({MAX_429_RETRIES}) exceeded')
                     if s3_bucket and s3_key:
-                        invoke_failure_analysis(s3_bucket, s3_key, filename, e, 'autotag')
+                        invoke_failure_analysis(s3_bucket, s3_key, filename, e, 'autotag', started_at=started_at)
                     raise RuntimeError(f"Max 429 retries exceeded for autotag API call: {e}")
             else:
                 # Non-429 error - don't retry
                 logging.error(f'Filename : {filename} | Adobe Autotag API failed: {e}')
                 custom_cw_logger.log_adobe_api_error(filename, api_type="autotag", error=e)
                 if s3_bucket and s3_key:
-                    invoke_failure_analysis(s3_bucket, s3_key, filename, e, 'autotag')
+                    invoke_failure_analysis(s3_bucket, s3_key, filename, e, 'autotag', started_at=started_at)
                 raise  # Re-raise to stop the container
         finally:
             # CRITICAL: Always release the slot if we haven't already (for non-429 errors)
@@ -496,6 +512,10 @@ def extract_api(filename, client_id, client_secret, s3_bucket=None, s3_key=None)
         logging.info(f'Filename : {filename} | Waiting for rate limit slot (extract)...')
         if not acquire_slot('extract', filename=filename):
             raise RuntimeError(f"Failed to acquire rate limit slot for extract API call")
+        
+        # Capture started_at timestamp for failure analysis (stored permanently)
+        from datetime import datetime, timezone
+        started_at = datetime.now(timezone.utc).isoformat()
         
         usage = get_current_usage()
         logging.info(f'Filename : {filename} | In-flight status: {usage["in_flight"]}/{usage["max_in_flight"]} ({usage["utilization_pct"]}% utilized)')
@@ -586,14 +606,14 @@ def extract_api(filename, client_id, client_secret, s3_bucket=None, s3_key=None)
                     # Max retries exceeded
                     logging.error(f'Filename : {filename} | Max 429 retries ({MAX_429_RETRIES}) exceeded')
                     if s3_bucket and s3_key:
-                        invoke_failure_analysis(s3_bucket, s3_key, filename, e, 'extract')
+                        invoke_failure_analysis(s3_bucket, s3_key, filename, e, 'extract', started_at=started_at)
                     raise RuntimeError(f"Max 429 retries exceeded for extract API call: {e}")
             else:
                 # Non-429 error - don't retry
                 logging.error(f'Filename : {filename} | Adobe Extract API failed: {e}')
                 custom_cw_logger.log_adobe_api_error(filename, api_type="extract", error=e)
                 if s3_bucket and s3_key:
-                    invoke_failure_analysis(s3_bucket, s3_key, filename, e, 'extract')
+                    invoke_failure_analysis(s3_bucket, s3_key, filename, e, 'extract', started_at=started_at)
                 raise  # Re-raise to stop the container
         finally:
             # CRITICAL: Always release the slot if we haven't already (for non-429 errors)

@@ -585,7 +585,7 @@ def _track_file_in_flight(table, filename: str, api_type: str):
                 'filename': os.path.basename(filename),
                 'api_type': api_type,
                 'started_at': datetime.now(timezone.utc).isoformat(),
-                'ttl': int(time.time()) + 3600  # Auto-expire after 1 hour as safety net
+                'ttl': int(time.time()) + 86400  # Auto-expire after 24 hours (was 1 hour)
             }
         )
         logger.debug(f"Tracked file in-flight: {filename} ({api_type})")

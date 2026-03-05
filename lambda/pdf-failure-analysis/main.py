@@ -178,8 +178,12 @@ def create_docx_report(log_entry: dict, result: AnalysisResult) -> bytes:
     return buffer.getvalue()
 
 
-def save_to_dynamodb(log_entry: dict, result: AnalysisResult) -> bool:
-    """Save analysis data to DynamoDB table."""
+def save_to_dynamodb(log_entry: dict, result: AnalysisResult, started_at: str = None, failed_at: str = None) -> bool:
+    """Save analysis data to DynamoDB table.
+    
+    Timing data (started_at, failed_at) is stored permanently so it's available
+    even after the in-flight tracker entries expire.
+    """
     if not ANALYSIS_TABLE:
         logger.warning("ANALYSIS_TABLE not configured, skipping DynamoDB save")
         return False
@@ -212,8 +216,14 @@ def save_to_dynamodb(log_entry: dict, result: AnalysisResult) -> bool:
             'analysis_error': result.analysis_error or ''
         }
         
+        # Add timing data if provided (stored permanently for failure analysis reports)
+        if started_at:
+            item['started_at'] = started_at
+        if failed_at:
+            item['failed_at'] = failed_at
+        
         table.put_item(Item=item)
-        logger.info(f"Saved analysis data to DynamoDB: {log_entry['s3_key']}")
+        logger.info(f"Saved analysis data to DynamoDB: {log_entry['s3_key']} (started_at: {started_at}, failed_at: {failed_at})")
         return True
         
     except Exception as e:
@@ -231,7 +241,9 @@ def lambda_handler(event, context):
         "key": "path/to/file.pdf",
         "filename": "file.pdf",
         "original_error": "ServiceApiException: ...",
-        "api_type": "autotag" | "extract"
+        "api_type": "autotag" | "extract",
+        "started_at": "2026-03-05T15:00:00+00:00",  # Optional: when API call started
+        "failed_at": "2026-03-05T15:02:39+00:00"    # Optional: when failure occurred
     }
     
     Can also be triggered via SNS/EventBridge with the payload in the message body.
@@ -252,6 +264,8 @@ def lambda_handler(event, context):
     filename = event.get('filename', os.path.basename(key) if key else 'unknown.pdf')
     original_error = event.get('original_error', 'Unknown error')
     api_type = event.get('api_type', 'unknown')
+    started_at = event.get('started_at')  # Timing data from container
+    failed_at = event.get('failed_at')    # Timing data from container
     
     if not bucket or not key:
         logger.error("Missing required parameters: bucket and key")
@@ -336,8 +350,8 @@ def lambda_handler(event, context):
         except Exception as e:
             logger.warning(f"Failed to save Word report to S3: {e}")
     
-    # Save analysis data to DynamoDB
-    save_to_dynamodb(log_entry, result)
+    # Save analysis data to DynamoDB (includes timing data for permanent storage)
+    save_to_dynamodb(log_entry, result, started_at=started_at, failed_at=failed_at)
     
     return {
         'statusCode': 200,

@@ -4,9 +4,9 @@ Failure Analysis Report Generator Lambda
 Generates an Excel spreadsheet from PDF failure analysis data stored in DynamoDB.
 Scheduled to run daily at 11:30 PM EST via EventBridge.
 
-Also pulls in timing data (started_at, released_at) from the adobe-api-in-flight-tracker
-table when available. Note: released_at may be missing if the container crashed before
-the slot was released.
+Timing data (started_at, failed_at) is now stored permanently in the failure analysis
+table at the moment of failure, so it doesn't depend on the in-flight tracker TTL.
+Falls back to in-flight tracker for older entries that don't have timing data.
 """
 
 import json
@@ -268,7 +268,8 @@ def create_excel_report(items: list) -> bytes:
         # Calculate duration if both timestamps exist
         duration = ''
         started_at = item.get('started_at', '')
-        released_at = item.get('released_at', '')
+        # Use failed_at if available (new approach), otherwise use released_at
+        released_at = item.get('failed_at', '') or item.get('released_at', '')
         crashed = item.get('crashed', False)
         
         if started_at and released_at:
@@ -372,16 +373,30 @@ def handler(event, context):
             'body': json.dumps({'message': 'No analysis data found'})
         }
     
-    # Enrich items with timing data from in-flight tracker
-    logger.info(f"Enriching items with timing data from {RATE_LIMIT_TABLE}")
+    # Enrich items with timing data
+    # Priority: 1) Use timing data stored in failure analysis table (permanent)
+    #           2) Fall back to in-flight tracker (may have expired)
+    logger.info(f"Enriching items with timing data")
     for item in items:
         filename = item.get('filename', '')
         api_type = item.get('api_type', '')
         
-        if filename:
+        # Check if timing data is already in the failure analysis record (new approach)
+        started_at = item.get('started_at', '')
+        failed_at = item.get('failed_at', '')
+        
+        if started_at and failed_at:
+            # Use timing data from failure analysis table (permanent storage)
+            item['released_at'] = failed_at  # Use failed_at as released_at for consistency
+            item['crashed'] = True  # If we have failure analysis, it was a failure
+            logger.debug(f"Using timing data from failure analysis table for {filename}")
+        elif filename:
+            # Fall back to in-flight tracker for older entries
             timing_data = get_in_flight_timing_data(filename, api_type)
-            item['started_at'] = timing_data.get('started_at', '')
-            item['released_at'] = timing_data.get('released_at', '')
+            if not started_at:
+                item['started_at'] = timing_data.get('started_at', '')
+            if not item.get('released_at'):
+                item['released_at'] = timing_data.get('released_at', '')
             item['crashed'] = timing_data.get('crashed', False)
             item['crashed_at'] = timing_data.get('crashed_at', '')
             item['crash_details'] = timing_data.get('crash_details')
