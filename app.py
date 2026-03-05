@@ -1169,13 +1169,15 @@ class PDFAccessibility(Stack):
             architecture=lambda_arch,
             environment={
                 "ANALYSIS_TABLE": pdf_failure_analysis_table.table_name,
-                "REPORT_BUCKET": pdf_processing_bucket.bucket_name
+                "REPORT_BUCKET": pdf_processing_bucket.bucket_name,
+                "RATE_LIMIT_TABLE": adobe_rate_limit_table.table_name
             }
         )
         
         # Grant permissions
         pdf_failure_analysis_table.grant_read_data(failure_analysis_report_lambda)
         pdf_processing_bucket.grant_write(failure_analysis_report_lambda, "reports/failure_analysis_summary/*")
+        adobe_rate_limit_table.grant_read_data(failure_analysis_report_lambda)  # For timing data lookup
         
         # Schedule to run daily at 11:30 PM EST (4:30 AM UTC next day)
         events.Rule(
