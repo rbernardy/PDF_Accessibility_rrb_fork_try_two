@@ -44,12 +44,15 @@ def log_chunk_created(filename):
         'body': 'Metric status updated to failed.'
     }
 
-def split_pdf_into_pages(source_content, original_key, s3_client, bucket_name, pages_per_chunk, max_chunk_size_mb=95):
+def split_pdf_into_pages(source_content, original_key, s3_client, bucket_name, pages_per_chunk, max_chunk_size_mb=95, is_retry=False):
     """
     Splits a PDF file into chunks based on page count AND file size limits.
     
     Adobe API has a 104MB limit, so we use 95MB as a safe threshold.
     If a chunk exceeds the size limit, it's automatically split into smaller pieces.
+    
+    For retry attempts (is_retry=True) with small PDFs (≤10 pages), uses per-page
+    splitting to maximize chances of success for previously failed files.
     
     Parameters:
         source_content (bytes): The binary content of the PDF file.
@@ -58,6 +61,7 @@ def split_pdf_into_pages(source_content, original_key, s3_client, bucket_name, p
         bucket_name (str): The name of the S3 bucket.
         pages_per_chunk (int): The maximum number of pages per chunk.
         max_chunk_size_mb (int): Maximum chunk size in MB (default 95MB, Adobe limit is 104MB).
+        is_retry (bool): Whether this is a retry attempt for a previously failed PDF.
 
     Returns:
         list: A list of dictionaries containing metadata for each uploaded chunk.
@@ -69,6 +73,17 @@ def split_pdf_into_pages(source_content, original_key, s3_client, bucket_name, p
     reader = PdfReader(io.BytesIO(source_content))
     num_pages = len(reader.pages)
     file_basename = original_key.split('/')[-1].rsplit('.', 1)[0]
+    
+    # For retry attempts with small PDFs, use per-page splitting
+    # This maximizes success chances for previously failed files
+    RETRY_PAGE_THRESHOLD = 10
+    if is_retry and num_pages <= RETRY_PAGE_THRESHOLD:
+        pages_per_chunk = 1
+        print(f'Filename - {file_basename} | RETRY MODE: Using per-page splitting for {num_pages}-page PDF')
+    elif is_retry:
+        # For larger retry PDFs, use smaller chunks but not necessarily per-page
+        pages_per_chunk = min(pages_per_chunk, 5)
+        print(f'Filename - {file_basename} | RETRY MODE: Using {pages_per_chunk} pages per chunk for {num_pages}-page PDF')
     
     # Preserve the full original path
     original_pdf_key = original_key
@@ -174,6 +189,9 @@ def lambda_handler(event, context):
     file from S3, splits the PDF into chunks (based on a page size), uploads each chunk back 
     to S3, and starts an AWS Step Functions execution to process the chunks. The function 
     also logs the processing status of each chunk.
+    
+    For retry attempts (detected via S3 metadata 'is-retry'), uses more aggressive splitting
+    to maximize success chances for previously failed PDFs.
 
     Parameters:
         event (dict): The S3 event that triggered the Lambda function, containing the S3 bucket 
@@ -199,6 +217,17 @@ def lambda_handler(event, context):
         s3 = boto3.client('s3')
         stepfunctions = boto3.client('stepfunctions')
 
+        # Check if this is a retry attempt by reading S3 object metadata
+        is_retry = False
+        try:
+            head_response = s3.head_object(Bucket=bucket_name, Key=pdf_file_key)
+            metadata = head_response.get('Metadata', {})
+            is_retry = metadata.get('is-retry', '').lower() == 'true'
+            if is_retry:
+                print(f'Filename - {pdf_file_key} | RETRY DETECTED via S3 metadata')
+        except Exception as e:
+            print(f'Filename - {pdf_file_key} | Could not read metadata: {e}')
+
         # Get the PDF file from S3
         response = s3.get_object(Bucket=bucket_name, Key=pdf_file_key)
         print(f'Filename - {pdf_file_key} | The response is: {response}')
@@ -207,7 +236,8 @@ def lambda_handler(event, context):
         # Split the PDF into pages and upload them to S3
         # Uses both page count (90 max) AND file size (95MB max) limits
         # Adobe API limit is 104MB, we use 95MB for safety margin
-        chunks = split_pdf_into_pages(pdf_file_content, pdf_file_key, s3, bucket_name, 90, max_chunk_size_mb=95)
+        # For retries, uses more aggressive splitting (per-page for small PDFs)
+        chunks = split_pdf_into_pages(pdf_file_content, pdf_file_key, s3, bucket_name, 90, max_chunk_size_mb=95, is_retry=is_retry)
         
         log_chunk_created(file_basename)
 
@@ -217,10 +247,11 @@ def lambda_handler(event, context):
             input=json.dumps({
                 "chunks": chunks, 
                 "s3_bucket": bucket_name,
-                "original_pdf_key": pdf_file_key
+                "original_pdf_key": pdf_file_key,
+                "is_retry": is_retry
             })
         )
-        print(f"Filename - {pdf_file_key} | Step Function started: {response['executionArn']}")
+        print(f"Filename - {pdf_file_key} | Step Function started: {response['executionArn']} | is_retry: {is_retry}")
 
     except KeyError as e:
  
