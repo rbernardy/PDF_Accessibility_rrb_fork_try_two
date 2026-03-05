@@ -239,8 +239,7 @@ def move_file_to_pdf_folder(bucket: str, source_key: str, source_prefix: str) ->
         queue/collection-A/doc1.pdf -> pdf/collection-A/doc1.pdf
         retry/collection-A/doc1.pdf -> pdf/collection-A/doc1.pdf
     
-    For retry files, adds metadata 'x-amz-meta-is-retry: true' so the splitter
-    can use more aggressive splitting (per-page) for previously failed PDFs.
+    Preserves S3 metadata (including retry-count) so the splitter can detect retries.
     
     Returns the new pdf key if successful, None otherwise.
     """
@@ -252,25 +251,23 @@ def move_file_to_pdf_folder(bucket: str, source_key: str, source_prefix: str) ->
     relative_path = source_key[len(source_prefix):]
     pdf_key = f"pdf/{relative_path}"
     
-    # Determine if this is a retry
-    is_retry = source_prefix == 'retry/'
-    
     try:
-        # Build copy arguments
-        copy_args = {
-            'Bucket': bucket,
-            'CopySource': {'Bucket': bucket, 'Key': source_key},
-            'Key': pdf_key
-        }
+        # Get existing metadata from source file
+        head_response = s3.head_object(Bucket=bucket, Key=source_key)
+        existing_metadata = head_response.get('Metadata', {})
         
-        # Add retry metadata if coming from retry folder
-        if is_retry:
-            copy_args['Metadata'] = {'is-retry': 'true'}
-            copy_args['MetadataDirective'] = 'REPLACE'
-            logger.info(f"Adding is-retry metadata for retry file: {source_key}")
+        retry_count = existing_metadata.get('retry-count', '0')
+        if int(retry_count) > 0:
+            logger.info(f"Preserving retry-count={retry_count} for {source_key}")
         
-        # Copy to pdf folder
-        s3.copy_object(**copy_args)
+        # Copy to pdf folder, preserving metadata
+        s3.copy_object(
+            Bucket=bucket,
+            CopySource={'Bucket': bucket, 'Key': source_key},
+            Key=pdf_key,
+            Metadata=existing_metadata,
+            MetadataDirective='REPLACE'  # Use REPLACE with the same metadata to preserve it
+        )
         logger.info(f"Copied s3://{bucket}/{source_key} to s3://{bucket}/{pdf_key}")
         
         # Delete from source folder
