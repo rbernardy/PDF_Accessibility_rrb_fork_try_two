@@ -141,12 +141,32 @@ def prescan_pdf_for_risk(pdf_content: bytes, filename: str) -> dict:
                 # Larger risky PDFs: 5 pages per chunk
                 result['recommended_pages_per_chunk'] = 5
         
+        # Store analysis details for logging
+        result['analysis_details'] = {
+            'page_sizes_found': list(page_sizes),
+            'large_page_count': large_page_count,
+            'total_images': total_images,
+            'images_per_page': round(images_per_page, 2),
+            'file_size_mb': round(file_size_mb, 2),
+            'mb_per_page': round(mb_per_page, 2)
+        }
+        
+        # Always log the full pre-scan report
+        print(f'Filename - {filename} | PRE-SCAN REPORT:')
+        print(f'Filename - {filename} |   - Pages: {num_pages}')
+        print(f'Filename - {filename} |   - File size: {file_size_mb:.2f} MB ({mb_per_page:.2f} MB/page)')
+        print(f'Filename - {filename} |   - Page sizes found: {len(page_sizes)} unique sizes: {list(page_sizes)[:5]}{"..." if len(page_sizes) > 5 else ""}')
+        print(f'Filename - {filename} |   - Large pages (>{LARGE_DIMENSION_THRESHOLD}pt): {large_page_count}')
+        print(f'Filename - {filename} |   - Images detected: {total_images} ({images_per_page:.1f} per page)')
+        print(f'Filename - {filename} |   - Risk assessment: {"RISKY" if result["is_risky"] else "NORMAL"}')
         if result['risk_factors']:
-            print(f'Filename - {filename} | PRE-SCAN: Risky PDF detected - {", ".join(result["risk_factors"])}')
-            print(f'Filename - {filename} | PRE-SCAN: Recommending {result["recommended_pages_per_chunk"]} pages per chunk')
+            print(f'Filename - {filename} |   - Risk factors: {", ".join(result["risk_factors"])}')
+        print(f'Filename - {filename} |   - Recommended pages/chunk: {result["recommended_pages_per_chunk"]}')
         
     except Exception as e:
         print(f'Filename - {filename} | PRE-SCAN: Error during analysis: {e}')
+        import traceback
+        traceback.print_exc()
         # On error, don't change defaults
     
     return result
@@ -392,14 +412,22 @@ def lambda_handler(event, context):
         # Use the more aggressive (smaller) value
         final_pages_per_chunk = min(prescan_pages_per_chunk, retry_pages_per_chunk)
         
-        if prescan_result['is_risky'] or retry_count > 0:
-            print(f'Filename - {pdf_file_key} | SPLITTING DECISION: prescan={prescan_pages_per_chunk}, retry={retry_pages_per_chunk}, final={final_pages_per_chunk}')
+        # Always log the splitting decision
+        print(f'Filename - {pdf_file_key} | SPLITTING DECISION:')
+        print(f'Filename - {pdf_file_key} |   - Pre-scan recommendation: {prescan_pages_per_chunk} pages/chunk')
+        print(f'Filename - {pdf_file_key} |   - Retry recommendation: {retry_pages_per_chunk} pages/chunk (retry_count={retry_count})')
+        print(f'Filename - {pdf_file_key} |   - FINAL DECISION: {final_pages_per_chunk} pages/chunk')
+        print(f'Filename - {pdf_file_key} |   - Total pages: {prescan_result["page_count"]}')
+        print(f'Filename - {pdf_file_key} |   - Expected chunks: ~{max(1, prescan_result["page_count"] // final_pages_per_chunk)}')
   
         # Split the PDF into pages and upload them to S3
         # Uses both page count AND file size (95MB max) limits
         # Adobe API limit is 104MB, we use 95MB for safety margin
         # Note: retry_count=0 passed since we already calculated final_pages_per_chunk above
         chunks = split_pdf_into_pages(pdf_file_content, pdf_file_key, s3, bucket_name, final_pages_per_chunk, max_chunk_size_mb=95, retry_count=0)
+        
+        # Log splitting result summary
+        print(f'Filename - {pdf_file_key} | SPLITTING COMPLETE: Created {len(chunks)} chunk(s) from {prescan_result["page_count"]} pages')
         
         log_chunk_created(file_basename)
 
