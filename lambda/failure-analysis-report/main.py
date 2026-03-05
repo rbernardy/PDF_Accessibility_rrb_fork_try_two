@@ -39,9 +39,9 @@ def parse_adobe_error(original_error: str) -> dict:
     Parse Adobe API error message to extract structured fields.
     
     Example error formats:
-    - "Adobe Autotag API failed: description = Bad Request.;; requestTrackingId=...; statusCode=400; errorCode=BAD_REQUEST"
-    - "ServiceApiException: description='Bad Request.'; requestTrackingId='...'; statusCode=400; errorCode=BAD_REQUEST"
-    - "ServiceApiException [message=An Internal Server Error...; httpStatusCode=500, errorCode=INTERNAL_SERVER_ERROR]"
+    - "ECS Task Failed (adobe-autotag): ... Adobe Autotag API failed: description =An Internal Server Error has occurred.;;"
+    - "description =An Internal Server Error has occurred.;; requestTrackingId=...; statusCode=500; errorCode=INTERNAL_SERVER_ERROR"
+    - "Status: 500"
     
     Returns:
         dict with 'api_name', 'description', 'status_code', 'error_code' keys
@@ -56,14 +56,21 @@ def parse_adobe_error(original_error: str) -> dict:
     if not original_error:
         return result
     
-    # Extract API name from "Adobe Autotag API failed:" or "Adobe Extract API failed:"
+    # Extract API name - try multiple patterns
+    # Pattern 1: "Adobe Autotag API failed:" or "Adobe Extract API failed:"
     api_match = re.search(r'Adobe\s+(Autotag|Extract)\s+API\s+failed', original_error, re.IGNORECASE)
     if api_match:
         api_type = api_match.group(1).capitalize()
         result['api_name'] = f"Adobe {api_type} API"
+    else:
+        # Pattern 2: "ECS Task Failed (adobe-autotag)" or "ECS Task Failed (adobe-extract)"
+        ecs_match = re.search(r'ECS\s+Task\s+Failed\s*\(\s*adobe[_-]?(autotag|extract)\s*\)', original_error, re.IGNORECASE)
+        if ecs_match:
+            api_type = ecs_match.group(1).capitalize()
+            result['api_name'] = f"Adobe {api_type} API"
     
     # Try to extract description - multiple formats
-    # Format 1: "API failed: description = ...;;" (with space around =, ends with ;;)
+    # Format 1: "description = ...;;" (with space around =, ends with ;;)
     desc_match = re.search(r"description\s*=\s*(.+?);;", original_error, re.IGNORECASE)
     if desc_match:
         result['description'] = desc_match.group(1).strip().strip("'\"")
@@ -78,10 +85,15 @@ def parse_adobe_error(original_error: str) -> dict:
             if msg_match:
                 result['description'] = msg_match.group(1).strip()
     
-    # Extract statusCode or httpStatusCode
+    # Extract statusCode, httpStatusCode, or Status:
     status_match = re.search(r"(?:statusCode|httpStatusCode)\s*=\s*(\d+)", original_error, re.IGNORECASE)
     if status_match:
         result['status_code'] = status_match.group(1)
+    else:
+        # Try "Status: 500" format
+        status_match = re.search(r"Status:\s*(\d+)", original_error, re.IGNORECASE)
+        if status_match:
+            result['status_code'] = status_match.group(1)
     
     # Extract errorCode
     error_code_match = re.search(r"errorCode\s*=\s*([A-Z_0-9]+)", original_error, re.IGNORECASE)
