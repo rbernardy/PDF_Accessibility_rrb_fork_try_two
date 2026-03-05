@@ -39,10 +39,9 @@ def parse_adobe_error(original_error: str) -> dict:
     Parse Adobe API error message to extract structured fields.
     
     Example error formats:
+    - "Adobe Autotag API failed: description = Bad Request.;; requestTrackingId=...; statusCode=400; errorCode=BAD_REQUEST"
     - "ServiceApiException: description='Bad Request.'; requestTrackingId='...'; statusCode=400; errorCode=BAD_REQUEST"
     - "ServiceApiException [message=An Internal Server Error...; httpStatusCode=500, errorCode=INTERNAL_SERVER_ERROR]"
-    - "Adobe Autotag API failed: ServiceApiException: description='...'"
-    - "Adobe Extract API failed: ServiceApiException: description='...'"
     
     Returns:
         dict with 'api_name', 'description', 'status_code', 'error_code' keys
@@ -64,15 +63,20 @@ def parse_adobe_error(original_error: str) -> dict:
         result['api_name'] = f"Adobe {api_type} API"
     
     # Try to extract description - multiple formats
-    # Format 1: description='...'
-    desc_match = re.search(r"description\s*=\s*['\"]([^'\"]+)['\"]", original_error, re.IGNORECASE)
+    # Format 1: "API failed: description = ...;;" (with space around =, ends with ;;)
+    desc_match = re.search(r"description\s*=\s*(.+?);;", original_error, re.IGNORECASE)
     if desc_match:
-        result['description'] = desc_match.group(1)
+        result['description'] = desc_match.group(1).strip().strip("'\"")
     else:
-        # Format 2: message=...;
-        msg_match = re.search(r"message\s*=\s*([^;]+)", original_error, re.IGNORECASE)
-        if msg_match:
-            result['description'] = msg_match.group(1).strip()
+        # Format 2: description='...' or description="..."
+        desc_match = re.search(r"description\s*=\s*['\"]([^'\"]+)['\"]", original_error, re.IGNORECASE)
+        if desc_match:
+            result['description'] = desc_match.group(1)
+        else:
+            # Format 3: message=...;
+            msg_match = re.search(r"message\s*=\s*([^;]+)", original_error, re.IGNORECASE)
+            if msg_match:
+                result['description'] = msg_match.group(1).strip()
     
     # Extract statusCode or httpStatusCode
     status_match = re.search(r"(?:statusCode|httpStatusCode)\s*=\s*(\d+)", original_error, re.IGNORECASE)
@@ -80,7 +84,7 @@ def parse_adobe_error(original_error: str) -> dict:
         result['status_code'] = status_match.group(1)
     
     # Extract errorCode
-    error_code_match = re.search(r"errorCode\s*=\s*([A-Z_]+)", original_error, re.IGNORECASE)
+    error_code_match = re.search(r"errorCode\s*=\s*([A-Z_0-9]+)", original_error, re.IGNORECASE)
     if error_code_match:
         result['error_code'] = error_code_match.group(1)
     
