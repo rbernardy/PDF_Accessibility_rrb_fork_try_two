@@ -55,19 +55,22 @@ def get_in_flight_timing_data(filename: str, api_type: str) -> dict:
     
     Note: released_at may be None if the container crashed before releasing the slot.
     In that case, the entry will have started_at but no released_at, indicating
-    the process did not complete normally.
+    the process did not complete normally. However, if the ECS task failure tracker
+    captured the crash, there will be a crashed_at timestamp instead.
     
     Args:
         filename: The PDF filename to look up
         api_type: The API type ('autotag' or 'extract')
         
     Returns:
-        dict with 'started_at', 'released_at', and 'crashed' keys
+        dict with 'started_at', 'released_at', 'crashed', 'crashed_at', and 'crash_details' keys
     """
     result = {
         'started_at': None,
         'released_at': None,
-        'crashed': False  # True if started_at exists but no released_at (container crash)
+        'crashed': False,  # True if started_at exists but no released_at (container crash)
+        'crashed_at': None,  # Timestamp from ECS task failure event
+        'crash_details': None  # Details about the crash (exit code, reason, etc.)
     }
     
     try:
@@ -114,10 +117,18 @@ def get_in_flight_timing_data(filename: str, api_type: str) -> dict:
         latest = items[0]
         result['started_at'] = latest.get('started_at')
         result['released_at'] = latest.get('released_at')
+        result['crashed_at'] = latest.get('crashed_at')
+        result['crash_details'] = latest.get('crash_details')
         
-        # Determine if this was a crash (started but never released)
-        if result['started_at'] and not result['released_at']:
-            # Check if the entry has been marked as released
+        # Determine if this was a crash
+        # crashed_at is set by the ECS task failure tracker when a container crashes
+        if result['crashed_at']:
+            result['crashed'] = True
+            # Use crashed_at as released_at if not already set
+            if not result['released_at']:
+                result['released_at'] = result['crashed_at']
+        elif result['started_at'] and not result['released_at']:
+            # No crashed_at but also no released_at - likely a crash that wasn't captured
             if not latest.get('released'):
                 result['crashed'] = True
                 logger.info(f"File {filename} appears to have crashed (started_at exists, no released_at)")
@@ -135,7 +146,7 @@ def create_excel_report(items: list) -> bytes:
     ws = wb.active
     ws.title = "Failure Analysis"
     
-    # Define headers - added timing columns
+    # Define headers - added timing columns and crash details
     headers = [
         'Filename',
         'S3 Key',
@@ -145,6 +156,8 @@ def create_excel_report(items: list) -> bytes:
         'Released At',
         'Duration (s)',
         'Crashed',
+        'Crash Reason',
+        'Exit Code',
         'File Size (MB)',
         'Page Count',
         'Image Count',
@@ -192,6 +205,21 @@ def create_excel_report(items: list) -> bytes:
             except Exception:
                 duration = ''
         
+        # Extract crash details if available
+        crash_reason = ''
+        exit_code = ''
+        crash_details = item.get('crash_details')
+        if crash_details:
+            try:
+                if isinstance(crash_details, str):
+                    details = json.loads(crash_details)
+                else:
+                    details = crash_details
+                crash_reason = details.get('stopped_reason', '') or details.get('container_reason', '')
+                exit_code = details.get('exit_code', '')
+            except Exception:
+                pass
+        
         row_data = [
             item.get('filename', ''),
             item.get('s3_key', ''),
@@ -201,6 +229,8 @@ def create_excel_report(items: list) -> bytes:
             released_at,
             duration,
             'Yes' if crashed else 'No',
+            crash_reason[:100] if crash_reason else '',  # Truncate long reasons
+            exit_code if exit_code is not None else '',
             item.get('file_size_mb', ''),
             item.get('page_count', 0),
             item.get('image_count', 0),
@@ -221,7 +251,7 @@ def create_excel_report(items: list) -> bytes:
                 cell.fill = crash_fill
     
     # Auto-adjust column widths - updated for new columns
-    column_widths = [30, 50, 25, 12, 25, 25, 12, 10, 12, 12, 12, 12, 10, 12, 50, 12, 60]
+    column_widths = [30, 50, 25, 12, 25, 25, 12, 10, 40, 10, 12, 12, 12, 12, 10, 12, 50, 12, 60]
     for col, width in enumerate(column_widths, 1):
         ws.column_dimensions[get_column_letter(col)].width = width
     
@@ -271,6 +301,8 @@ def handler(event, context):
             item['started_at'] = timing_data.get('started_at', '')
             item['released_at'] = timing_data.get('released_at', '')
             item['crashed'] = timing_data.get('crashed', False)
+            item['crashed_at'] = timing_data.get('crashed_at', '')
+            item['crash_details'] = timing_data.get('crash_details')
     
     # Sort by timestamp descending
     items.sort(key=lambda x: x.get('analysis_timestamp', ''), reverse=True)

@@ -1096,6 +1096,55 @@ class PDFAccessibility(Stack):
         reconciler_schedule.add_target(targets.LambdaFunction(in_flight_reconciler_lambda))
 
         # =============================================================================
+        # ECS Task Failure Tracker Lambda - Captures crash timestamps from ECS events
+        # =============================================================================
+        # When an ECS task crashes (OOM, error, etc.) before releasing its slot,
+        # this lambda captures the crash timestamp and details from the ECS Task
+        # State Change event and updates the in-flight tracker table.
+        
+        ecs_task_failure_tracker_lambda = lambda_.Function(
+            self, "EcsTaskFailureTrackerLambda",
+            function_name="ecs-task-failure-tracker",
+            runtime=lambda_.Runtime.PYTHON_3_12,
+            handler="main.handler",
+            code=lambda_.Code.from_asset("lambda/ecs-task-failure-tracker"),
+            memory_size=128,
+            timeout=Duration.seconds(30),
+            architecture=lambda_arch,
+            environment={
+                "RATE_LIMIT_TABLE": adobe_rate_limit_table.table_name,
+                "ECS_CLUSTER_NAME": pdf_remediation_cluster.cluster_name
+            }
+        )
+        
+        # Grant DynamoDB read/write for updating in-flight entries with crash details
+        adobe_rate_limit_table.grant_read_write_data(ecs_task_failure_tracker_lambda)
+        
+        # EventBridge rule to capture ECS task failures from our cluster
+        ecs_task_failure_rule = events.Rule(
+            self, "EcsTaskFailureRule",
+            rule_name="ecs-task-failure-tracker",
+            description="Captures ECS task crashes to record crash timestamps",
+            event_pattern=events.EventPattern(
+                source=["aws.ecs"],
+                detail_type=["ECS Task State Change"],
+                detail={
+                    "clusterArn": [pdf_remediation_cluster.cluster_arn],
+                    "lastStatus": ["STOPPED"],
+                    # Only capture tasks that stopped abnormally
+                    "stopCode": [
+                        "EssentialContainerExited",
+                        "TaskFailedToStart",
+                        "ServiceSchedulerInitiated",
+                        "SpotInterruption",
+                        "TerminationNotice"
+                    ]
+                }
+            )
+        )
+        ecs_task_failure_rule.add_target(targets.LambdaFunction(ecs_task_failure_tracker_lambda))
+
+        # =============================================================================
         # PDF Failure Analysis Lambda - Analyzes PDFs that fail Adobe API processing
         # =============================================================================
         
