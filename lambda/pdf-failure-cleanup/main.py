@@ -56,6 +56,15 @@ SSM_MAX_RETRIES_PARAM = os.environ.get('SSM_MAX_RETRIES_PARAM', '/pdf-processing
 # Failure analysis Lambda ARN (optional - for detailed diagnostics)
 FAILURE_ANALYSIS_LAMBDA_ARN = os.environ.get('FAILURE_ANALYSIS_LAMBDA_ARN', '')
 
+# Non-retryable error patterns - these should immediately fail without retry
+# These errors indicate the PDF itself is problematic, not a transient issue
+NON_RETRYABLE_ERROR_PATTERNS = [
+    "File is not suitable for conversion: File content is too complex",
+    "File content is too complex",
+    "PERMANENT FAILURE",
+    "exit code: 42",
+]
+
 # SSM client for reading parameters
 ssm = boto3.client('ssm')
 
@@ -96,6 +105,27 @@ def get_ssm_parameter(param_name: str, default: int) -> int:
 def get_max_retries() -> int:
     """Get the max retries value from SSM or environment."""
     return get_ssm_parameter(SSM_MAX_RETRIES_PARAM, MAX_RETRIES_DEFAULT)
+
+
+def is_non_retryable_error(failure_reason: str) -> bool:
+    """
+    Check if a failure reason indicates a non-retryable error.
+    
+    These are errors where retrying won't help because the PDF itself
+    is problematic (too complex, corrupted, etc.).
+    
+    Args:
+        failure_reason: The failure reason string
+        
+    Returns:
+        True if this is a non-retryable error, False otherwise
+    """
+    failure_lower = failure_reason.lower()
+    for pattern in NON_RETRYABLE_ERROR_PATTERNS:
+        if pattern.lower() in failure_lower:
+            logger.info(f"Detected non-retryable error pattern: '{pattern}'")
+            return True
+    return False
 
 
 def get_retry_count(bucket: str, pdf_key: str) -> int:
@@ -162,9 +192,9 @@ def move_pdf_to_queue_folder(bucket: str, pdf_key: str, retry_count: int) -> Opt
         return None
 
 
-def move_pdf_to_failed_folder(bucket: str, pdf_key: str, retry_count: int) -> Optional[str]:
+def move_pdf_to_failed_folder(bucket: str, pdf_key: str, retry_count: int, is_permanent_failure: bool = False) -> Optional[str]:
     """
-    Move a PDF from pdf/ to failed/ folder after max retries exceeded.
+    Move a PDF from pdf/ to failed/ folder after max retries exceeded or permanent failure.
     
     Preserves the folder structure:
         pdf/folder-name/document.pdf -> failed/folder-name/document.pdf
@@ -173,6 +203,7 @@ def move_pdf_to_failed_folder(bucket: str, pdf_key: str, retry_count: int) -> Op
         bucket: S3 bucket name
         pdf_key: Original PDF key (e.g., "pdf/folder-name/document.pdf")
         retry_count: Final retry count
+        is_permanent_failure: True if this is a non-retryable error (e.g., "too complex")
         
     Returns:
         The new failed key if successful, None otherwise
@@ -185,15 +216,24 @@ def move_pdf_to_failed_folder(bucket: str, pdf_key: str, retry_count: int) -> Op
     failed_key = 'failed/' + pdf_key[4:]  # Remove 'pdf/' prefix, add 'failed/'
     
     try:
+        # Build metadata
+        metadata = {
+            'retry-count': str(retry_count),
+            'max-retries-exceeded': 'true'
+        }
+        if is_permanent_failure:
+            metadata['permanent-failure'] = 'true'
+            metadata['failure-reason'] = 'non-retryable-error'
+        
         # Copy to failed folder with retry count in metadata
         s3.copy_object(
             Bucket=bucket,
             CopySource={'Bucket': bucket, 'Key': pdf_key},
             Key=failed_key,
-            Metadata={'retry-count': str(retry_count), 'max-retries-exceeded': 'true'},
+            Metadata=metadata,
             MetadataDirective='REPLACE'
         )
-        logger.info(f"Copied s3://{bucket}/{pdf_key} to s3://{bucket}/{failed_key} (max retries exceeded)")
+        logger.info(f"Copied s3://{bucket}/{pdf_key} to s3://{bucket}/{failed_key} (max retries exceeded, permanent={is_permanent_failure})")
         
         # Delete from original location
         s3.delete_object(Bucket=bucket, Key=pdf_key)
@@ -490,7 +530,8 @@ def store_failure_record(
     queue_key: str = None,
     retry_count: int = 0,
     max_retries_exceeded: bool = False,
-    failed_key: str = None
+    failed_key: str = None,
+    is_permanent_failure: bool = False
 ):
     """Store failure record in DynamoDB for daily digest."""
     try:
@@ -512,6 +553,7 @@ def store_failure_record(
             'moved_to_queue': moved_to_queue,
             'retry_count': retry_count,
             'max_retries_exceeded': max_retries_exceeded,
+            'is_permanent_failure': is_permanent_failure,
         }
         
         if queue_key:
@@ -695,6 +737,12 @@ def handler(event, context):
     retry_count = get_retry_count(bucket, pdf_key)
     logger.info(f"Current retry count: {retry_count}")
     
+    # Check if this is a non-retryable error (e.g., "File content is too complex")
+    # These should go directly to failed/ folder regardless of retry count
+    is_permanent_failure = is_non_retryable_error(failure_reason)
+    if is_permanent_failure:
+        logger.info(f"NON-RETRYABLE ERROR detected - skipping retries, moving directly to failed/")
+    
     # Get temp folder path
     temp_folder = get_temp_folder_path(pdf_key)
     
@@ -706,15 +754,18 @@ def handler(event, context):
     failed_key = None
     max_retries_exceeded = False
     
-    if retry_count >= max_retries:
-        # MAX RETRIES EXCEEDED: Move to failed/ folder
+    if is_permanent_failure or retry_count >= max_retries:
+        # PERMANENT FAILURE or MAX RETRIES EXCEEDED: Move to failed/ folder
         max_retries_exceeded = True
-        logger.info(f"Max retries ({max_retries}) exceeded - moving {pdf_key} to failed/ folder")
+        if is_permanent_failure:
+            logger.info(f"Permanent failure (non-retryable error) - moving {pdf_key} to failed/ folder")
+        else:
+            logger.info(f"Max retries ({max_retries}) exceeded - moving {pdf_key} to failed/ folder")
         
-        failed_key = move_pdf_to_failed_folder(bucket, pdf_key, retry_count)
+        failed_key = move_pdf_to_failed_folder(bucket, pdf_key, retry_count, is_permanent_failure=is_permanent_failure)
         
         if failed_key:
-            logger.info(f"Moved to {failed_key} after {retry_count} failed attempts")
+            logger.info(f"Moved to {failed_key} after {retry_count} failed attempts (permanent_failure={is_permanent_failure})")
             action = 'MOVED_TO_FAILED'
             # Original PDF is now in failed/ folder - no placeholder needed
         else:
@@ -756,7 +807,8 @@ def handler(event, context):
         queue_key=queue_key,
         retry_count=retry_count + 1,  # Increment for this failure
         max_retries_exceeded=max_retries_exceeded,
-        failed_key=failed_key
+        failed_key=failed_key,
+        is_permanent_failure=is_permanent_failure
     )
     
     # Log the cleanup event
@@ -776,7 +828,10 @@ def handler(event, context):
     if action == 'MOVED_TO_QUEUE':
         logger.info(f"Cleanup complete for {pdf_key}: moved to {queue_key} (retry #{retry_count + 1}), deleted {temp_files_deleted} temp files")
     elif action == 'MOVED_TO_FAILED':
-        logger.info(f"Cleanup complete for {pdf_key}: moved to {failed_key} (max retries exceeded), deleted {temp_files_deleted} temp files")
+        if is_permanent_failure:
+            logger.info(f"Cleanup complete for {pdf_key}: moved to {failed_key} (PERMANENT FAILURE - non-retryable error), deleted {temp_files_deleted} temp files")
+        else:
+            logger.info(f"Cleanup complete for {pdf_key}: moved to {failed_key} (max retries exceeded), deleted {temp_files_deleted} temp files")
     else:
         logger.info(f"Cleanup complete for {pdf_key}: left in place (move failed), deleted {temp_files_deleted} temp files")
     
@@ -789,6 +844,7 @@ def handler(event, context):
             'failed_key': failed_key,
             'retry_count': retry_count + 1,
             'max_retries_exceeded': max_retries_exceeded,
+            'is_permanent_failure': is_permanent_failure,
             'temp_files_deleted': temp_files_deleted,
             'uploaded_by': uploader_info['username']
         })

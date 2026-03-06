@@ -98,6 +98,46 @@ MAX_429_RETRIES = 10
 # Base backoff time in seconds for 429 retries (will be multiplied by retry count)
 BASE_429_BACKOFF = 30
 
+# Non-retryable Adobe API errors - these should immediately fail without retry
+# These errors indicate the PDF itself is problematic, not a transient issue
+NON_RETRYABLE_ERRORS = [
+    "File is not suitable for conversion: File content is too complex",
+    "File content is too complex",
+]
+
+
+class PermanentFailureError(Exception):
+    """
+    Exception raised when a PDF fails with a non-retryable error.
+    
+    This signals to the failure cleanup Lambda that the PDF should be
+    moved directly to the failed/ folder without any retry attempts.
+    """
+    def __init__(self, message: str, original_error: str):
+        self.message = message
+        self.original_error = original_error
+        super().__init__(self.message)
+
+
+def is_non_retryable_error(error_str: str) -> bool:
+    """
+    Check if an error message indicates a non-retryable failure.
+    
+    These are errors where retrying won't help because the PDF itself
+    is problematic (too complex, corrupted, etc.).
+    
+    Args:
+        error_str: The error message string from Adobe API
+        
+    Returns:
+        True if this is a non-retryable error, False otherwise
+    """
+    error_lower = error_str.lower()
+    for pattern in NON_RETRYABLE_ERRORS:
+        if pattern.lower() in error_lower:
+            return True
+    return False
+
 
 def get_pdf_page_count(filename: str) -> int:
     """
@@ -444,6 +484,15 @@ def autotag_pdf_with_options(filename, client_id, client_secret, s3_bucket=None,
                 custom_cw_logger.log_adobe_api_error(filename, api_type="autotag", error=e)
                 if s3_bucket and s3_key:
                     invoke_failure_analysis(s3_bucket, s3_key, filename, e, 'autotag', started_at=started_at)
+                
+                # Check if this is a non-retryable error (e.g., "File content is too complex")
+                if is_non_retryable_error(error_str):
+                    logging.error(f'Filename : {filename} | NON-RETRYABLE ERROR detected - PDF should not be retried')
+                    raise PermanentFailureError(
+                        f"Adobe API returned non-retryable error: {error_str}",
+                        original_error=error_str
+                    )
+                
                 raise  # Re-raise to stop the container
         finally:
             # CRITICAL: Always release the slot if we haven't already (for non-429 errors)
@@ -451,6 +500,8 @@ def autotag_pdf_with_options(filename, client_id, client_secret, s3_bucket=None,
             if retry_count == 0 or '429' not in str(last_error if last_error else ''):
                 release_slot('autotag', filename=filename)
                 logging.info(f'Filename : {filename} | Released rate limit slot (autotag)')
+
+
 def extract_api(filename, client_id, client_secret, s3_bucket=None, s3_key=None):
     """
     Extracts text, tables, and figures from a PDF using Adobe PDF Services.
@@ -596,6 +647,15 @@ def extract_api(filename, client_id, client_secret, s3_bucket=None, s3_key=None)
                 custom_cw_logger.log_adobe_api_error(filename, api_type="extract", error=e)
                 if s3_bucket and s3_key:
                     invoke_failure_analysis(s3_bucket, s3_key, filename, e, 'extract', started_at=started_at)
+                
+                # Check if this is a non-retryable error (e.g., "File content is too complex")
+                if is_non_retryable_error(error_str):
+                    logging.error(f'Filename : {filename} | NON-RETRYABLE ERROR detected - PDF should not be retried')
+                    raise PermanentFailureError(
+                        f"Adobe API returned non-retryable error: {error_str}",
+                        original_error=error_str
+                    )
+                
                 raise  # Re-raise to stop the container
         finally:
             # CRITICAL: Always release the slot if we haven't already (for non-429 errors)
@@ -935,9 +995,10 @@ def main():
     # VERSION MARKER - This proves the new code is running
     # If you see this in CloudWatch logs, the deployment was successful
     logging.info("=" * 60)
-    logging.info("CONTAINER VERSION: 2.6-RETRY-ON-429")
+    logging.info("CONTAINER VERSION: 2.7-PERMANENT-FAILURE-DETECTION")
     logging.info("Rate limiter: 429 retry with global backoff, reduced limits")
     logging.info(f"Max retries for 429: {MAX_429_RETRIES}, Base backoff: {BASE_429_BACKOFF}s")
+    logging.info("Non-retryable errors: File content too complex -> exit code 42")
     logging.info("=" * 60)
     
     file_key = None
@@ -1028,6 +1089,21 @@ def main():
             error=e
         )
         sys.exit(1)
+    except PermanentFailureError as e:
+        # Non-retryable error - PDF should go directly to failed/ folder
+        logger.error(f"File: {file_key}, Status: PERMANENT FAILURE - No Retry")
+        logger.error(f"Filename : {file_key} | Permanent Failure: {e.message}")
+        logger.error(f"Filename : {file_key} | Original Error: {e.original_error}")
+        # Log processing failure to custom CloudWatch stream
+        custom_cw_logger.log_processing_failure(
+            filename=file_key or "unknown",
+            file_path=local_file_path if 'local_file_path' in dir() else "",
+            stage="adobe_api_permanent_failure",
+            error=e
+        )
+        # Exit with code 42 to signal permanent failure (no retry)
+        # The failure cleanup Lambda will detect this and skip retries
+        sys.exit(42)
     except ClientError as e:
         logger.error(f"File: {file_key}, Status: Failed in First ECS task - AWS Error")
         logger.error(f"Filename : {file_key} | AWS Error: {e}")
