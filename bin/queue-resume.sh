@@ -17,3 +17,4 @@ aws ssm put-parameter \
 echo ""
 echo "Queue processing is now ENABLED."
 echo "Files will be moved from queue/ to pdf/ every 2 minutes."
+echo "Resumed at: $(date '+%Y-%m-%d %H:%M:%S %Z')"
