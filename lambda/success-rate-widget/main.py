@@ -172,7 +172,7 @@ def handler(event, context):
             </div>
             <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; text-align: center;">
                 <div style="font-size: 28px; font-weight: bold; color: #1565c0;">{queue_count:,}</div>
-                <div style="font-size: 12px; color: #666;">Files in Queue<br>({now_local.strftime('%I:%M %p').lstrip('0')})</div>
+                <div style="font-size: 12px; color: #666;">Files in Queue<br>({now_local.strftime('%I:%M %p').lstrip('0')} {tz_abbrev})</div>
             </div>
         </div>
         
