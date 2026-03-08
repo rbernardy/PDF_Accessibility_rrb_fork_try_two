@@ -17,7 +17,7 @@
 set -e
 
 # Default values
-BUCKET_NAME="pdfaccessibility-pdfaccessibilitybucket149b7021e-tcuthkjujq0m"
+BUCKET_NAME="${AWS_PROJECT_S3_BUCKET_NAME}
 QUEUE_LINES="0"
 FAILED_LINES="0"
 WRITE_UNIQUE_FAILED_ANALYSIS=""
@@ -106,7 +106,7 @@ calc_throughput() {
     local cutoff=$((now - seconds_ago))
     
     if [ ! -f "$HISTORY_FILE" ]; then
-        echo "0"
+        echo "0,0"
         return
     fi
     
@@ -116,7 +116,7 @@ calc_throughput() {
     local newest=$(tail -1 "$HISTORY_FILE")
     
     if [ -z "$oldest_in_window" ] || [ -z "$newest" ]; then
-        echo "0"
+        echo "0,0"
         return
     fi
     

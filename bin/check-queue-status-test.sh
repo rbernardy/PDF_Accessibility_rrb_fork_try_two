@@ -4,6 +4,7 @@
 # Shows counts in queue/, retry/, pdf/, failed/, and result/ folders
 # Lists individual files under each folder
 # Tracks percentage change between runs
+# Computes running averages per hour, day, and week
 #
 # Usage: ./bin/check-queue-status.sh [options]
 #
@@ -16,7 +17,7 @@
 set -e
 
 # Default values
-BUCKET_NAME="pdfaccessibility-pdfaccessibilitybucket149b7021e-ljzn29qgmwog"
+BUCKET_NAME=${AWS_PROJECT_S3_BUCKET_NAME}
 QUEUE_LINES="0"
 FAILED_LINES="0"
 WRITE_UNIQUE_FAILED_ANALYSIS=""
