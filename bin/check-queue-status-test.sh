@@ -280,6 +280,12 @@ if [ "$FAILED_COUNT" -gt 0 ] && [ -n "$FAILED_FILES" ]; then
     fi
 fi
 
+# Pre-failed folder (high-risk PDFs that were not processed)
+PRE_FAILED_COUNT=$(aws s3 ls "s3://${BUCKET_NAME}/pre-failed/" --recursive 2>/dev/null | grep -c "\.pdf$" || echo "0")
+PRE_FAILED_COUNT=$(echo "$PRE_FAILED_COUNT" | sed 's/^0*//' | tr -d '[:space:]')
+PRE_FAILED_COUNT=${PRE_FAILED_COUNT:-0}
+echo "  pre-failed/ : $PRE_FAILED_COUNT PDFs (high-risk, not processed)"
+
 # Result folder - count only
 RESULT_COUNT=$(aws s3 ls "s3://${BUCKET_NAME}/result/" --recursive 2>/dev/null | grep -c "\.pdf$" || echo "0")
 RESULT_COUNT=$(echo "$RESULT_COUNT" | sed 's/^0*//' | tr -d '[:space:]')

@@ -4,10 +4,15 @@ The function performs the following operations:
 
 1. Downloads the PDF file from S3.
 2. Pre-scans the PDF using PyMuPDF to detect "risky" characteristics that may cause Adobe API failures.
-3. HIGH-RISK PDFs (complexity score >= 50) are moved to pre-failed/ folder and NOT processed.
-4. MEDIUM-RISK PDFs (score 25-49) are processed with smaller chunks.
-5. LOW-RISK PDFs (score < 25) are processed normally.
-6. Splits the PDF into chunks of specified page size (adjusted based on risk assessment).
+3. Stores pre-scan data in DynamoDB for all PDFs (regardless of risk-based splitting setting).
+4. If risk-based splitting is ENABLED (default):
+   - HIGH-RISK PDFs (complexity score >= 50) are moved to pre-failed/ folder and NOT processed.
+   - MEDIUM-RISK PDFs (score 25-49) are processed with smaller chunks.
+   - LOW-RISK PDFs (score < 25) are processed normally.
+5. If risk-based splitting is DISABLED:
+   - All PDFs are processed using page count (from SSM parameter) and file size limits only.
+   - No PDFs are moved to pre-failed/.
+6. Splits the PDF into chunks of specified page size.
 7. Uploads each PDF chunk to a temporary location in the same S3 bucket.
 8. Starts an AWS Step Functions execution with metadata about the uploaded chunks.
 
@@ -24,12 +29,104 @@ from datetime import datetime
 cloudwatch = boto3.client('cloudwatch')
 s3_client = boto3.client('s3')
 stepfunctions = boto3.client('stepfunctions')
+ssm_client = boto3.client('ssm')
+dynamodb = boto3.resource('dynamodb')
 
 state_machine_arn = os.environ['STATE_MACHINE_ARN']
+PRESCAN_TABLE = os.environ.get('PRESCAN_TABLE', 'pdf-prescan-data')
+RISK_BASED_SPLITTING_PARAM = os.environ.get('RISK_BASED_SPLITTING_PARAM', '/pdf-processing/risk-based-splitting-enabled')
+SPLITTING_PAGE_COUNT_PARAM = os.environ.get('SPLITTING_PAGE_COUNT_PARAM', '/pdf-processing/splitting-page-count')
 
 # Risk thresholds
 HIGH_RISK_THRESHOLD = 50
 MEDIUM_RISK_THRESHOLD = 25
+
+# Adobe API file size limit (104MB), use 95MB as safe threshold
+MAX_CHUNK_SIZE_MB = 95
+
+
+def get_ssm_parameter(param_name: str, default: str) -> str:
+    """Get a parameter value from SSM Parameter Store."""
+    try:
+        response = ssm_client.get_parameter(Name=param_name)
+        return response['Parameter']['Value']
+    except Exception as e:
+        print(f"Could not read SSM parameter {param_name}: {e}, using default: {default}")
+        return default
+
+
+def is_risk_based_splitting_enabled() -> bool:
+    """Check if risk-based splitting is enabled via SSM parameter."""
+    value = get_ssm_parameter(RISK_BASED_SPLITTING_PARAM, 'true')
+    return value.lower() in ('true', '1', 'yes')
+
+
+def get_splitting_page_count() -> int:
+    """Get the max pages per chunk from SSM parameter."""
+    value = get_ssm_parameter(SPLITTING_PAGE_COUNT_PARAM, '95')
+    try:
+        return int(value)
+    except ValueError:
+        return 95
+
+
+def store_prescan_data(pdf_key: str, prescan_result: dict, risk_based_enabled: bool):
+    """Store pre-scan data in DynamoDB for analysis."""
+    try:
+        table = dynamodb.Table(PRESCAN_TABLE)
+        now = datetime.utcnow()
+        
+        # Extract filename and path from pdf_key
+        # e.g., pdf/collection/subfolder/document.pdf -> filename=document.pdf, path=collection/subfolder
+        parts = pdf_key.split('/')
+        filename = parts[-1] if parts else pdf_key
+        if pdf_key.startswith('pdf/'):
+            path_parts = parts[1:-1]  # Skip 'pdf/' prefix and filename
+            path = '/'.join(path_parts) if path_parts else ''
+        else:
+            path_parts = parts[:-1]
+            path = '/'.join(path_parts) if path_parts else ''
+        
+        item = {
+            'pdf_key': pdf_key,
+            'scan_timestamp': now.isoformat() + 'Z',
+            'scan_date': now.strftime('%Y-%m-%d'),
+            'filename': filename,
+            'path': path,
+            'file_size_bytes': prescan_result['file_size_bytes'],
+            'file_size_mb': str(prescan_result['file_size_mb']),
+            'page_count': prescan_result['page_count'],
+            'risk_level': prescan_result['risk_level'],
+            'complexity_score': prescan_result['complexity_score'],
+            'risk_factors': prescan_result['risk_factors'],
+            'risk_based_splitting_enabled': risk_based_enabled,
+            # Pre-scan metrics
+            'pdf_version': prescan_result.get('pdf_version', ''),
+            'is_encrypted': prescan_result.get('is_encrypted', False),
+            'has_javascript': prescan_result.get('has_javascript', False),
+            'has_embedded_files': prescan_result.get('has_embedded_files', False),
+            'total_images': prescan_result.get('total_images', 0),
+            'total_text_chars': prescan_result.get('total_text_chars', 0),
+            'total_fonts': prescan_result.get('total_fonts', 0),
+            'total_drawings': prescan_result.get('total_drawings', 0),
+            'max_image_pixels': prescan_result.get('max_image_pixels', 0),
+            'images_over_1mp': prescan_result.get('images_over_1mp', 0),
+            'images_over_4mp': prescan_result.get('images_over_4mp', 0),
+            'unique_page_sizes': prescan_result.get('unique_page_sizes', 0),
+            'pages_over_tabloid': prescan_result.get('pages_over_tabloid', 0),
+            'mb_per_page': str(prescan_result.get('mb_per_page', 0)),
+            'images_per_page': str(prescan_result.get('images_per_page', 0)),
+            'chars_per_page': str(prescan_result.get('chars_per_page', 0)),
+            'drawings_per_page': str(prescan_result.get('drawings_per_page', 0)),
+            'image_colorspaces': prescan_result.get('image_colorspaces', {}),
+            'recommended_pages_per_chunk': prescan_result.get('recommended_pages_per_chunk', 90),
+        }
+        
+        table.put_item(Item=item)
+        print(f'Filename - {pdf_key} | Stored pre-scan data in DynamoDB')
+        
+    except Exception as e:
+        print(f'Filename - {pdf_key} | Error storing pre-scan data: {e}')
 
 
 def prescan_pdf_advanced(pdf_content: bytes, filename: str) -> dict:
@@ -455,10 +552,16 @@ def lambda_handler(event, context):
     """
     AWS Lambda function to handle S3 events and split uploaded PDF files into chunks.
 
-    HIGH-RISK PDFs (score >= 50) are moved to pre-failed/ and NOT processed.
-    MEDIUM-RISK PDFs (score 25-49) are processed with smaller chunks.
-    LOW-RISK PDFs (score < 25) are processed normally.
+    When risk-based splitting is ENABLED (default):
+    - HIGH-RISK PDFs (score >= 50) are moved to pre-failed/ and NOT processed.
+    - MEDIUM-RISK PDFs (score 25-49) are processed with smaller chunks.
+    - LOW-RISK PDFs (score < 25) are processed normally.
     
+    When risk-based splitting is DISABLED:
+    - All PDFs are processed using page count (from SSM) and file size limits only.
+    - No PDFs are moved to pre-failed/.
+    
+    Pre-scan data is stored in DynamoDB for all PDFs regardless of the setting.
     Folder structure is preserved in pre-failed/ folder.
     """
     try:
@@ -475,6 +578,13 @@ def lambda_handler(event, context):
 
         s3 = boto3.client('s3')
         stepfunctions = boto3.client('stepfunctions')
+
+        # Check if risk-based splitting is enabled
+        risk_based_enabled = is_risk_based_splitting_enabled()
+        splitting_page_count = get_splitting_page_count()
+        
+        print(f'Filename - {pdf_file_key} | Risk-based splitting: {"ENABLED" if risk_based_enabled else "DISABLED"}')
+        print(f'Filename - {pdf_file_key} | Splitting page count (SSM): {splitting_page_count}')
 
         retry_count = 0
         try:
@@ -493,8 +603,11 @@ def lambda_handler(event, context):
         # Advanced pre-scan using PyMuPDF
         prescan_result = prescan_pdf_advanced(pdf_file_content, pdf_file_key)
         
-        # HIGH-RISK: Move to pre-failed/ and do NOT process
-        if prescan_result['risk_level'] == 'HIGH':
+        # Store pre-scan data in DynamoDB for ALL PDFs (regardless of risk-based splitting setting)
+        store_prescan_data(pdf_file_key, prescan_result, risk_based_enabled)
+        
+        # Handle HIGH-RISK PDFs based on risk-based splitting setting
+        if risk_based_enabled and prescan_result['risk_level'] == 'HIGH':
             print(f'Filename - {pdf_file_key} | HIGH-RISK PDF DETECTED (score={prescan_result["complexity_score"]})')
             print(f'Filename - {pdf_file_key} | Moving to pre-failed/ folder - will NOT be processed')
             
@@ -523,10 +636,17 @@ def lambda_handler(event, context):
                 })
             }
         
-        # MEDIUM or LOW risk - proceed with processing
-        prescan_pages_per_chunk = prescan_result['recommended_pages_per_chunk']
+        # Determine pages per chunk based on risk-based splitting setting
+        if risk_based_enabled:
+            # Use risk-based chunk sizing
+            prescan_pages_per_chunk = prescan_result['recommended_pages_per_chunk']
+            default_pages_per_chunk = 90
+        else:
+            # Use SSM parameter for page count, ignore risk levels
+            prescan_pages_per_chunk = splitting_page_count
+            default_pages_per_chunk = splitting_page_count
         
-        default_pages_per_chunk = 90
+        # Adjust for retries
         if retry_count > 0:
             num_pages = prescan_result['page_count']
             retry_pages_per_chunk = 1 if num_pages <= 10 else 5
@@ -536,14 +656,18 @@ def lambda_handler(event, context):
         final_pages_per_chunk = min(prescan_pages_per_chunk, retry_pages_per_chunk)
         
         print(f'Filename - {pdf_file_key} | SPLITTING DECISION:')
+        print(f'Filename - {pdf_file_key} |   - Risk-based splitting: {"ENABLED" if risk_based_enabled else "DISABLED"}')
         print(f'Filename - {pdf_file_key} |   - Risk Level: {prescan_result["risk_level"]}')
-        print(f'Filename - {pdf_file_key} |   - Pre-scan recommendation: {prescan_pages_per_chunk} pages/chunk')
+        if risk_based_enabled:
+            print(f'Filename - {pdf_file_key} |   - Pre-scan recommendation: {prescan_pages_per_chunk} pages/chunk')
+        else:
+            print(f'Filename - {pdf_file_key} |   - SSM page count: {splitting_page_count} pages/chunk')
         print(f'Filename - {pdf_file_key} |   - Retry recommendation: {retry_pages_per_chunk} pages/chunk (retry_count={retry_count})')
         print(f'Filename - {pdf_file_key} |   - FINAL DECISION: {final_pages_per_chunk} pages/chunk')
         print(f'Filename - {pdf_file_key} |   - Total pages: {prescan_result["page_count"]}')
         print(f'Filename - {pdf_file_key} |   - Expected chunks: ~{max(1, prescan_result["page_count"] // final_pages_per_chunk)}')
   
-        chunks = split_pdf_into_pages(pdf_file_content, pdf_file_key, s3, bucket_name, final_pages_per_chunk, max_chunk_size_mb=95, retry_count=0)
+        chunks = split_pdf_into_pages(pdf_file_content, pdf_file_key, s3, bucket_name, final_pages_per_chunk, max_chunk_size_mb=MAX_CHUNK_SIZE_MB, retry_count=0)
         
         print(f'Filename - {pdf_file_key} | SPLITTING COMPLETE: Created {len(chunks)} chunk(s) from {prescan_result["page_count"]} pages')
         
@@ -561,7 +685,8 @@ def lambda_handler(event, context):
                     "risk_level": prescan_result['risk_level'],
                     "complexity_score": prescan_result['complexity_score'],
                     "risk_factors": prescan_result['risk_factors'],
-                    "pages_per_chunk": final_pages_per_chunk
+                    "pages_per_chunk": final_pages_per_chunk,
+                    "risk_based_splitting_enabled": risk_based_enabled
                 }
             })
         )

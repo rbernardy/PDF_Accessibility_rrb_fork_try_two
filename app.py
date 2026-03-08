@@ -96,6 +96,26 @@ class PDFAccessibility(Stack):
             description="Target number of PDFs to remediate for progress tracking"
         )
         
+        # SSM Parameter for risk-based splitting - when true, high-risk PDFs go to pre-failed/
+        # and medium-risk PDFs use smaller chunks. When false, all PDFs are processed using
+        # page count and file size limits only.
+        risk_based_splitting_param_name = '/pdf-processing/risk-based-splitting-enabled'
+        risk_based_splitting_param = ssm.StringParameter(
+            self, "RiskBasedSplittingParam",
+            parameter_name=risk_based_splitting_param_name,
+            string_value="false",  # Default: false (risk-based splitting disabled)
+            description="Enable risk-based PDF splitting (true=use risk levels, false=split by page count only)"
+        )
+        
+        # SSM Parameter for splitting page count - max pages per chunk when risk-based splitting is disabled
+        splitting_page_count_param_name = '/pdf-processing/splitting-page-count'
+        splitting_page_count_param = ssm.StringParameter(
+            self, "SplittingPageCountParam",
+            parameter_name=splitting_page_count_param_name,
+            string_value="95",  # Default: 95 pages per chunk
+            description="Max pages per chunk when risk-based splitting is disabled"
+        )
+        
         # DynamoDB table for distributed in-flight tracking across ECS tasks
         # Uses a single counter that tracks requests currently in progress
         # - Incremented when API call starts
@@ -112,6 +132,36 @@ class PDFAccessibility(Stack):
             billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
             removal_policy=cdk.RemovalPolicy.DESTROY,
             time_to_live_attribute="ttl"  # Auto-expire file tracking entries after 1 hour
+        )
+
+        # DynamoDB table for storing PDF pre-scan data
+        # Records all PDFs processed with their pre-scan metrics for analysis
+        pdf_prescan_table = dynamodb.Table(
+            self, "PdfPrescanTable",
+            table_name="pdf-prescan-data",
+            partition_key=dynamodb.Attribute(
+                name="pdf_key",
+                type=dynamodb.AttributeType.STRING
+            ),
+            sort_key=dynamodb.Attribute(
+                name="scan_timestamp",
+                type=dynamodb.AttributeType.STRING
+            ),
+            billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
+            removal_policy=cdk.RemovalPolicy.DESTROY
+        )
+        
+        # Add GSI for querying by date
+        pdf_prescan_table.add_global_secondary_index(
+            index_name="scan_date-index",
+            partition_key=dynamodb.Attribute(
+                name="scan_date",
+                type=dynamodb.AttributeType.STRING
+            ),
+            sort_key=dynamodb.Attribute(
+                name="scan_timestamp",
+                type=dynamodb.AttributeType.STRING
+            )
         )
 
         # Docker images with zstd compression for faster Fargate cold starts
@@ -662,6 +712,25 @@ class PDFAccessibility(Stack):
 
         # Pass State Machine ARN to Lambda as an Environment Variable
         pdf_splitter_lambda.add_environment("STATE_MACHINE_ARN", pdf_remediation_state_machine.state_machine_arn)
+        pdf_splitter_lambda.add_environment("PRESCAN_TABLE", pdf_prescan_table.table_name)
+        pdf_splitter_lambda.add_environment("RISK_BASED_SPLITTING_PARAM", risk_based_splitting_param_name)
+        pdf_splitter_lambda.add_environment("SPLITTING_PAGE_COUNT_PARAM", splitting_page_count_param_name)
+        
+        # Grant DynamoDB write access for storing pre-scan data
+        pdf_prescan_table.grant_write_data(pdf_splitter_lambda)
+        
+        # Grant SSM read access for the new parameters
+        pdf_splitter_lambda.add_to_role_policy(
+            iam.PolicyStatement(
+                effect=iam.Effect.ALLOW,
+                actions=["ssm:GetParameter"],
+                resources=[
+                    risk_based_splitting_param.parameter_arn,
+                    splitting_page_count_param.parameter_arn
+                ]
+            )
+        )
+        
         # Store log group names dynamically
         pdf_splitter_lambda_log_group_name = f"/aws/lambda/{pdf_splitter_lambda.function_name}"
         pdf_merger_lambda_log_group_name = f"/aws/lambda/{pdf_merger_lambda.function_name}"
