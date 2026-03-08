@@ -99,8 +99,29 @@ def handler(event, context):
     table = dynamodb.Table(RATE_LIMIT_TABLE)
     now = datetime.now(timezone.utc)
     
-    # Convert to US Eastern time for display
-    eastern_offset = timedelta(hours=-5)  # EST (use -4 for EDT)
+    # Convert to US Eastern time for display (handles DST automatically)
+    # US Eastern: EST (UTC-5) from first Sunday in November to second Sunday in March
+    #             EDT (UTC-4) from second Sunday in March to first Sunday in November
+    def is_dst_us_eastern(dt_utc):
+        """Check if a UTC datetime falls within US Eastern Daylight Time."""
+        year = dt_utc.year
+        # Second Sunday in March (DST starts at 2 AM local = 7 AM UTC)
+        march_second_sunday = datetime(year, 3, 8, 7, 0, 0, tzinfo=timezone.utc)
+        while march_second_sunday.weekday() != 6:  # Find Sunday
+            march_second_sunday += timedelta(days=1)
+        # First Sunday in November (DST ends at 2 AM local = 6 AM UTC)
+        nov_first_sunday = datetime(year, 11, 1, 6, 0, 0, tzinfo=timezone.utc)
+        while nov_first_sunday.weekday() != 6:  # Find Sunday
+            nov_first_sunday += timedelta(days=1)
+        return march_second_sunday <= dt_utc < nov_first_sunday
+    
+    if is_dst_us_eastern(now):
+        eastern_offset = timedelta(hours=-4)  # EDT
+        tz_abbrev = "EDT"
+    else:
+        eastern_offset = timedelta(hours=-5)  # EST
+        tz_abbrev = "EST"
+    
     now_local = now + eastern_offset
     local_hour_display = now_local.strftime('%I %p').lstrip('0')  # e.g., "3 PM"
     local_date_display = now_local.strftime('%A %Y-%m-%d')  # e.g., "Wednesday 2026-03-04"
@@ -147,7 +168,7 @@ def handler(event, context):
             </div>
             <div style="background: #f0fff0; padding: 15px; border-radius: 8px; text-align: center;">
                 <div style="font-size: 28px; font-weight: bold; color: #2e7d32;">{today_count:,}</div>
-                <div style="font-size: 12px; color: #666;">Processed Today ({local_date_display})</div>
+                <div style="font-size: 12px; color: #666;">Processed Today ({local_date_display} {tz_abbrev})</div>
             </div>
             <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; text-align: center;">
                 <div style="font-size: 28px; font-weight: bold; color: #1565c0;">{queue_count:,}</div>
@@ -162,7 +183,7 @@ def handler(event, context):
             </div>
             <div style="background: #fce4ec; padding: 15px; border-radius: 8px; text-align: center;">
                 <div style="font-size: 28px; font-weight: bold; color: #c2185b;">{current_hour_count:,}</div>
-                <div style="font-size: 12px; color: #666;">This Hour ({local_hour_display})</div>
+                <div style="font-size: 12px; color: #666;">This Hour ({local_hour_display} {tz_abbrev})</div>
             </div>
             <div style="background: #f3e5f5; padding: 15px; border-radius: 8px; text-align: center;">
                 <div style="font-size: 28px; font-weight: bold; color: #7b1fa2;">{last_6h:,}</div>
