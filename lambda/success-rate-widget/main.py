@@ -156,6 +156,9 @@ def handler(event, context):
     # Get queue file count
     queue_count = get_queue_file_count(BUCKET_NAME)
     
+    # Calculate percent completed
+    percent_completed = (total_count / remediation_goal * 100) if remediation_goal > 0 else 0.0
+    
     # Build HTML response
     html = f'''<div style="font-family: Arial, sans-serif; padding: 10px;">
         <h3 style="margin: 0; color: #232f3e;">PDF Processing Throughput</h3>
@@ -203,6 +206,9 @@ def handler(event, context):
             <div style="background: #e8f4fd; padding: 10px; border-radius: 5px;">
                 <div style="font-size: 14px; color: #333;">
                     <strong>Remediation Total Count Goal:</strong> {remediation_goal:,}
+                </div>
+                <div style="font-size: 14px; color: #333;">
+                    <strong>% completed:</strong> {percent_completed:.2f}
                 </div>
                 <div style="font-size: 14px; color: #333;">
                     <strong>Estimated Days to Completion:</strong> {days_display}
