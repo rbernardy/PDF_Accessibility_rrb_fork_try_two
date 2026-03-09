@@ -161,8 +161,7 @@ def handler(event, context):
     
     # Build HTML response
     html = f'''<div style="font-family: Arial, sans-serif; padding: 10px;">
-        <h3 style="margin: 0; color: #232f3e;">PDF Processing Throughput</h3>
-        <div style="font-size: 11px; color: #888; margin-bottom: 15px;">Updated: {now.strftime('%Y-%m-%d %H:%M:%S')} UTC | Data based on UTC time; local time shown for reference</div>
+        <h3 style="margin: 0 0 15px 0; color: #232f3e;">PDF Processing Throughput</h3>
         
         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
             <div style="background: #f0f8ff; padding: 15px; border-radius: 8px; text-align: center;">
@@ -201,6 +200,9 @@ def handler(event, context):
                 </div>
                 <div style="font-size: 14px; color: #333;">
                     <strong>Last 24 Hours:</strong> {total_24h:,} PDFs
+                </div>
+                <div style="font-size: 11px; color: #888; margin-top: 8px;">
+                    Updated: {now.strftime('%Y-%m-%d %H:%M:%S')} UTC
                 </div>
             </div>
             <div style="background: #e8f4fd; padding: 10px; border-radius: 5px;">
