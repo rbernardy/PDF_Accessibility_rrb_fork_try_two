@@ -55,7 +55,12 @@ if [[ ! "$response" =~ ^[Yy]$ ]]; then
 fi
 
 echo ""
-echo "Proceeding with LIVE deployment..."
+deployment_type="${AWS_DEPLOYMENT_TYPE}"
+echo "deployment_type=${deployment_type}"
+read -p "press any key to continue"
+
+echo ""
+echo "Proceeding with ${deployment_type} deployment..."
 echo "Cleaning CDK output directory..."
 rm -rf ./cdk.out/
 
@@ -67,8 +72,12 @@ echo ""
 echo "Starting CDK deployment with forced image rebuild..."
 echo "Build timestamp will be embedded in Docker image to ensure new code is deployed."
 
+echo "source_bucket=${AWS_PROJECT_S3_BUCKET_NAME}"
+echo "destination_buket=${AWS_DESTINATION_BUCKET_NAME}"
+read -p "Press any key to continue"
+
 # Run CDK deploy and capture exit code
-cdk deploy PDFAccessibility -c source_bucket=pdfaccessibility-pdfaccessibilitybucket149b7021e-tcuthkjujq0m -c destination_bucket=usflibraries-pdfaccessibility-live-public --require-approval never --force
+cdk deploy PDFAccessibility -c source_bucket=${AWS_PROJECT_S3_BUCKET_NAME} -c destination_bucket=${AWS_DESTINATION_BUCKET_NAME} --require-approval never --force
 CDK_EXIT_CODE=$?
 
 echo ""
@@ -77,12 +86,12 @@ echo "Deployment completed at: $(date '+%Y-%m-%d %H:%M:%S')"
 # Notify based on success/failure
 if [ $CDK_EXIT_CODE -eq 0 ]; then
     echo ""
-    echo "✅ LIVE deployment SUCCEEDED!"
-    notify_completion "success" "Live deployment completed successfully"
+    echo "✅ ${deployment_type} deployment SUCCEEDED!"
+    notify_completion "success" "${deployment_type} deployment completed successfully"
 else
     echo ""
-    echo "❌ LIVE deployment FAILED with exit code $CDK_EXIT_CODE"
-    notify_completion "failure" "Live deployment failed"
+    echo "❌ ${deployment_type} deployment FAILED with exit code $CDK_EXIT_CODE"
+    notify_completion "failure" "${deployemnt_type} deployment failed"
     exit $CDK_EXIT_CODE
 fi
 
@@ -95,3 +104,5 @@ echo ""
 echo "To verify rate limiter is working, check CloudWatch logs for:"
 echo "  - 'Initial jitter:' messages (proves new code is running)"
 echo "  - 'RPM (global)' messages (proves combined counter is active)"
+echo ""
+
