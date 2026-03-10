@@ -612,12 +612,16 @@ class PDFAccessibility(Stack):
             architecture=lambda_arch,
             environment={
                 'BUCKET_NAME': pdf_processing_bucket.bucket_name,
-                'TZ': 'US/Eastern'  # Set timezone for local time in filenames
+                'TZ': 'US/Eastern',  # Set timezone for local time in filenames
+                'PRESCAN_TABLE': pdf_prescan_table.table_name
             }
         )
         
         # Grant S3 read/write access for reading PDFs/JSONs and writing CSV reports
         pdf_processing_bucket.grant_read_write(pdf_report_generator_lambda)
+        
+        # Grant DynamoDB read access for prescan table (to get cached page counts)
+        pdf_prescan_table.grant_read_data(pdf_report_generator_lambda)
         pdf_report_generator_lambda.add_to_role_policy(cloudwatch_metrics_policy)
         
         # Grant permission to invoke itself for batch processing (use wildcard to avoid circular dependency)
@@ -1414,6 +1418,7 @@ class PDFAccessibility(Stack):
         # Grant permissions to read from DynamoDB and SSM
         adobe_rate_limit_table.grant_read_data(success_rate_widget_lambda)
         remediation_goal_param.grant_read(success_rate_widget_lambda)
+        remediation_deadline_param.grant_read(success_rate_widget_lambda)
         pdf_processing_bucket.grant_read(success_rate_widget_lambda)
         
         # Grant CloudWatch permission to invoke the custom widget Lambda

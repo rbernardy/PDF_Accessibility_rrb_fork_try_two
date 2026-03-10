@@ -31,25 +31,62 @@ from openpyxl.utils import get_column_letter
 # Initialize clients
 s3_client = boto3.client('s3')
 lambda_client = boto3.client('lambda')
+dynamodb = boto3.resource('dynamodb')
 
 # Version marker to force Lambda updates
-VERSION = "3.0.0-batch"
+VERSION = "3.1.0-prescan"
 
 # Batch processing settings
 BATCH_SIZE = 200  # Number of PDFs to process per invocation
 
+# DynamoDB prescan table
+PRESCAN_TABLE = os.environ.get('PRESCAN_TABLE', 'pdf-prescan-data')
 
-def get_pdf_page_count(bucket: str, key: str) -> int:
+
+def get_page_count_from_prescan(original_pdf_key: str) -> Optional[int]:
     """
-    Get the number of pages in a PDF file from S3.
+    Try to get page count from the prescan DynamoDB table.
+    
+    Args:
+        original_pdf_key: The original PDF key (e.g., pdf/folder/file.pdf)
+        
+    Returns:
+        Page count if found in prescan table, None otherwise
+    """
+    try:
+        table = dynamodb.Table(PRESCAN_TABLE)
+        response = table.get_item(Key={'pdf_key': original_pdf_key})
+        item = response.get('Item')
+        if item and 'page_count' in item:
+            return int(item['page_count'])
+    except Exception as e:
+        print(f"Error getting prescan data for {original_pdf_key}: {e}")
+    return None
+
+
+def get_pdf_page_count(bucket: str, key: str, original_pdf_key: str = None) -> int:
+    """
+    Get the number of pages in a PDF file.
+    
+    First checks the prescan DynamoDB table for cached page count.
+    Falls back to downloading and reading the PDF if not found.
     
     Args:
         bucket: S3 bucket name
-        key: S3 object key
+        key: S3 object key (result PDF)
+        original_pdf_key: Original PDF key to look up in prescan table
         
     Returns:
         Number of pages in the PDF, or 0 if unable to read
     """
+    # Try prescan table first (much faster)
+    if original_pdf_key:
+        prescan_count = get_page_count_from_prescan(original_pdf_key)
+        if prescan_count is not None:
+            print(f"Got page count {prescan_count} from prescan table for {original_pdf_key}")
+            return prescan_count
+    
+    # Fall back to downloading the PDF
     try:
         response = s3_client.get_object(Bucket=bucket, Key=key)
         pdf_bytes = response['Body'].read()
@@ -320,6 +357,13 @@ def build_report_row(bucket: str, pdf_info: Dict) -> Dict[str, Any]:
     folder_path = extract_folder_path_from_result_key(result_key)
     original_filename = extract_original_filename(result_key)
     
+    # Construct the original PDF key for prescan table lookup
+    # result/folder/COMPLIANT_file.pdf -> pdf/folder/file.pdf
+    if folder_path:
+        original_pdf_key = f"pdf/{folder_path}/{original_filename}"
+    else:
+        original_pdf_key = f"pdf/{original_filename}"
+    
     # Start with basic file info
     row = {
         'file-path': result_key,
@@ -328,7 +372,7 @@ def build_report_row(bucket: str, pdf_info: Dict) -> Dict[str, Any]:
         'folder-path': folder_path,
         'file-size-bytes': pdf_info['size'],
         'last-modified': pdf_info['last_modified'],
-        'page-count': get_pdf_page_count(bucket, result_key)
+        'page-count': get_pdf_page_count(bucket, result_key, original_pdf_key)
     }
     
     # Load before remediation report
