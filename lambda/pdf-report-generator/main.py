@@ -4,6 +4,12 @@ PDF Processing Report Generator Lambda
 This Lambda function generates an Excel report of all processed PDF files.
 It retrieves file metadata and accessibility report data from S3.
 
+Supports batch processing for large numbers of files:
+- Processes files in batches to avoid Lambda timeout
+- Saves intermediate results to S3
+- Re-invokes itself for subsequent batches
+- Merges all batch results into final Excel report
+
 The report includes:
 - File path, name, size, page count
 - Before and after remediation accessibility metrics
@@ -22,11 +28,15 @@ from openpyxl.styles import Font, Alignment, PatternFill
 from openpyxl.utils import get_column_letter
 
 
-# Initialize S3 client
+# Initialize clients
 s3_client = boto3.client('s3')
+lambda_client = boto3.client('lambda')
 
 # Version marker to force Lambda updates
-VERSION = "2.0.0-excel"
+VERSION = "3.0.0-batch"
+
+# Batch processing settings
+BATCH_SIZE = 200  # Number of PDFs to process per invocation
 
 
 def get_pdf_page_count(bucket: str, key: str) -> int:
@@ -477,13 +487,14 @@ def generate_excel_content(rows: List[Dict], columns: List[str]) -> bytes:
     return output.read()
 
 
-def save_excel_to_s3(bucket: str, excel_content: bytes) -> str:
+def save_excel_to_s3(bucket: str, excel_content: bytes, suffix: str = '') -> str:
     """
     Save Excel content to S3.
     
     Args:
         bucket: S3 bucket name
         excel_content: Excel file content as bytes
+        suffix: Optional suffix for the filename (e.g., '-batch-1')
         
     Returns:
         S3 key where the Excel file was saved
@@ -497,7 +508,7 @@ def save_excel_to_s3(bucket: str, excel_content: bytes) -> str:
         print(f"Warning: Could not use timezone {tz_name}, falling back to UTC: {e}")
         timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
     
-    key = f"reports/pdf_processing_reports/pdf-processing-report-{timestamp}.xlsx"
+    key = f"reports/pdf_processing_reports/pdf-processing-report-{timestamp}{suffix}.xlsx"
     
     s3_client.put_object(
         Bucket=bucket,
@@ -510,12 +521,99 @@ def save_excel_to_s3(bucket: str, excel_content: bytes) -> str:
     return key
 
 
+def save_batch_results_to_s3(bucket: str, rows: List[Dict], batch_id: str) -> str:
+    """
+    Save batch results as JSON to S3 for later merging.
+    
+    Args:
+        bucket: S3 bucket name
+        rows: List of row dictionaries
+        batch_id: Unique identifier for this batch run
+        
+    Returns:
+        S3 key where the batch results were saved
+    """
+    key = f"reports/pdf_processing_reports/temp/{batch_id}/batch-{len(rows)}.json"
+    
+    s3_client.put_object(
+        Bucket=bucket,
+        Key=key,
+        Body=json.dumps(rows),
+        ContentType='application/json'
+    )
+    
+    print(f"Batch results saved to s3://{bucket}/{key}")
+    return key
+
+
+def load_batch_results_from_s3(bucket: str, batch_id: str) -> List[Dict]:
+    """
+    Load all batch results from S3.
+    
+    Args:
+        bucket: S3 bucket name
+        batch_id: Unique identifier for this batch run
+        
+    Returns:
+        Combined list of all row dictionaries from all batches
+    """
+    all_rows = []
+    prefix = f"reports/pdf_processing_reports/temp/{batch_id}/"
+    
+    paginator = s3_client.get_paginator('list_objects_v2')
+    for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
+        for obj in page.get('Contents', []):
+            key = obj['Key']
+            if key.endswith('.json'):
+                try:
+                    response = s3_client.get_object(Bucket=bucket, Key=key)
+                    content = response['Body'].read().decode('utf-8')
+                    rows = json.loads(content)
+                    all_rows.extend(rows)
+                    print(f"Loaded {len(rows)} rows from {key}")
+                except Exception as e:
+                    print(f"Error loading batch results from {key}: {e}")
+    
+    return all_rows
+
+
+def cleanup_batch_results(bucket: str, batch_id: str):
+    """
+    Delete temporary batch result files from S3.
+    
+    Args:
+        bucket: S3 bucket name
+        batch_id: Unique identifier for this batch run
+    """
+    prefix = f"reports/pdf_processing_reports/temp/{batch_id}/"
+    
+    paginator = s3_client.get_paginator('list_objects_v2')
+    for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
+        for obj in page.get('Contents', []):
+            try:
+                s3_client.delete_object(Bucket=bucket, Key=obj['Key'])
+                print(f"Deleted temp file: {obj['Key']}")
+            except Exception as e:
+                print(f"Error deleting {obj['Key']}: {e}")
+
+
 def lambda_handler(event: Dict, context: Any) -> Dict:
     """
     Lambda handler for generating PDF processing reports.
     
+    Supports batch processing:
+    - First invocation: lists all PDFs, processes first batch, invokes next batch
+    - Subsequent invocations: processes assigned batch, invokes next or finalizes
+    
+    Event parameters:
+    - bucket: S3 bucket name (optional, defaults to BUCKET_NAME env var)
+    - batch_id: Unique ID for this report generation run
+    - batch_number: Current batch number (0-indexed)
+    - total_files: Total number of PDF files to process
+    - pdf_keys: List of PDF file keys to process in this batch (for continuation)
+    
     Args:
-        event: Lambda event (can contain 'bucket' override)
+        event: Lambda event
         context: Lambda context
         
     Returns:
@@ -530,37 +628,140 @@ def lambda_handler(event: Dict, context: Any) -> Dict:
             'body': 'Missing bucket name. Provide in event or BUCKET_NAME env var.'
         }
     
-    print(f"Generating PDF processing report for bucket: {bucket} (version: {VERSION})")
+    # Check if this is a continuation of batch processing
+    batch_id = event.get('batch_id')
+    batch_number = event.get('batch_number', 0)
+    all_pdf_keys = event.get('all_pdf_keys')
     
-    # List all PDFs in result folder
-    pdf_files = list_result_pdfs(bucket)
-    print(f"Found {len(pdf_files)} PDF files in result folder")
+    # First invocation - list all PDFs and start batch processing
+    if not batch_id:
+        print(f"Starting new report generation for bucket: {bucket} (version: {VERSION})")
+        
+        # Generate unique batch ID
+        tz_name = os.environ.get('TZ', 'US/Eastern')
+        try:
+            tz = ZoneInfo(tz_name)
+            batch_id = datetime.now(tz).strftime('%Y%m%d-%H%M%S')
+        except:
+            batch_id = datetime.now().strftime('%Y%m%d-%H%M%S')
+        
+        # List all PDFs in result folder
+        pdf_files = list_result_pdfs(bucket)
+        total_files = len(pdf_files)
+        print(f"Found {total_files} PDF files in result folder")
+        
+        if not pdf_files:
+            return {
+                'statusCode': 200,
+                'body': 'No PDF files found in result folder.'
+            }
+        
+        # Store all PDF keys for batch processing
+        all_pdf_keys = [f['key'] for f in pdf_files]
+        
+        # If small enough, process all at once (no batching needed)
+        if total_files <= BATCH_SIZE:
+            print(f"Processing all {total_files} files in single batch")
+            rows = []
+            for i, pdf_info in enumerate(pdf_files):
+                print(f"Processing ({i+1}/{total_files}): {pdf_info['key']}")
+                row = build_report_row(bucket, pdf_info)
+                rows.append(row)
+            
+            columns = collect_all_columns(rows)
+            excel_content = generate_excel_content(rows, columns)
+            report_key = save_excel_to_s3(bucket, excel_content)
+            
+            return {
+                'statusCode': 200,
+                'body': {
+                    'message': f'Report generated successfully with {len(rows)} files',
+                    'report_location': f's3://{bucket}/{report_key}',
+                    'files_processed': len(rows)
+                }
+            }
+        
+        # Large dataset - start batch processing
+        print(f"Starting batch processing: {total_files} files in batches of {BATCH_SIZE}")
+        batch_number = 0
     
-    if not pdf_files:
-        return {
-            'statusCode': 200,
-            'body': 'No PDF files found in result folder.'
-        }
+    # Process current batch
+    total_files = len(all_pdf_keys)
+    start_idx = batch_number * BATCH_SIZE
+    end_idx = min(start_idx + BATCH_SIZE, total_files)
+    batch_keys = all_pdf_keys[start_idx:end_idx]
     
-    # Build report rows
+    print(f"Processing batch {batch_number + 1}: files {start_idx + 1} to {end_idx} of {total_files}")
+    
     rows = []
-    for pdf_info in pdf_files:
-        print(f"Processing: {pdf_info['key']}")
+    for i, key in enumerate(batch_keys):
+        print(f"Processing ({start_idx + i + 1}/{total_files}): {key}")
+        # Reconstruct pdf_info from key
+        try:
+            response = s3_client.head_object(Bucket=bucket, Key=key)
+            pdf_info = {
+                'key': key,
+                'size': response['ContentLength'],
+                'last_modified': response['LastModified'].isoformat()
+            }
+        except Exception as e:
+            print(f"Error getting metadata for {key}: {e}")
+            pdf_info = {'key': key, 'size': 0, 'last_modified': ''}
+        
         row = build_report_row(bucket, pdf_info)
         rows.append(row)
     
-    # Collect all columns and generate Excel
-    columns = collect_all_columns(rows)
-    excel_content = generate_excel_content(rows, columns)
+    # Save batch results
+    save_batch_results_to_s3(bucket, rows, batch_id)
     
-    # Save to S3
+    # Check if there are more batches
+    if end_idx < total_files:
+        # Invoke next batch
+        next_batch = batch_number + 1
+        print(f"Invoking next batch: {next_batch + 1}")
+        
+        function_name = context.function_name
+        lambda_client.invoke(
+            FunctionName=function_name,
+            InvocationType='Event',  # Async invocation
+            Payload=json.dumps({
+                'bucket': bucket,
+                'batch_id': batch_id,
+                'batch_number': next_batch,
+                'all_pdf_keys': all_pdf_keys
+            })
+        )
+        
+        return {
+            'statusCode': 202,
+            'body': {
+                'message': f'Batch {batch_number + 1} complete, next batch triggered',
+                'batch_id': batch_id,
+                'files_processed_this_batch': len(rows),
+                'total_files': total_files,
+                'batches_remaining': (total_files - end_idx + BATCH_SIZE - 1) // BATCH_SIZE
+            }
+        }
+    
+    # Final batch - merge all results and generate Excel
+    print("Final batch complete. Merging all results...")
+    
+    all_rows = load_batch_results_from_s3(bucket, batch_id)
+    print(f"Loaded {len(all_rows)} total rows from all batches")
+    
+    columns = collect_all_columns(all_rows)
+    excel_content = generate_excel_content(all_rows, columns)
     report_key = save_excel_to_s3(bucket, excel_content)
+    
+    # Cleanup temp files
+    cleanup_batch_results(bucket, batch_id)
     
     return {
         'statusCode': 200,
         'body': {
-            'message': f'Report generated successfully with {len(rows)} files',
+            'message': f'Report generated successfully with {len(all_rows)} files',
             'report_location': f's3://{bucket}/{report_key}',
-            'files_processed': len(rows)
+            'files_processed': len(all_rows),
+            'batches_processed': batch_number + 1
         }
     }

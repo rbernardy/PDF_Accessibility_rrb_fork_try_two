@@ -27,6 +27,7 @@ s3 = boto3.client('s3')
 
 RATE_LIMIT_TABLE = os.environ.get('RATE_LIMIT_TABLE', '')
 REMEDIATION_GOAL_PARAM = os.environ.get('REMEDIATION_GOAL_PARAM', '/pdf-processing/remediation-count-goal')
+REMEDIATION_DEADLINE_PARAM = '/pdf-processing/remediation-deadline-date'
 BUCKET_NAME = os.environ.get('BUCKET_NAME', '')
 
 
@@ -50,6 +51,16 @@ def get_ssm_parameter(param_name: str) -> int:
         return 0
 
 
+def get_ssm_parameter_string(param_name: str) -> str:
+    """Get a string value from SSM parameter."""
+    try:
+        response = ssm.get_parameter(Name=param_name)
+        return response['Parameter']['Value']
+    except (ClientError, KeyError) as e:
+        logger.error(f"Error getting SSM parameter {param_name}: {e}")
+        return ''
+
+
 def get_queue_file_count(bucket: str, prefix: str = 'queue/') -> int:
     """Count PDF files in the S3 queue folder."""
     if not bucket:
@@ -65,6 +76,24 @@ def get_queue_file_count(bucket: str, prefix: str = 'queue/') -> int:
         return count
     except ClientError as e:
         logger.error(f"Error counting queue files: {e}")
+        return 0
+
+
+def get_failed_file_count(bucket: str, prefix: str = 'failed/') -> int:
+    """Count PDF files in the S3 failed folder."""
+    if not bucket:
+        return 0
+    
+    try:
+        count = 0
+        paginator = s3.get_paginator('list_objects_v2')
+        for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
+            for obj in page.get('Contents', []):
+                if obj['Key'].lower().endswith('.pdf'):
+                    count += 1
+        return count
+    except ClientError as e:
+        logger.error(f"Error counting failed files: {e}")
         return 0
 
 
@@ -153,8 +182,24 @@ def handler(event, context):
     else:
         days_display = "N/A"
     
+    # Get remediation deadline and calculate days remaining
+    deadline_str = get_ssm_parameter_string(REMEDIATION_DEADLINE_PARAM)
+    if deadline_str:
+        try:
+            deadline_date = datetime.strptime(deadline_str, '%Y-%m-%d').date()
+            today_date = now_local.date()
+            days_to_deadline = (deadline_date - today_date).days
+            deadline_display = f"{days_to_deadline}"
+        except ValueError:
+            deadline_display = "N/A"
+    else:
+        deadline_display = "N/A"
+    
     # Get queue file count
     queue_count = get_queue_file_count(BUCKET_NAME)
+    
+    # Get failed file count
+    failed_count = get_failed_file_count(BUCKET_NAME)
     
     # Calculate percent completed
     percent_completed = (total_count / remediation_goal * 100) if remediation_goal > 0 else 0.0
@@ -163,7 +208,7 @@ def handler(event, context):
     html = f'''<div style="font-family: Arial, sans-serif; padding: 10px;">
         <h3 style="margin: 0 0 15px 0; color: #232f3e;">PDF Processing Throughput</h3>
         
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
             <div style="background: #f0f8ff; padding: 15px; border-radius: 8px; text-align: center;">
                 <div style="font-size: 28px; font-weight: bold; color: #0073bb;">{total_count:,}</div>
                 <div style="font-size: 12px; color: #666;">Total Processed (All Time)</div>
@@ -175,6 +220,10 @@ def handler(event, context):
             <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; text-align: center;">
                 <div style="font-size: 28px; font-weight: bold; color: #1565c0;">{queue_count:,}</div>
                 <div style="font-size: 12px; color: #666;">Files in Queue<br>({now_local.strftime('%I:%M %p').lstrip('0')} {tz_abbrev})</div>
+            </div>
+            <div style="background: #ffebee; padding: 15px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 28px; font-weight: bold; color: #c62828;">{failed_count:,}</div>
+                <div style="font-size: 12px; color: #666;">Failed Files<br>({now_local.strftime('%I:%M %p').lstrip('0')} {tz_abbrev})</div>
             </div>
         </div>
         
@@ -214,6 +263,9 @@ def handler(event, context):
                 </div>
                 <div style="font-size: 14px; color: #333;">
                     <strong>Estimated Days to Completion:</strong> {days_display}
+                </div>
+                <div style="font-size: 14px; color: #333;">
+                    <strong>Days to Deadline ({deadline_str}):</strong> {deadline_display}
                 </div>
                 <div style="font-size: 10px; color: #666;">
                     (based on Last 24 Hours completion count)

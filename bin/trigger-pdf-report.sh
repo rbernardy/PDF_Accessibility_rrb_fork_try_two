@@ -24,11 +24,12 @@ fi
 
 echo "Found function: $FUNCTION_NAME"
 echo ""
-echo "Triggering Lambda..."
+echo "Triggering Lambda (this may take several minutes)..."
 aws lambda invoke \
     --function-name "$FUNCTION_NAME" \
     --payload '{}' \
     --cli-binary-format raw-in-base64-out \
+    --cli-read-timeout 900 \
     /tmp/pdf-report-response.json
 
 echo ""

@@ -96,6 +96,16 @@ class PDFAccessibility(Stack):
             description="Target number of PDFs to remediate for progress tracking"
         )
         
+        # SSM Parameter for remediation deadline date - target completion date
+        # Used by the throughput widget to show days remaining
+        remediation_deadline_param_name = '/pdf-processing/remediation-deadline-date'
+        remediation_deadline_param = ssm.StringParameter(
+            self, "RemediationDeadlineParam",
+            parameter_name=remediation_deadline_param_name,
+            string_value="2026-04-26",  # Default deadline date (update via set-remediation-deadline.sh)
+            description="Target deadline date for PDF remediation completion (YYYY-MM-DD format)"
+        )
+        
         # SSM Parameter for risk-based splitting - when true, high-risk PDFs go to pre-failed/
         # and medium-risk PDFs use smaller chunks. When false, all PDFs are processed using
         # page count and file size limits only.
@@ -609,6 +619,12 @@ class PDFAccessibility(Stack):
         # Grant S3 read/write access for reading PDFs/JSONs and writing CSV reports
         pdf_processing_bucket.grant_read_write(pdf_report_generator_lambda)
         pdf_report_generator_lambda.add_to_role_policy(cloudwatch_metrics_policy)
+        
+        # Grant permission to invoke itself for batch processing (use wildcard to avoid circular dependency)
+        pdf_report_generator_lambda.add_to_role_policy(iam.PolicyStatement(
+            actions=['lambda:InvokeFunction'],
+            resources=[f'arn:aws:lambda:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}:function:*PdfReportGenerator*']
+        ))
         
         # Schedule the report generator to run daily at midnight UTC
         pdf_report_schedule = events.Rule(
