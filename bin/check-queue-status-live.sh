@@ -17,7 +17,7 @@
 set -e
 
 # Default values
-BUCKET_NAME="${AWS_PROJECT_S3_BUCKET_NAME}
+BUCKET_NAME="${AWS_PROJECT_S3_BUCKET_NAME}"
 QUEUE_LINES="0"
 FAILED_LINES="0"
 WRITE_UNIQUE_FAILED_ANALYSIS=""
@@ -459,7 +459,7 @@ fi
 # Deadline projection (April 26, 2026)
 echo ""
 echo "=== Deadline Projection (04/26/2026) ==="
-TARGET_TOTAL=250000
+TARGET_TOTAL=${AWS_TARGET_TOTAL}
 DEADLINE_DATE="2026-04-26"
 TODAY=$(date +%s)
 DEADLINE=$(date -d "$DEADLINE_DATE" +%s)
