@@ -34,7 +34,7 @@ lambda_client = boto3.client('lambda')
 dynamodb = boto3.resource('dynamodb')
 
 # Version marker to force Lambda updates
-VERSION = "3.1.0-prescan"
+VERSION = "3.2.0-s3-keys"
 
 # Batch processing settings
 BATCH_SIZE = 200  # Number of PDFs to process per invocation
@@ -565,7 +565,7 @@ def save_excel_to_s3(bucket: str, excel_content: bytes, suffix: str = '') -> str
     return key
 
 
-def save_batch_results_to_s3(bucket: str, rows: List[Dict], batch_id: str) -> str:
+def save_batch_results_to_s3(bucket: str, rows: List[Dict], batch_id: str, batch_number: int) -> str:
     """
     Save batch results as JSON to S3 for later merging.
     
@@ -573,11 +573,12 @@ def save_batch_results_to_s3(bucket: str, rows: List[Dict], batch_id: str) -> st
         bucket: S3 bucket name
         rows: List of row dictionaries
         batch_id: Unique identifier for this batch run
+        batch_number: The batch number for unique naming
         
     Returns:
         S3 key where the batch results were saved
     """
-    key = f"reports/pdf_processing_reports/temp/{batch_id}/batch-{len(rows)}.json"
+    key = f"reports/pdf_processing_reports/temp/{batch_id}/batch-{batch_number:04d}.json"
     
     s3_client.put_object(
         Bucket=bucket,
@@ -588,6 +589,55 @@ def save_batch_results_to_s3(bucket: str, rows: List[Dict], batch_id: str) -> st
     
     print(f"Batch results saved to s3://{bucket}/{key}")
     return key
+
+
+def save_pdf_keys_to_s3(bucket: str, pdf_keys: List[str], batch_id: str) -> str:
+    """
+    Save the list of PDF keys to S3 to avoid payload size limits.
+    
+    Args:
+        bucket: S3 bucket name
+        pdf_keys: List of PDF S3 keys
+        batch_id: Unique identifier for this batch run
+        
+    Returns:
+        S3 key where the PDF keys were saved
+    """
+    key = f"reports/pdf_processing_reports/temp/{batch_id}/pdf_keys.json"
+    
+    s3_client.put_object(
+        Bucket=bucket,
+        Key=key,
+        Body=json.dumps(pdf_keys),
+        ContentType='application/json'
+    )
+    
+    print(f"PDF keys list saved to s3://{bucket}/{key} ({len(pdf_keys)} keys)")
+    return key
+
+
+def load_pdf_keys_from_s3(bucket: str, batch_id: str) -> List[str]:
+    """
+    Load the list of PDF keys from S3.
+    
+    Args:
+        bucket: S3 bucket name
+        batch_id: Unique identifier for this batch run
+        
+    Returns:
+        List of PDF S3 keys
+    """
+    key = f"reports/pdf_processing_reports/temp/{batch_id}/pdf_keys.json"
+    
+    try:
+        response = s3_client.get_object(Bucket=bucket, Key=key)
+        content = response['Body'].read().decode('utf-8')
+        pdf_keys = json.loads(content)
+        print(f"Loaded {len(pdf_keys)} PDF keys from S3")
+        return pdf_keys
+    except Exception as e:
+        print(f"Error loading PDF keys from S3: {e}")
+        return []
 
 
 def load_batch_results_from_s3(bucket: str, batch_id: str) -> List[Dict]:
@@ -646,15 +696,14 @@ def lambda_handler(event: Dict, context: Any) -> Dict:
     Lambda handler for generating PDF processing reports.
     
     Supports batch processing:
-    - First invocation: lists all PDFs, processes first batch, invokes next batch
-    - Subsequent invocations: processes assigned batch, invokes next or finalizes
+    - First invocation: lists all PDFs, saves keys to S3, processes first batch, invokes next batch
+    - Subsequent invocations: loads keys from S3, processes assigned batch, invokes next or finalizes
     
     Event parameters:
     - bucket: S3 bucket name (optional, defaults to BUCKET_NAME env var)
     - batch_id: Unique ID for this report generation run
     - batch_number: Current batch number (0-indexed)
     - total_files: Total number of PDF files to process
-    - pdf_keys: List of PDF file keys to process in this batch (for continuation)
     
     Args:
         event: Lambda event
@@ -675,7 +724,7 @@ def lambda_handler(event: Dict, context: Any) -> Dict:
     # Check if this is a continuation of batch processing
     batch_id = event.get('batch_id')
     batch_number = event.get('batch_number', 0)
-    all_pdf_keys = event.get('all_pdf_keys')
+    total_files = event.get('total_files', 0)
     
     # First invocation - list all PDFs and start batch processing
     if not batch_id:
@@ -725,12 +774,22 @@ def lambda_handler(event: Dict, context: Any) -> Dict:
                 }
             }
         
-        # Large dataset - start batch processing
+        # Large dataset - save PDF keys to S3 and start batch processing
         print(f"Starting batch processing: {total_files} files in batches of {BATCH_SIZE}")
+        save_pdf_keys_to_s3(bucket, all_pdf_keys, batch_id)
         batch_number = 0
     
-    # Process current batch
+    # Load PDF keys from S3 for batch processing
+    all_pdf_keys = load_pdf_keys_from_s3(bucket, batch_id)
+    if not all_pdf_keys:
+        return {
+            'statusCode': 500,
+            'body': f'Failed to load PDF keys from S3 for batch_id: {batch_id}'
+        }
+    
     total_files = len(all_pdf_keys)
+    
+    # Process current batch
     start_idx = batch_number * BATCH_SIZE
     end_idx = min(start_idx + BATCH_SIZE, total_files)
     batch_keys = all_pdf_keys[start_idx:end_idx]
@@ -756,7 +815,7 @@ def lambda_handler(event: Dict, context: Any) -> Dict:
         rows.append(row)
     
     # Save batch results
-    save_batch_results_to_s3(bucket, rows, batch_id)
+    save_batch_results_to_s3(bucket, rows, batch_id, batch_number)
     
     # Check if there are more batches
     if end_idx < total_files:
@@ -772,7 +831,7 @@ def lambda_handler(event: Dict, context: Any) -> Dict:
                 'bucket': bucket,
                 'batch_id': batch_id,
                 'batch_number': next_batch,
-                'all_pdf_keys': all_pdf_keys
+                'total_files': total_files
             })
         )
         
