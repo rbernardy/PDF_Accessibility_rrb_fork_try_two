@@ -19,7 +19,6 @@ from io import BytesIO
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
-from openpyxl.worksheet.table import Table, TableStyleInfo
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -387,26 +386,11 @@ def create_excel_report(items: list) -> bytes:
     for col, width in enumerate(column_widths, 1):
         ws.column_dimensions[get_column_letter(col)].width = width
     
-    # Add Excel table with auto-filter enabled
+    # Add auto-filter to the header row (simpler than Table, allows editing)
     if len(items) > 0:
-        # Define table range (A1 to last column/row)
         last_col_letter = get_column_letter(len(headers))
         last_row = len(items) + 1  # +1 for header row
-        table_ref = f"A1:{last_col_letter}{last_row}"
-        
-        # Create table with filters
-        table = Table(displayName="FailureAnalysis", ref=table_ref)
-        
-        # Add a default table style with filters enabled
-        style = TableStyleInfo(
-            name="TableStyleMedium2",
-            showFirstColumn=False,
-            showLastColumn=False,
-            showRowStripes=True,
-            showColumnStripes=False
-        )
-        table.tableStyleInfo = style
-        ws.add_table(table)
+        ws.auto_filter.ref = f"A1:{last_col_letter}{last_row}"
     
     # Freeze header row
     ws.freeze_panes = 'A2'
