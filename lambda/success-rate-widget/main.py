@@ -28,6 +28,7 @@ s3 = boto3.client('s3')
 RATE_LIMIT_TABLE = os.environ.get('RATE_LIMIT_TABLE', '')
 REMEDIATION_GOAL_PARAM = os.environ.get('REMEDIATION_GOAL_PARAM', '/pdf-processing/remediation-count-goal')
 REMEDIATION_DEADLINE_PARAM = '/pdf-processing/remediation-deadline-date'
+CUSTOM_FORK_VERSION_PARAM = '/pdf-processing/custom-fork-version'
 BUCKET_NAME = os.environ.get('BUCKET_NAME', '')
 
 
@@ -204,9 +205,13 @@ def handler(event, context):
     # Calculate percent completed
     percent_completed = (total_count / remediation_goal * 100) if remediation_goal > 0 else 0.0
     
+    # Get custom fork version for display in title
+    fork_version = get_ssm_parameter_string(CUSTOM_FORK_VERSION_PARAM)
+    fork_version_display = f" ({fork_version})" if fork_version else ""
+    
     # Build HTML response
     html = f'''<div style="font-family: Arial, sans-serif; padding: 10px;">
-        <h3 style="margin: 0 0 15px 0; color: #232f3e;">PDF Processing Throughput</h3>
+        <h3 style="margin: 0 0 15px 0; color: #232f3e;">PDF Processing Throughput{fork_version_display}</h3>
         
         <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
             <div style="background: #f0f8ff; padding: 15px; border-radius: 8px; text-align: center;">
