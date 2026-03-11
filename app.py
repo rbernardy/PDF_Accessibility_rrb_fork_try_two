@@ -1317,7 +1317,8 @@ class PDFAccessibility(Stack):
             environment={
                 "ANALYSIS_TABLE": pdf_failure_analysis_table.table_name,
                 "REPORT_BUCKET": pdf_processing_bucket.bucket_name,
-                "RATE_LIMIT_TABLE": adobe_rate_limit_table.table_name
+                "RATE_LIMIT_TABLE": adobe_rate_limit_table.table_name,
+                "PRESCAN_TABLE": pdf_prescan_table.table_name
             }
         )
         
@@ -1325,6 +1326,7 @@ class PDFAccessibility(Stack):
         pdf_failure_analysis_table.grant_read_data(failure_analysis_report_lambda)
         pdf_processing_bucket.grant_write(failure_analysis_report_lambda, "reports/failure_analysis_summary/*")
         adobe_rate_limit_table.grant_read_data(failure_analysis_report_lambda)  # For timing data lookup
+        pdf_prescan_table.grant_read_data(failure_analysis_report_lambda)  # For prescan data lookup
         
         # Schedule to run hourly at minute 00
         events.Rule(

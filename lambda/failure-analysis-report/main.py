@@ -15,6 +15,7 @@ import logging
 import re
 import boto3
 from datetime import datetime, timezone, timedelta
+from decimal import Decimal
 from io import BytesIO
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
@@ -29,6 +30,7 @@ s3 = boto3.client('s3')
 ANALYSIS_TABLE = os.environ.get('ANALYSIS_TABLE', '')
 REPORT_BUCKET = os.environ.get('REPORT_BUCKET', '')
 RATE_LIMIT_TABLE = os.environ.get('RATE_LIMIT_TABLE', 'adobe-api-in-flight-tracker')
+PRESCAN_TABLE = os.environ.get('PRESCAN_TABLE', 'pdf-prescan-data')
 
 # Prefix for individual file tracking entries (must match rate_limiter.py)
 IN_FLIGHT_FILE_PREFIX = "file_"
@@ -67,6 +69,56 @@ def extract_collection_folder(s3_key: str) -> str:
         return parts[1]
     
     return ''
+
+
+def get_prescan_data(filename: str, collection_folder: str) -> dict:
+    """
+    Look up prescan data from the pdf-prescan-data DynamoDB table.
+    
+    The prescan table uses pdf_key as the partition key, which is in the format:
+    pdf/collection_folder/filename.pdf
+    
+    Args:
+        filename: The PDF filename (e.g., 'document.pdf')
+        collection_folder: The collection folder name
+        
+    Returns:
+        dict with prescan data, or empty dict if not found
+    """
+    result = {}
+    
+    if not filename or not collection_folder:
+        return result
+    
+    try:
+        table = dynamodb.Table(PRESCAN_TABLE)
+        
+        # Construct the pdf_key to look up
+        pdf_key = f"pdf/{collection_folder}/{filename}"
+        
+        response = table.get_item(Key={'pdf_key': pdf_key})
+        item = response.get('Item')
+        
+        if item:
+            # Convert Decimal types to float/int for Excel compatibility
+            for key, value in item.items():
+                if isinstance(value, Decimal):
+                    result[key] = float(value) if '.' in str(value) else int(value)
+                elif isinstance(value, dict):
+                    # Convert nested dicts (like image_colorspaces) to string
+                    result[key] = json.dumps(value)
+                elif isinstance(value, list):
+                    result[key] = ', '.join(str(v) for v in value)
+                else:
+                    result[key] = value
+            logger.debug(f"Found prescan data for {pdf_key}")
+        else:
+            logger.debug(f"No prescan data found for {pdf_key}")
+            
+    except Exception as e:
+        logger.warning(f"Error looking up prescan data for {filename}: {e}")
+    
+    return result
 
 
 def parse_adobe_error(original_error: str) -> dict:
@@ -252,7 +304,7 @@ def create_excel_report(items: list) -> bytes:
     ws = wb.active
     ws.title = "Failure Analysis"
     
-    # Define headers - includes parsed error fields and timing columns
+    # Define headers - includes parsed error fields, timing columns, and prescan data
     headers = [
         'Filename',
         'Collection Folder',
@@ -278,12 +330,33 @@ def create_excel_report(items: list) -> bytes:
         'Error Status Code',
         'Error Code',
         'Request Tracking ID',
-        'Original Error'
+        'Original Error',
+        # Prescan data columns
+        'Prescan Risk Level',
+        'Prescan Complexity Score',
+        'Prescan Risk Factors',
+        'Prescan Total Images',
+        'Prescan Total Text Chars',
+        'Prescan Total Fonts',
+        'Prescan Total Drawings',
+        'Prescan Max Image Pixels',
+        'Prescan Images Over 1MP',
+        'Prescan Images Over 4MP',
+        'Prescan Unique Page Sizes',
+        'Prescan Pages Over Tabloid',
+        'Prescan MB Per Page',
+        'Prescan Images Per Page',
+        'Prescan Chars Per Page',
+        'Prescan Drawings Per Page',
+        'Prescan Has Javascript',
+        'Prescan Has Embedded Files',
+        'Prescan Recommended Chunk Size'
     ]
     
     # Style definitions
     header_font = Font(bold=True, color='FFFFFF')
     header_fill = PatternFill(start_color='4472C4', end_color='4472C4', fill_type='solid')
+    prescan_header_fill = PatternFill(start_color='70AD47', end_color='70AD47', fill_type='solid')  # Green for prescan
     header_alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
     thin_border = Border(
         left=Side(style='thin'),
@@ -293,11 +366,18 @@ def create_excel_report(items: list) -> bytes:
     )
     crash_fill = PatternFill(start_color='FFCCCC', end_color='FFCCCC', fill_type='solid')
     
+    # Index where prescan columns start (0-indexed)
+    prescan_start_col = 26  # After 'Original Error'
+    
     # Write headers
     for col, header in enumerate(headers, 1):
         cell = ws.cell(row=1, column=col, value=header)
         cell.font = header_font
-        cell.fill = header_fill
+        # Use green fill for prescan columns
+        if col > prescan_start_col:
+            cell.fill = prescan_header_fill
+        else:
+            cell.fill = header_fill
         cell.alignment = header_alignment
         cell.border = thin_border
     
@@ -341,8 +421,12 @@ def create_excel_report(items: list) -> bytes:
         s3_key = item.get('s3_key', '')
         collection_folder = extract_collection_folder(s3_key)
         
+        # Look up prescan data for this file
+        filename = item.get('filename', '')
+        prescan = get_prescan_data(filename, collection_folder)
+        
         row_data = [
-            item.get('filename', ''),
+            filename,
             collection_folder,
             s3_key,
             item.get('analysis_timestamp', ''),
@@ -366,7 +450,27 @@ def create_excel_report(items: list) -> bytes:
             parsed_error['status_code'],
             parsed_error['error_code'],
             parsed_error['request_tracking_id'],
-            original_error[:500]  # Truncate long errors
+            original_error[:500],  # Truncate long errors
+            # Prescan data
+            prescan.get('risk_level', ''),
+            prescan.get('complexity_score', ''),
+            prescan.get('risk_factors', ''),
+            prescan.get('total_images', ''),
+            prescan.get('total_text_chars', ''),
+            prescan.get('total_fonts', ''),
+            prescan.get('total_drawings', ''),
+            prescan.get('max_image_pixels', ''),
+            prescan.get('images_over_1mp', ''),
+            prescan.get('images_over_4mp', ''),
+            prescan.get('unique_page_sizes', ''),
+            prescan.get('pages_over_tabloid', ''),
+            prescan.get('mb_per_page', ''),
+            prescan.get('images_per_page', ''),
+            prescan.get('chars_per_page', ''),
+            prescan.get('drawings_per_page', ''),
+            'Yes' if prescan.get('has_javascript') else ('No' if prescan else ''),
+            'Yes' if prescan.get('has_embedded_files') else ('No' if prescan else ''),
+            prescan.get('recommended_pages_per_chunk', '')
         ]
         
         for col, value in enumerate(row_data, 1):
@@ -377,12 +481,13 @@ def create_excel_report(items: list) -> bytes:
             if crashed:
                 cell.fill = crash_fill
     
-    # Auto-adjust column widths - updated for new columns
-    # Headers: Filename, Collection Folder, S3 Key, Analysis Timestamp, API Type, Started At, Released At,
-    #          Duration, Crashed, Crash Reason, Exit Code, File Size, Page Count, Image Count, Font Count,
-    #          Encrypted, PDF Version, Likely Cause, Issue Count, Error API, Error Description, 
-    #          Error Status Code, Error Code, Request Tracking ID, Original Error
-    column_widths = [30, 30, 50, 25, 12, 25, 25, 12, 10, 40, 10, 12, 12, 12, 12, 10, 12, 50, 12, 20, 40, 12, 25, 40, 60]
+    # Auto-adjust column widths - updated for new columns including prescan
+    # Original columns + prescan columns
+    column_widths = [
+        30, 30, 50, 25, 12, 25, 25, 12, 10, 40, 10, 12, 12, 12, 12, 10, 12, 50, 12, 20, 40, 12, 25, 40, 60,
+        # Prescan columns
+        12, 12, 40, 12, 12, 12, 12, 15, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12
+    ]
     for col, width in enumerate(column_widths, 1):
         ws.column_dimensions[get_column_letter(col)].width = width
     
