@@ -588,9 +588,10 @@ def handler(event, context):
     # Generate Excel report
     excel_bytes = create_excel_report(items, prescan_cache)
     
-    # Generate filename with timestamp (US Eastern time)
-    eastern_offset = timedelta(hours=-5)
-    now_eastern = datetime.now(timezone.utc) + eastern_offset
+    # Generate filename with timestamp (US Eastern time - handles EST/EDT automatically)
+    from zoneinfo import ZoneInfo
+    eastern_tz = ZoneInfo('America/New_York')
+    now_eastern = datetime.now(eastern_tz)
     timestamp_str = now_eastern.strftime('%Y%m%d_%H%M%S')
     report_key = f"reports/failure_analysis_summary/failure_analysis_report_{timestamp_str}.xlsx"
     
