@@ -1326,11 +1326,11 @@ class PDFAccessibility(Stack):
         pdf_processing_bucket.grant_write(failure_analysis_report_lambda, "reports/failure_analysis_summary/*")
         adobe_rate_limit_table.grant_read_data(failure_analysis_report_lambda)  # For timing data lookup
         
-        # Schedule to run daily at 11:30 PM EST (4:30 AM UTC next day)
+        # Schedule to run hourly at minute 00
         events.Rule(
             self, "FailureAnalysisReportSchedule",
             rule_name="failure-analysis-report-schedule",
-            schedule=events.Schedule.cron(hour="4", minute="30"),
+            schedule=events.Schedule.cron(minute="0"),
             targets=[targets.LambdaFunction(failure_analysis_report_lambda)]
         )
 
