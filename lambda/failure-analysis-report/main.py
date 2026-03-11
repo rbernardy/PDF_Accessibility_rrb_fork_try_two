@@ -39,28 +39,34 @@ def extract_collection_folder(s3_key: str) -> str:
     """
     Extract the collection folder from an S3 key.
     
-    Example: pdf/my-collection-folder/document.pdf -> my-collection-folder
-    Example: pdf/folder1/subfolder/document.pdf -> folder1/subfolder
+    The collection folder is the first folder after the top-level prefix
+    (temp/, failed/, queue/, pdf/, etc.)
+    
+    Examples:
+        temp/pdfs-test-failures-13-american_boy-S0-F19/11_american_boy_a/file.pdf 
+            -> pdfs-test-failures-13-american_boy-S0-F19
+        failed/pdfs-test-failures-13-american_boy-S0-F19/11_american_boy_a.pdf 
+            -> pdfs-test-failures-13-american_boy-S0-F19
+        queue/pdfs-test-failures-07-coe_college/60_coe.pdf 
+            -> pdfs-test-failures-07-coe_college
     
     Args:
         s3_key: The S3 key of the PDF file
         
     Returns:
-        The collection folder path, or empty string if not found
+        The collection folder name, or empty string if not found
     """
     if not s3_key:
         return ''
     
-    # Remove the 'pdf/' prefix if present
-    if s3_key.startswith('pdf/'):
-        path = s3_key[4:]
-    else:
-        path = s3_key
+    # Split by '/'
+    parts = s3_key.split('/')
     
-    # Split by '/' and remove the filename (last part)
-    parts = path.rsplit('/', 1)
-    if len(parts) > 1:
-        return parts[0]
+    # Need at least 2 parts: top-level-prefix/collection-folder/...
+    if len(parts) >= 2:
+        # Return the second part (index 1), which is the collection folder
+        return parts[1]
+    
     return ''
 
 
