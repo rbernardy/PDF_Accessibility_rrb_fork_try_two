@@ -80,13 +80,14 @@ def parse_adobe_error(original_error: str) -> dict:
     - "Status: 500"
     
     Returns:
-        dict with 'api_name', 'description', 'status_code', 'error_code' keys
+        dict with 'api_name', 'description', 'status_code', 'error_code', 'request_tracking_id' keys
     """
     result = {
         'api_name': '',
         'description': '',
         'status_code': '',
-        'error_code': ''
+        'error_code': '',
+        'request_tracking_id': ''
     }
     
     if not original_error:
@@ -105,21 +106,21 @@ def parse_adobe_error(original_error: str) -> dict:
             api_type = ecs_match.group(1).capitalize()
             result['api_name'] = f"Adobe {api_type} API"
     
-    # Try to extract description - multiple formats
-    # Format 1: "description = ...;;" (with space around =, ends with ;;)
-    desc_match = re.search(r"description\s*=\s*(.+?);;", original_error, re.IGNORECASE)
+    # Extract description - everything between "description =" and ";"
+    # This handles: description =Some error message here;
+    desc_match = re.search(r"description\s*=\s*([^;]+)", original_error, re.IGNORECASE)
     if desc_match:
         result['description'] = desc_match.group(1).strip().strip("'\"")
     else:
-        # Format 2: description='...' or description="..."
-        desc_match = re.search(r"description\s*=\s*['\"]([^'\"]+)['\"]", original_error, re.IGNORECASE)
-        if desc_match:
-            result['description'] = desc_match.group(1)
-        else:
-            # Format 3: message=...;
-            msg_match = re.search(r"message\s*=\s*([^;]+)", original_error, re.IGNORECASE)
-            if msg_match:
-                result['description'] = msg_match.group(1).strip()
+        # Fallback: try message=...;
+        msg_match = re.search(r"message\s*=\s*([^;]+)", original_error, re.IGNORECASE)
+        if msg_match:
+            result['description'] = msg_match.group(1).strip()
+    
+    # Extract requestTrackingId
+    tracking_match = re.search(r"requestTrackingId\s*=\s*([^;\s]+)", original_error, re.IGNORECASE)
+    if tracking_match:
+        result['request_tracking_id'] = tracking_match.group(1).strip()
     
     # Extract statusCode, httpStatusCode, or Status:
     status_match = re.search(r"(?:statusCode|httpStatusCode)\s*=\s*(\d+)", original_error, re.IGNORECASE)
@@ -277,6 +278,7 @@ def create_excel_report(items: list) -> bytes:
         'Error Description',
         'Error Status Code',
         'Error Code',
+        'Request Tracking ID',
         'Original Error'
     ]
     
@@ -364,6 +366,7 @@ def create_excel_report(items: list) -> bytes:
             parsed_error['description'],
             parsed_error['status_code'],
             parsed_error['error_code'],
+            parsed_error['request_tracking_id'],
             original_error[:500]  # Truncate long errors
         ]
         
@@ -376,7 +379,11 @@ def create_excel_report(items: list) -> bytes:
                 cell.fill = crash_fill
     
     # Auto-adjust column widths - updated for new columns
-    column_widths = [30, 30, 50, 25, 12, 25, 25, 12, 10, 40, 10, 12, 12, 12, 12, 10, 12, 50, 12, 20, 40, 12, 25, 60]
+    # Headers: Filename, Collection Folder, S3 Key, Analysis Timestamp, API Type, Started At, Released At,
+    #          Duration, Crashed, Crash Reason, Exit Code, File Size, Page Count, Image Count, Font Count,
+    #          Encrypted, PDF Version, Likely Cause, Issue Count, Error API, Error Description, 
+    #          Error Status Code, Error Code, Request Tracking ID, Original Error
+    column_widths = [30, 30, 50, 25, 12, 25, 25, 12, 10, 40, 10, 12, 12, 12, 12, 10, 12, 50, 12, 20, 40, 12, 25, 40, 60]
     for col, width in enumerate(column_widths, 1):
         ws.column_dimensions[get_column_letter(col)].width = width
     
