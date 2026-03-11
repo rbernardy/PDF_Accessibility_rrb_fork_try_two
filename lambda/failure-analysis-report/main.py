@@ -84,6 +84,7 @@ def load_all_prescan_data() -> dict:
     
     try:
         table = dynamodb.Table(PRESCAN_TABLE)
+        logger.info(f"Loading prescan data from table: {PRESCAN_TABLE}")
         
         # Scan all items from prescan table
         response = table.scan()
@@ -93,7 +94,12 @@ def load_all_prescan_data() -> dict:
             response = table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
             items.extend(response.get('Items', []))
         
-        logger.info(f"Loaded {len(items)} prescan records")
+        logger.info(f"Loaded {len(items)} prescan records from DynamoDB")
+        
+        # Log a few sample keys for debugging
+        if items:
+            sample_keys = [item.get('pdf_key', '') for item in items[:5]]
+            logger.info(f"Sample prescan pdf_keys: {sample_keys}")
         
         # Build cache keyed by pdf_key
         for item in items:
@@ -111,14 +117,16 @@ def load_all_prescan_data() -> dict:
                     else:
                         converted[key] = value
                 prescan_cache[pdf_key] = converted
+        
+        logger.info(f"Built prescan cache with {len(prescan_cache)} entries")
                 
     except Exception as e:
-        logger.warning(f"Error loading prescan data: {e}")
+        logger.error(f"Error loading prescan data: {e}", exc_info=True)
     
     return prescan_cache
 
 
-def get_prescan_data(filename: str, collection_folder: str, prescan_cache: dict) -> dict:
+def get_prescan_data(filename: str, collection_folder: str, prescan_cache: dict, log_misses: bool = False) -> dict:
     """
     Look up prescan data from the pre-loaded cache.
     
@@ -126,17 +134,25 @@ def get_prescan_data(filename: str, collection_folder: str, prescan_cache: dict)
         filename: The PDF filename (e.g., 'document.pdf')
         collection_folder: The collection folder name
         prescan_cache: Pre-loaded prescan data dictionary
+        log_misses: If True, log when prescan data is not found
         
     Returns:
         dict with prescan data, or empty dict if not found
     """
     if not filename or not collection_folder:
+        if log_misses:
+            logger.debug(f"Prescan lookup skipped - missing filename ({filename}) or collection_folder ({collection_folder})")
         return {}
     
     # Construct the pdf_key to look up
     pdf_key = f"pdf/{collection_folder}/{filename}"
     
-    return prescan_cache.get(pdf_key, {})
+    result = prescan_cache.get(pdf_key, {})
+    
+    if log_misses and not result:
+        logger.debug(f"Prescan data NOT FOUND for pdf_key: {pdf_key}")
+    
+    return result
 
 
 def parse_adobe_error(original_error: str) -> dict:
@@ -350,6 +366,7 @@ def create_excel_report(items: list, prescan_cache: dict) -> bytes:
         'Request Tracking ID',
         'Original Error',
         # Prescan data columns
+        'Prescan Info Available',
         'Prescan Risk Level',
         'Prescan Complexity Score',
         'Prescan Risk Factors',
@@ -441,7 +458,16 @@ def create_excel_report(items: list, prescan_cache: dict) -> bytes:
         
         # Look up prescan data for this file
         filename = item.get('filename', '')
-        prescan = get_prescan_data(filename, collection_folder, prescan_cache)
+        # Log first 10 lookups for debugging
+        log_this_lookup = (row_num <= 12)  # row_num starts at 2
+        prescan = get_prescan_data(filename, collection_folder, prescan_cache, log_misses=log_this_lookup)
+        
+        # Log the constructed key for first few rows
+        if row_num <= 12:
+            constructed_key = f"pdf/{collection_folder}/{filename}"
+            logger.info(f"Row {row_num}: filename={filename}, collection_folder={collection_folder}, constructed_key={constructed_key}, prescan_found={bool(prescan)}")
+        
+        prescan_available = 'True' if prescan else 'False'
         
         row_data = [
             filename,
@@ -470,6 +496,7 @@ def create_excel_report(items: list, prescan_cache: dict) -> bytes:
             parsed_error['request_tracking_id'],
             original_error[:500],  # Truncate long errors
             # Prescan data
+            prescan_available,
             prescan.get('risk_level', ''),
             prescan.get('complexity_score', ''),
             prescan.get('risk_factors', ''),
@@ -500,11 +527,11 @@ def create_excel_report(items: list, prescan_cache: dict) -> bytes:
                 cell.fill = crash_fill
     
     # Auto-adjust column widths - updated for new columns including prescan
-    # Original columns + prescan columns
+    # Original columns + prescan columns (added Prescan Info Available column)
     column_widths = [
         30, 30, 50, 25, 12, 25, 25, 12, 10, 40, 10, 12, 12, 12, 12, 10, 12, 50, 12, 20, 40, 12, 25, 40, 60,
-        # Prescan columns
-        12, 12, 40, 12, 12, 12, 12, 15, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12
+        # Prescan columns: Info Available, Risk Level, Complexity, Risk Factors, etc.
+        15, 12, 12, 40, 12, 12, 12, 12, 15, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12
     ]
     for col, width in enumerate(column_widths, 1):
         ws.column_dimensions[get_column_letter(col)].width = width
