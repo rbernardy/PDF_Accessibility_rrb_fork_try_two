@@ -1311,8 +1311,8 @@ class PDFAccessibility(Stack):
             self, "FailureAnalysisReportLambda",
             function_name="failure-analysis-report",
             code=lambda_.DockerImageCode.from_image_asset("lambda/failure-analysis-report"),
-            memory_size=512,
-            timeout=Duration.seconds(120),
+            memory_size=1024,
+            timeout=Duration.seconds(300),
             architecture=lambda_arch,
             environment={
                 "ANALYSIS_TABLE": pdf_failure_analysis_table.table_name,

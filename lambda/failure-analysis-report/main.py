@@ -71,54 +71,72 @@ def extract_collection_folder(s3_key: str) -> str:
     return ''
 
 
-def get_prescan_data(filename: str, collection_folder: str) -> dict:
+def load_all_prescan_data() -> dict:
     """
-    Look up prescan data from the pdf-prescan-data DynamoDB table.
+    Load all prescan data from DynamoDB into a dictionary keyed by pdf_key.
     
-    The prescan table uses pdf_key as the partition key, which is in the format:
-    pdf/collection_folder/filename.pdf
+    This is more efficient than individual lookups when processing many records.
     
-    Args:
-        filename: The PDF filename (e.g., 'document.pdf')
-        collection_folder: The collection folder name
-        
     Returns:
-        dict with prescan data, or empty dict if not found
+        dict mapping pdf_key to prescan data dict
     """
-    result = {}
-    
-    if not filename or not collection_folder:
-        return result
+    prescan_cache = {}
     
     try:
         table = dynamodb.Table(PRESCAN_TABLE)
         
-        # Construct the pdf_key to look up
-        pdf_key = f"pdf/{collection_folder}/{filename}"
+        # Scan all items from prescan table
+        response = table.scan()
+        items = response.get('Items', [])
         
-        response = table.get_item(Key={'pdf_key': pdf_key})
-        item = response.get('Item')
+        while 'LastEvaluatedKey' in response:
+            response = table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
+            items.extend(response.get('Items', []))
         
-        if item:
-            # Convert Decimal types to float/int for Excel compatibility
-            for key, value in item.items():
-                if isinstance(value, Decimal):
-                    result[key] = float(value) if '.' in str(value) else int(value)
-                elif isinstance(value, dict):
-                    # Convert nested dicts (like image_colorspaces) to string
-                    result[key] = json.dumps(value)
-                elif isinstance(value, list):
-                    result[key] = ', '.join(str(v) for v in value)
-                else:
-                    result[key] = value
-            logger.debug(f"Found prescan data for {pdf_key}")
-        else:
-            logger.debug(f"No prescan data found for {pdf_key}")
-            
+        logger.info(f"Loaded {len(items)} prescan records")
+        
+        # Build cache keyed by pdf_key
+        for item in items:
+            pdf_key = item.get('pdf_key', '')
+            if pdf_key:
+                # Convert Decimal types to float/int for Excel compatibility
+                converted = {}
+                for key, value in item.items():
+                    if isinstance(value, Decimal):
+                        converted[key] = float(value) if '.' in str(value) else int(value)
+                    elif isinstance(value, dict):
+                        converted[key] = json.dumps(value)
+                    elif isinstance(value, list):
+                        converted[key] = ', '.join(str(v) for v in value)
+                    else:
+                        converted[key] = value
+                prescan_cache[pdf_key] = converted
+                
     except Exception as e:
-        logger.warning(f"Error looking up prescan data for {filename}: {e}")
+        logger.warning(f"Error loading prescan data: {e}")
     
-    return result
+    return prescan_cache
+
+
+def get_prescan_data(filename: str, collection_folder: str, prescan_cache: dict) -> dict:
+    """
+    Look up prescan data from the pre-loaded cache.
+    
+    Args:
+        filename: The PDF filename (e.g., 'document.pdf')
+        collection_folder: The collection folder name
+        prescan_cache: Pre-loaded prescan data dictionary
+        
+    Returns:
+        dict with prescan data, or empty dict if not found
+    """
+    if not filename or not collection_folder:
+        return {}
+    
+    # Construct the pdf_key to look up
+    pdf_key = f"pdf/{collection_folder}/{filename}"
+    
+    return prescan_cache.get(pdf_key, {})
 
 
 def parse_adobe_error(original_error: str) -> dict:
@@ -298,7 +316,7 @@ def get_in_flight_timing_data(filename: str, api_type: str) -> dict:
         return result
 
 
-def create_excel_report(items: list) -> bytes:
+def create_excel_report(items: list, prescan_cache: dict) -> bytes:
     """Create an Excel spreadsheet from the analysis data."""
     wb = Workbook()
     ws = wb.active
@@ -423,7 +441,7 @@ def create_excel_report(items: list) -> bytes:
         
         # Look up prescan data for this file
         filename = item.get('filename', '')
-        prescan = get_prescan_data(filename, collection_folder)
+        prescan = get_prescan_data(filename, collection_folder, prescan_cache)
         
         row_data = [
             filename,
@@ -563,8 +581,12 @@ def handler(event, context):
     # Sort by timestamp descending
     items.sort(key=lambda x: x.get('analysis_timestamp', ''), reverse=True)
     
+    # Load all prescan data upfront for efficiency
+    logger.info("Loading prescan data...")
+    prescan_cache = load_all_prescan_data()
+    
     # Generate Excel report
-    excel_bytes = create_excel_report(items)
+    excel_bytes = create_excel_report(items, prescan_cache)
     
     # Generate filename with timestamp (US Eastern time)
     eastern_offset = timedelta(hours=-5)
