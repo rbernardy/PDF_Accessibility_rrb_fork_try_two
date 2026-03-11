@@ -2,7 +2,7 @@
 Failure Analysis Report Generator Lambda
 
 Generates an Excel spreadsheet from PDF failure analysis data stored in DynamoDB.
-Scheduled to run daily at 11:30 PM EST via EventBridge.
+Scheduled to run hourly via EventBridge.
 
 Timing data (started_at, failed_at) is now stored permanently in the failure analysis
 table at the moment of failure, so it doesn't depend on the in-flight tracker TTL.
@@ -19,6 +19,7 @@ from io import BytesIO
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.table import Table, TableStyleInfo
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -32,6 +33,35 @@ RATE_LIMIT_TABLE = os.environ.get('RATE_LIMIT_TABLE', 'adobe-api-in-flight-track
 
 # Prefix for individual file tracking entries (must match rate_limiter.py)
 IN_FLIGHT_FILE_PREFIX = "file_"
+
+
+def extract_collection_folder(s3_key: str) -> str:
+    """
+    Extract the collection folder from an S3 key.
+    
+    Example: pdf/my-collection-folder/document.pdf -> my-collection-folder
+    Example: pdf/folder1/subfolder/document.pdf -> folder1/subfolder
+    
+    Args:
+        s3_key: The S3 key of the PDF file
+        
+    Returns:
+        The collection folder path, or empty string if not found
+    """
+    if not s3_key:
+        return ''
+    
+    # Remove the 'pdf/' prefix if present
+    if s3_key.startswith('pdf/'):
+        path = s3_key[4:]
+    else:
+        path = s3_key
+    
+    # Split by '/' and remove the filename (last part)
+    parts = path.rsplit('/', 1)
+    if len(parts) > 1:
+        return parts[0]
+    return ''
 
 
 def parse_adobe_error(original_error: str) -> dict:
@@ -219,6 +249,7 @@ def create_excel_report(items: list) -> bytes:
     # Define headers - includes parsed error fields and timing columns
     headers = [
         'Filename',
+        'Collection Folder',
         'S3 Key',
         'Analysis Timestamp',
         'API Type',
@@ -299,9 +330,14 @@ def create_excel_report(items: list) -> bytes:
         original_error = item.get('original_error', '')
         parsed_error = parse_adobe_error(original_error)
         
+        # Extract collection folder from S3 key
+        s3_key = item.get('s3_key', '')
+        collection_folder = extract_collection_folder(s3_key)
+        
         row_data = [
             item.get('filename', ''),
-            item.get('s3_key', ''),
+            collection_folder,
+            s3_key,
             item.get('analysis_timestamp', ''),
             item.get('api_type', ''),
             started_at,
@@ -334,12 +370,37 @@ def create_excel_report(items: list) -> bytes:
                 cell.fill = crash_fill
     
     # Auto-adjust column widths - updated for new columns
-    column_widths = [30, 50, 25, 12, 25, 25, 12, 10, 40, 10, 12, 12, 12, 12, 10, 12, 50, 12, 20, 40, 12, 25, 60]
+    column_widths = [30, 30, 50, 25, 12, 25, 25, 12, 10, 40, 10, 12, 12, 12, 12, 10, 12, 50, 12, 20, 40, 12, 25, 60]
     for col, width in enumerate(column_widths, 1):
         ws.column_dimensions[get_column_letter(col)].width = width
     
+    # Add Excel table with auto-filter enabled
+    if len(items) > 0:
+        # Define table range (A1 to last column/row)
+        last_col_letter = get_column_letter(len(headers))
+        last_row = len(items) + 1  # +1 for header row
+        table_ref = f"A1:{last_col_letter}{last_row}"
+        
+        # Create table with filters
+        table = Table(displayName="FailureAnalysis", ref=table_ref)
+        
+        # Add a default table style with filters enabled
+        style = TableStyleInfo(
+            name="TableStyleMedium2",
+            showFirstColumn=False,
+            showLastColumn=False,
+            showRowStripes=True,
+            showColumnStripes=False
+        )
+        table.tableStyleInfo = style
+        ws.add_table(table)
+    
     # Freeze header row
     ws.freeze_panes = 'A2'
+    
+    # Unprotect the sheet to allow editing (sheets are editable by default, but explicitly ensure it)
+    ws.protection.sheet = False
+    ws.protection.password = None
     
     # Save to bytes
     buffer = BytesIO()
