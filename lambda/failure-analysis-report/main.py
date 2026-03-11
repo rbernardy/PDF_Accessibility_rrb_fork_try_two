@@ -398,10 +398,6 @@ def create_excel_report(items: list) -> bytes:
     # Freeze header row
     ws.freeze_panes = 'A2'
     
-    # Unprotect the sheet to allow editing (sheets are editable by default, but explicitly ensure it)
-    ws.protection.sheet = False
-    ws.protection.password = None
-    
     # Save to bytes
     buffer = BytesIO()
     wb.save(buffer)
