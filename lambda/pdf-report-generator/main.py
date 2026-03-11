@@ -658,7 +658,8 @@ def load_batch_results_from_s3(bucket: str, batch_id: str) -> List[Dict]:
     for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
         for obj in page.get('Contents', []):
             key = obj['Key']
-            if key.endswith('.json'):
+            # Only load batch-*.json files, skip pdf_keys.json and other files
+            if key.endswith('.json') and '/batch-' in key:
                 try:
                     response = s3_client.get_object(Bucket=bucket, Key=key)
                     content = response['Body'].read().decode('utf-8')
