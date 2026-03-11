@@ -126,6 +126,15 @@ class PDFAccessibility(Stack):
             description="Max pages per chunk when risk-based splitting is disabled"
         )
         
+        # SSM Parameter for custom fork version - displayed in the dashboard widget title
+        custom_fork_version_param_name = '/pdf-processing/custom-fork-version'
+        custom_fork_version_param = ssm.StringParameter(
+            self, "CustomForkVersionParam",
+            parameter_name=custom_fork_version_param_name,
+            string_value="20260114080000",  # Default version (update via set-fork-version.sh)
+            description="Custom fork version identifier displayed in dashboard widget"
+        )
+        
         # DynamoDB table for distributed in-flight tracking across ECS tasks
         # Uses a single counter that tracks requests currently in progress
         # - Incremented when API call starts
@@ -1419,6 +1428,7 @@ class PDFAccessibility(Stack):
         adobe_rate_limit_table.grant_read_data(success_rate_widget_lambda)
         remediation_goal_param.grant_read(success_rate_widget_lambda)
         remediation_deadline_param.grant_read(success_rate_widget_lambda)
+        custom_fork_version_param.grant_read(success_rate_widget_lambda)
         pdf_processing_bucket.grant_read(success_rate_widget_lambda)
         
         # Grant CloudWatch permission to invoke the custom widget Lambda
