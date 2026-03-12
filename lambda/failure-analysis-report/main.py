@@ -89,17 +89,24 @@ def load_all_prescan_data() -> dict:
         # Scan all items from prescan table
         response = table.scan()
         items = response.get('Items', [])
+        logger.info(f"First scan returned {len(items)} items, has more: {'LastEvaluatedKey' in response}")
         
+        page_count = 1
         while 'LastEvaluatedKey' in response:
+            page_count += 1
             response = table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
-            items.extend(response.get('Items', []))
+            new_items = response.get('Items', [])
+            items.extend(new_items)
+            logger.info(f"Scan page {page_count} returned {len(new_items)} items, total so far: {len(items)}")
         
-        logger.info(f"Loaded {len(items)} prescan records from DynamoDB")
+        logger.info(f"Loaded {len(items)} total prescan records from DynamoDB after {page_count} scan(s)")
         
         # Log a few sample keys for debugging
         if items:
-            sample_keys = [item.get('pdf_key', '') for item in items[:5]]
+            sample_keys = [item.get('pdf_key', 'NO_KEY') for item in items[:5]]
             logger.info(f"Sample prescan pdf_keys: {sample_keys}")
+        else:
+            logger.warning(f"No items found in prescan table {PRESCAN_TABLE}")
         
         # Build cache keyed by pdf_key
         for item in items:
@@ -117,8 +124,14 @@ def load_all_prescan_data() -> dict:
                     else:
                         converted[key] = value
                 prescan_cache[pdf_key] = converted
+            else:
+                logger.warning(f"Prescan item missing pdf_key: {item}")
         
         logger.info(f"Built prescan cache with {len(prescan_cache)} entries")
+        
+        # Log all keys if there are few (for debugging)
+        if len(prescan_cache) <= 20:
+            logger.info(f"All prescan keys: {list(prescan_cache.keys())}")
                 
     except Exception as e:
         logger.error(f"Error loading prescan data: {e}", exc_info=True)
@@ -126,12 +139,58 @@ def load_all_prescan_data() -> dict:
     return prescan_cache
 
 
+def extract_original_filename(chunk_filename: str) -> str:
+    """
+    Extract the original PDF filename from a processed chunk filename.
+    
+    During processing, files may have:
+    1. A prefix added: COMPLIANT_, REMEDIATED_, etc.
+    2. A chunk suffix: _chunk_N
+    
+    We need to strip both to get back to the original filename.
+    
+    Examples:
+        COMPLIANT_19_american_boy_a_chunk_4.pdf -> 19_american_boy_a.pdf
+        document_chunk_1.pdf -> document.pdf
+        REMEDIATED_report_chunk_3.pdf -> report.pdf
+        my_file.pdf -> my_file.pdf (no change)
+    
+    Args:
+        chunk_filename: The processed filename
+        
+    Returns:
+        The original filename, or the input if no patterns match
+    """
+    import re
+    
+    result = chunk_filename
+    
+    # Step 1: Remove known prefixes (COMPLIANT_, REMEDIATED_, etc.)
+    prefixes_to_remove = ['COMPLIANT_', 'REMEDIATED_', 'PROCESSED_', 'TAGGED_']
+    for prefix in prefixes_to_remove:
+        if result.upper().startswith(prefix.upper()):
+            result = result[len(prefix):]
+            break
+    
+    # Step 2: Remove _chunk_N suffix (before .pdf)
+    # Pattern: anything_chunk_N.pdf where N is one or more digits
+    match = re.match(r'^(.+)_chunk_\d+\.pdf$', result, re.IGNORECASE)
+    if match:
+        original_basename = match.group(1)
+        result = f"{original_basename}.pdf"
+    
+    return result
+
+
 def get_prescan_data(filename: str, collection_folder: str, prescan_cache: dict, log_misses: bool = False) -> tuple:
     """
     Look up prescan data from the pre-loaded cache.
     
+    The prescan data is stored for the ORIGINAL PDF file (before splitting into chunks).
+    So we need to convert chunk filenames back to original filenames.
+    
     Args:
-        filename: The PDF filename (e.g., 'document.pdf')
+        filename: The PDF filename (may be a chunk like 'document_chunk_1.pdf')
         collection_folder: The collection folder name
         prescan_cache: Pre-loaded prescan data dictionary
         log_misses: If True, log when prescan data is not found
@@ -147,9 +206,18 @@ def get_prescan_data(filename: str, collection_folder: str, prescan_cache: dict,
             logger.debug(f"Prescan lookup skipped - missing filename ({filename}) or collection_folder ({collection_folder})")
         return {}, matching_info
     
-    # Construct the pdf_key to look up
-    pdf_key = f"pdf/{collection_folder}/{filename}"
-    matching_info = f"Query: pdf_key='{pdf_key}'"
+    # Convert chunk filename to original filename
+    # e.g., document_chunk_1.pdf -> document.pdf
+    original_filename = extract_original_filename(filename)
+    
+    # Construct the pdf_key to look up (prescan stores with pdf/ prefix)
+    pdf_key = f"pdf/{collection_folder}/{original_filename}"
+    
+    # Build matching info for debugging
+    if original_filename != filename:
+        matching_info = f"Chunk '{filename}' -> Original '{original_filename}' | Query: '{pdf_key}'"
+    else:
+        matching_info = f"Query: '{pdf_key}'"
     
     result = prescan_cache.get(pdf_key, {})
     
@@ -158,7 +226,7 @@ def get_prescan_data(filename: str, collection_folder: str, prescan_cache: dict,
     else:
         matching_info += f" | NOT FOUND in {len(prescan_cache)} cached records"
         # Try to find similar keys for debugging
-        similar_keys = [k for k in prescan_cache.keys() if filename in k][:3]
+        similar_keys = [k for k in prescan_cache.keys() if original_filename in k][:3]
         if similar_keys:
             matching_info += f" | Similar keys: {similar_keys}"
     
