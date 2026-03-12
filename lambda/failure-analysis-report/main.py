@@ -36,6 +36,38 @@ PRESCAN_TABLE = os.environ.get('PRESCAN_TABLE', 'pdf-prescan-data')
 IN_FLIGHT_FILE_PREFIX = "file_"
 
 
+def convert_dynamodb_value(value):
+    """
+    Recursively convert DynamoDB values (Decimals, nested dicts/lists) to Python native types.
+    """
+    if isinstance(value, Decimal):
+        # Convert to int if it's a whole number, otherwise float
+        if value % 1 == 0:
+            return int(value)
+        return float(value)
+    elif isinstance(value, dict):
+        # Recursively convert dict values
+        return {k: convert_dynamodb_value(v) for k, v in value.items()}
+    elif isinstance(value, list):
+        # Recursively convert list items
+        return [convert_dynamodb_value(item) for item in value]
+    else:
+        return value
+
+
+def format_for_excel(value):
+    """
+    Format a value for Excel cell output.
+    Converts lists and dicts to readable strings.
+    """
+    if isinstance(value, list):
+        return ', '.join(str(v) for v in value)
+    elif isinstance(value, dict):
+        return json.dumps(value)
+    else:
+        return value
+
+
 def extract_collection_folder(s3_key: str) -> str:
     """
     Extract the collection folder from an S3 key.
@@ -75,29 +107,43 @@ def load_all_prescan_data() -> dict:
     """
     Load all prescan data from DynamoDB into a dictionary keyed by pdf_key.
     
-    This is more efficient than individual lookups when processing many records.
+    Note: The prescan table has a sort key (scan_timestamp), so there may be
+    multiple records per pdf_key. We keep the most recent one (last scanned).
     
     Returns:
         dict mapping pdf_key to prescan data dict
     """
     prescan_cache = {}
     
+    if not PRESCAN_TABLE:
+        logger.warning("PRESCAN_TABLE environment variable not set")
+        return prescan_cache
+    
     try:
         table = dynamodb.Table(PRESCAN_TABLE)
         logger.info(f"Loading prescan data from table: {PRESCAN_TABLE}")
         
         # Scan all items from prescan table
-        response = table.scan()
+        try:
+            response = table.scan()
+        except Exception as scan_error:
+            logger.error(f"Error during initial scan of {PRESCAN_TABLE}: {scan_error}", exc_info=True)
+            return prescan_cache
+            
         items = response.get('Items', [])
         logger.info(f"First scan returned {len(items)} items, has more: {'LastEvaluatedKey' in response}")
         
         page_count = 1
         while 'LastEvaluatedKey' in response:
             page_count += 1
-            response = table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
-            new_items = response.get('Items', [])
-            items.extend(new_items)
-            logger.info(f"Scan page {page_count} returned {len(new_items)} items, total so far: {len(items)}")
+            try:
+                response = table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
+                new_items = response.get('Items', [])
+                items.extend(new_items)
+                logger.info(f"Scan page {page_count} returned {len(new_items)} items, total so far: {len(items)}")
+            except Exception as page_error:
+                logger.error(f"Error during scan page {page_count}: {page_error}", exc_info=True)
+                break
         
         logger.info(f"Loaded {len(items)} total prescan records from DynamoDB after {page_count} scan(s)")
         
@@ -109,25 +155,30 @@ def load_all_prescan_data() -> dict:
             logger.warning(f"No items found in prescan table {PRESCAN_TABLE}")
         
         # Build cache keyed by pdf_key
+        # Since there's a sort key, multiple records may exist per pdf_key
+        # We'll keep the most recent one (by scan_timestamp)
         for item in items:
             pdf_key = item.get('pdf_key', '')
             if pdf_key:
+                scan_timestamp = item.get('scan_timestamp', '')
+                
+                # Check if we already have this key and if this record is newer
+                existing = prescan_cache.get(pdf_key)
+                if existing:
+                    existing_timestamp = existing.get('scan_timestamp', '')
+                    if scan_timestamp <= existing_timestamp:
+                        continue  # Skip older record
+                
                 # Convert Decimal types to float/int for Excel compatibility
+                # Also handle nested dicts/lists that may contain Decimals
                 converted = {}
                 for key, value in item.items():
-                    if isinstance(value, Decimal):
-                        converted[key] = float(value) if '.' in str(value) else int(value)
-                    elif isinstance(value, dict):
-                        converted[key] = json.dumps(value)
-                    elif isinstance(value, list):
-                        converted[key] = ', '.join(str(v) for v in value)
-                    else:
-                        converted[key] = value
+                    converted[key] = convert_dynamodb_value(value)
                 prescan_cache[pdf_key] = converted
             else:
                 logger.warning(f"Prescan item missing pdf_key: {item}")
         
-        logger.info(f"Built prescan cache with {len(prescan_cache)} entries")
+        logger.info(f"Built prescan cache with {len(prescan_cache)} unique pdf_keys from {len(items)} records")
         
         # Log all keys if there are few (for debugging)
         if len(prescan_cache) <= 20:
@@ -582,7 +633,7 @@ def create_excel_report(items: list, prescan_cache: dict) -> bytes:
             prescan_matching_info,
             prescan.get('risk_level', ''),
             prescan.get('complexity_score', ''),
-            prescan.get('risk_factors', ''),
+            format_for_excel(prescan.get('risk_factors', '')),
             prescan.get('total_images', ''),
             prescan.get('total_text_chars', ''),
             prescan.get('total_fonts', ''),
